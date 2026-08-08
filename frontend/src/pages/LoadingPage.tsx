@@ -116,15 +116,44 @@ export const LoadingPage: React.FC = () => {
               </div>
             )}
 
-            <button
-              onClick={() => {
-                setSelectedBatchId(batch.id);
-                setActualLoadedInput(batch.loadedCount);
-              }}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-lg text-xs transition-colors"
-            >
-              Report / Edit Discrepancy
-            </button>
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+              {batch.status !== 'COMPLETED' && batch.status !== 'ACCEPTED' ? (
+                <button
+                  onClick={async () => {
+                    const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                      ? 'http://localhost:5000'
+                      : '';
+                    try {
+                      await fetch(`${API_BASE}/api/batches/${batch.id}/accept`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ loadmanName: 'Kumar', status: 'ACCEPTED' }),
+                      });
+                      window.location.reload();
+                    } catch (err) {
+                      console.error('Accept batch error:', err);
+                    }
+                  }}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg text-xs transition-colors cursor-pointer shadow-sm shadow-emerald-600/20"
+                >
+                  Accept Order & Confirm Batch
+                </button>
+              ) : (
+                <div className="flex-1 bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold py-2 rounded-lg text-xs text-center">
+                  Order Accepted & Verified
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setSelectedBatchId(batch.id);
+                  setActualLoadedInput(batch.loadedCount);
+                }}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer"
+              >
+                Discrepancy
+              </button>
+            </div>
           </div>
         ))}
       </div>

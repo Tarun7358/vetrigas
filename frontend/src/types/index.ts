@@ -71,7 +71,7 @@ export interface LoadingBatch {
   loadmanName: string;
   requiredCount: number;
   loadedCount: number;
-  status: 'COMPLETED' | 'IN_PROGRESS' | 'DISCREPANCY';
+  status: 'COMPLETED' | 'IN_PROGRESS' | 'DISCREPANCY' | 'ACCEPTED';
   discrepancyReason?: string;
   discrepancyDiff?: number;
   timestamp: string;

@@ -126,7 +126,7 @@ export async function seedDatabase() {
     const empCheck = await fetchOne('SELECT COUNT(*) as count FROM employees');
     if (empCheck && empCheck.count === 0) {
       const initialEmployees = [
-        ['emp-00', 'Vetri', 'Owner', 'owner@vetriindane.com', 'Vetri@2026', '+91 98765 00001', '01 Jan 2023', 'Present', '9h 00m', '100%', 100, 'Active', 150],
+        ['emp-00', 'Vetri', 'Owner', 'owner@vetriindane.com', 'Vetri@2026', '+91 96008 70814', '01 Jan 2023', 'Present', '9h 00m', '100%', 100, 'Active', 150],
         ['emp-01', 'Arun', 'Driver', 'arun.driver@vetriindane.com', 'Arun@2026', '+91 98765 43210', '12 Jan 2024', 'Present', '8h 42m', '17/24', 95, 'Active', 85],
         ['emp-02', 'Kumar', 'Loadman', 'kumar.loadman@vetriindane.com', 'Kumar@2026', '+91 98765 43211', '05 Mar 2024', 'Present', '9h 05m', '86/100', 94, 'Active', 70],
         ['emp-03', 'Suresh', 'Driver', 'suresh.driver@vetriindane.com', 'Suresh@2026', '+91 98765 43212', '18 Jun 2023', 'Present', '8h 50m', '21/25', 96, 'Active', 90],

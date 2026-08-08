@@ -30,7 +30,7 @@ Delivered By  : ${data.driverName}
 Timestamp     : ${data.date}
 ========================================
 STATUS: PAYMENT VERIFIED & CONFIRMED
-Helpline: +91 98765 00001
+Helpline: +91 96008 70814
 ========================================`;
 }
 

@@ -355,6 +355,43 @@ app.post('/api/batches', async (req: Request, res: Response) => {
   }
 });
 
+// ACCEPT & UPDATE BATCH ENDPOINT (For Loadman & Depot Staff)
+app.put('/api/batches/:id/accept', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { loadmanName, status } = req.body;
+  const targetStatus = status || 'ACCEPTED';
+
+  try {
+    await runQuery(
+      `UPDATE loading_batches SET status = ?, loadmanName = COALESCE(?, loadmanName) WHERE id = ?`,
+      [targetStatus, loadmanName || null, id]
+    );
+    const updated = await fetchOne('SELECT * FROM loading_batches WHERE id = ?', [id]);
+    console.log(`[INFO] [BATCH UPDATED] Batch ${id} marked as ${targetStatus} by ${loadmanName}`);
+    res.json({ success: true, batch: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update batch status in SQLite' });
+  }
+});
+
+// UPDATE DELIVERY STATUS ENDPOINT (For Driver & Loadman)
+app.put('/api/deliveries/:id/status', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, deliveredTime } = req.body;
+
+  try {
+    await runQuery(
+      `UPDATE deliveries SET status = ?, deliveredTime = COALESCE(?, deliveredTime) WHERE id = ?`,
+      [status, deliveredTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id]
+    );
+    const updated = await fetchOne('SELECT * FROM deliveries WHERE id = ?', [id]);
+    console.log(`[INFO] [DELIVERY UPDATED] Delivery ${id} status updated to ${status}`);
+    res.json({ success: true, delivery: updated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update delivery status in SQLite' });
+  }
+});
+
 // SPA Fallback Route for React Frontend
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(frontendPath, 'index.html'));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi } from 'lucide-react';
+import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X } from 'lucide-react';
 import { EBillModal } from '../components/EBillModal';
 import type { BillRecord } from '../types';
 import { sendWhatsAppReceipt } from '../utils/whatsappReceipt';
@@ -12,8 +12,51 @@ export const DeliveriesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBill, setSelectedBill] = useState<BillRecord | null>(null);
 
+  const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
+  const [newCustName, setNewCustName] = useState<string>('');
+  const [newCustPhone, setNewCustPhone] = useState<string>('');
+  const [newCustAddress, setNewCustAddress] = useState<string>('');
+  const [newQty, setNewQty] = useState<number>(1);
+  const [newAmount, setNewAmount] = useState<number>(940);
+  const [newDriver, setNewDriver] = useState<string>('Arun');
+
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
+
+  const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : '';
+
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCustName || !newCustAddress) return;
+
+    try {
+      await fetch(`${API_BASE}/api/deliveries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: newCustName,
+          address: newCustAddress,
+          phone: newCustPhone || '+91 96008 70814',
+          category: 'COMMERCIAL',
+          paymentType: 'UPI',
+          amount: newAmount,
+          assignedDriverName: newDriver,
+          scheduledTime: '02:30 PM',
+        }),
+      });
+
+      setShowOrderModal(false);
+      setNewCustName('');
+      setNewCustAddress('');
+      setNewCustPhone('');
+      soundAlerts.playSuccessSyncChime();
+      window.location.reload();
+    } catch (err) {
+      console.error('Order creation error:', err);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = offlineSync.subscribe((online, count) => {
@@ -68,17 +111,24 @@ export const DeliveriesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Network & Offline PWA Sync Status */}
-        <div className="flex items-center gap-2">
+        {/* Network & Offline PWA Sync Status & Order Booking */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowOrderModal(true)}
+            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+          >
+            + Book New Client Order
+          </button>
+
           {!isOnline ? (
             <div className="bg-amber-500/20 border border-amber-500/40 text-amber-300 px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 animate-pulse">
               <WifiOff className="w-4 h-4 text-amber-400" />
-              <span>Offline Mode ({offlineQueueCount} Queued)</span>
+              <span>Offline ({offlineQueueCount})</span>
             </div>
           ) : (
             <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 px-3 py-1.5 rounded-xl text-xs flex items-center gap-2">
               <Wifi className="w-4 h-4 text-emerald-400" />
-              <span>PWA Online & Synced</span>
+              <span>Synced</span>
             </div>
           )}
         </div>
@@ -201,6 +251,108 @@ export const DeliveriesPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* New Client Order Entry Modal (Storeroom Staff & Godown Keeper) */}
+      {showOrderModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-white animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+              <span className="font-bold text-sm text-amber-400">Book New Client LPG Order (Office Entry)</span>
+              <button onClick={() => setShowOrderModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOrder} className="p-5 space-y-3.5 text-xs">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Customer Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Hotel / Saravana Mess"
+                  value={newCustName}
+                  onChange={e => setNewCustName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Phone Number *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="+91 96008 70814"
+                    value={newCustPhone}
+                    onChange={e => setNewCustPhone(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Cylinder Qty *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newQty}
+                    onChange={e => {
+                      const q = Number(e.target.value);
+                      setNewQty(q);
+                      setNewAmount(q * 940);
+                    }}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Delivery Address *</label>
+                <textarea
+                  required
+                  rows={2}
+                  placeholder="No. 14, Main Road, Peelamedu, Coimbatore"
+                  value={newCustAddress}
+                  onChange={e => setNewCustAddress(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Total Amount (Rs.)</label>
+                  <input
+                    type="number"
+                    value={newAmount}
+                    onChange={e => setNewAmount(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-amber-400 font-bold font-mono focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Assign Field Driver</label>
+                  <select
+                    value={newDriver}
+                    onChange={e => setNewDriver(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
+                  >
+                    <option value="Arun">Arun (TN 38 AU 4821)</option>
+                    <option value="Suresh">Suresh (TN 38 BQ 1092)</option>
+                    <option value="Ramesh">Ramesh (TN 38 CF 9901)</option>
+                    <option value="Vijay">Vijay (TN 38 DK 3341)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full mt-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+              >
+                Post Order & Notify Loadman / Driver
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <EBillModal bill={selectedBill} onClose={() => setSelectedBill(null)} />
     </div>
