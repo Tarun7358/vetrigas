@@ -189,21 +189,29 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Quick Role Selection Tab Bar */}
-        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-2 xs:grid-cols-4 gap-1.5 text-[11px] font-bold">
-          {(['OWNER', 'MANAGER', 'DRIVER', 'LOADMAN'] as UserRole[]).map(r => {
+        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px] font-bold">
+          {(['OWNER', 'STOREROOM_STAFF', 'MANAGER', 'GODOWN_KEEPER', 'DRIVER', 'LOADMAN'] as UserRole[]).map(r => {
             const isSelected = selectedRole === r;
+            const labels: Record<UserRole, string> = {
+              OWNER: '👑 OWNER',
+              STOREROOM_STAFF: '🛡️ OFFICE',
+              MANAGER: '💼 FIELD MGR',
+              GODOWN_KEEPER: '🔥 GODOWN',
+              DRIVER: '🚛 DRIVER',
+              LOADMAN: '📦 LOADMAN',
+            };
             return (
               <button
                 key={r}
                 type="button"
                 onClick={() => handleRoleSelect(r)}
-                className={`py-2 rounded-lg transition-all flex flex-col items-center gap-1 ${
+                className={`py-2 px-1 rounded-lg transition-all flex items-center justify-center text-center ${
                   isSelected
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-black'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
-                <span>{r}</span>
+                <span>{labels[r]}</span>
               </button>
             );
           })}
