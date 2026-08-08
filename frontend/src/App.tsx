@@ -38,6 +38,10 @@ const AppContent: React.FC = () => {
         setActiveTab('loading');
       } else if (role === 'DRIVER') {
         setActiveTab('deliveries');
+      } else if (role === 'GODOWN_KEEPER') {
+        setActiveTab('deliveries');
+      } else if (role === 'STOREROOM_STAFF') {
+        setActiveTab('dashboard');
       } else if (role === 'MANAGER') {
         setActiveTab('fleet');
       } else {

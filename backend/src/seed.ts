@@ -86,7 +86,9 @@ export async function seedDatabase() {
         ['emp-04', 'Ramesh', 'Driver', 'ramesh.driver@vetriindane.com', 'Ramesh@2026', '+91 98765 43213', '10 Nov 2023', 'Present', '7h 15m', '14/20', 88, 'Active', 85],
         ['emp-05', 'Vijay', 'Driver', 'vijay.driver@vetriindane.com', 'Vijay@2026', '+91 98765 43214', '01 Feb 2024', 'Late', '4h 30m', '5/18', 82, 'Active', 80],
         ['emp-06', 'Murugan', 'Loadman', 'murugan.loadman@vetriindane.com', 'Murugan@2026', '+91 98765 43215', '22 Aug 2023', 'Present', '8h 40m', '92/100', 97, 'Active', 70],
-        ['emp-07', 'Santhosh', 'Manager', 'santhosh.manager@vetriindane.com', 'Santhosh@2026', '+91 98765 00002', '01 Jan 2023', 'Present', '9h 30m', '100%', 99, 'Active', 120]
+        ['emp-07', 'Santhosh', 'Manager', 'santhosh.manager@vetriindane.com', 'Santhosh@2026', '+91 98765 00002', '01 Jan 2023', 'Present', '9h 30m', '100%', 99, 'Active', 120],
+        ['emp-08', 'Karthik', 'Godown Keeper', 'karthik.godown@vetriindane.com', 'Karthik@2026', '+91 98765 00003', '15 Feb 2024', 'Present', '8h 30m', 'Stock Verified', 96, 'Active', 95],
+        ['emp-09', 'Priya', 'Storeroom Staff', 'priya.office@vetriindane.com', 'Priya@2026', '+91 98765 00004', '10 Jan 2024', 'Present', '9h 00m', 'Analytics Sync', 98, 'Active', 110]
       ];
 
       for (const emp of initialEmployees) {

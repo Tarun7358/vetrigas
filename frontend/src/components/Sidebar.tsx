@@ -64,6 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const allowedTabsPerRole: Record<string, string[]> = {
     OWNER: ['dashboard', 'workforce', 'attendance', 'payroll', 'expenses', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues', 'audit', 'settings'],
     MANAGER: ['dashboard', 'workforce', 'attendance', 'expenses', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues'],
+    GODOWN_KEEPER: ['deliveries', 'inventory', 'loading', 'billing', 'attendance', 'issues'],
+    STOREROOM_STAFF: ['dashboard', 'reports', 'inventory', 'deliveries', 'fleet', 'billing', 'performance', 'issues'],
     DRIVER: ['deliveries', 'expenses', 'fleet', 'camera', 'attendance', 'issues'],
     LOADMAN: ['loading', 'inventory', 'attendance', 'issues'],
   };

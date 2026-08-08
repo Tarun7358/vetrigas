@@ -212,9 +212,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const defaultNames: Record<UserRole, string> = {
       OWNER: 'Vetri',
-      MANAGER: 'Santhosh',
+      MANAGER: 'Santhosh (Field Agent)',
       DRIVER: 'Arun',
       LOADMAN: 'Kumar',
+      GODOWN_KEEPER: 'Karthik',
+      STOREROOM_STAFF: 'Priya (Office Analytics)',
     };
 
     setCurrentUser({

@@ -57,6 +57,20 @@ export const LoginPage: React.FC = () => {
       icon: PackageCheck,
       badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
     },
+    GODOWN_KEEPER: {
+      email: 'karthik.godown@vetriindane.com',
+      title: 'Godown Keeper (Karthik)',
+      subtitle: 'Client Order Entry, Cylinder Stock Audits & Inventory Checking',
+      icon: Flame,
+      badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
+    },
+    STOREROOM_STAFF: {
+      email: 'priya.office@vetriindane.com',
+      title: 'Storeroom Staff / Office Analytics (Priya)',
+      subtitle: 'Office Analytics Command Center, Live Tracking & Owner Updates',
+      icon: ShieldCheck,
+      badgeColor: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
+    },
   };
 
   // Forgot Password State

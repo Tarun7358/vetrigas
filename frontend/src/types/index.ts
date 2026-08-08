@@ -1,4 +1,4 @@
-export type UserRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'LOADMAN';
+export type UserRole = 'OWNER' | 'MANAGER' | 'DRIVER' | 'LOADMAN' | 'GODOWN_KEEPER' | 'STOREROOM_STAFF';
 
 export interface Vehicle {
   id: string;
@@ -23,7 +23,7 @@ export interface Employee {
   name: string;
   email: string;
   password?: string;
-  role: 'Driver' | 'Loadman' | 'Manager' | 'Owner';
+  role: 'Driver' | 'Loadman' | 'Manager' | 'Owner' | 'Godown Keeper' | 'Storeroom Staff';
   phone: string;
   joiningDate: string;
   attendanceStatus: 'Present' | 'Absent' | 'Late';
