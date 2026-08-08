@@ -200,19 +200,25 @@ INSERT INTO roles (id, name, description) VALUES
 ('11111111-1111-1111-1111-111111111111', 'OWNER', 'Full System Control & Financial Approvals'),
 ('22222222-2222-2222-2222-222222222222', 'MANAGER', 'Operations, Dispatch & Live Fleet Management'),
 ('33333333-3333-3333-3333-333333333333', 'DRIVER', 'Field Delivery & Customer Payment Collection'),
-('44444444-4444-4444-4444-444444444444', 'LOADMAN', 'Depot Loading & Discrepancy Audits')
+('44444444-4444-4444-4444-444444444444', 'LOADMAN', 'Depot Loading & Discrepancy Audits'),
+('55555555-5555-5555-5555-555555555555', 'GODOWN_KEEPER', 'Godown Stock Entry & Client Order Bookings'),
+('66666666-6666-6666-6666-666666666666', 'STOREROOM_STAFF', 'Office Operations & Briefing Analytics')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO users (id, username, email, password_hash, role_id) VALUES
 ('a1111111-1111-1111-1111-111111111111', 'vetri_owner', 'owner@vetri.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '11111111-1111-1111-1111-111111111111'),
 ('b2222222-2222-2222-2222-222222222222', 'santhosh_manager', 'manager@vetri.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '22222222-2222-2222-2222-222222222222'),
 ('c3333333-3333-3333-3333-333333333333', 'arun_driver', 'arun@vetri.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '33333333-3333-3333-3333-333333333333'),
-('d4444444-4444-4444-4444-444444444444', 'kumar_loadman', 'kumar@vetri.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '44444444-4444-4444-4444-444444444444')
+('d4444444-4444-4444-4444-444444444444', 'kumar_loadman', 'kumar@vetri.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '44444444-4444-4444-4444-444444444444'),
+('e5555555-5555-5555-5555-555555555555', 'karthik_godown', 'karthik.godown@vetriindane.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '55555555-5555-5555-5555-555555555555'),
+('f6666666-6666-6666-6666-666666666666', 'priya_storeroom', 'priya.office@vetriindane.com', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW', '66666666-6666-6666-6666-666666666666')
 ON CONFLICT (username) DO NOTHING;
 
 INSERT INTO employees (user_id, employee_code, name, role, phone, joining_date, hourly_rate) VALUES
 ('a1111111-1111-1111-1111-111111111111', 'EMP-OWNER-01', 'Vetri', 'Owner', '+91 98765 00001', '2024-01-01', 200.00),
 ('b2222222-2222-2222-2222-222222222222', 'EMP-MGR-01', 'Santhosh', 'Manager', '+91 98765 00002', '2024-02-01', 120.00),
 ('c3333333-3333-3333-3333-333333333333', 'EMP-DRV-01', 'Arun', 'Driver', '+91 98765 43210', '2024-01-12', 75.00),
-('d4444444-4444-4444-4444-444444444444', 'EMP-LDM-01', 'Kumar', 'Loadman', '+91 98765 43211', '2024-03-05', 65.00)
+('d4444444-4444-4444-4444-444444444444', 'EMP-LDM-01', 'Kumar', 'Loadman', '+91 98765 43211', '2024-03-05', 65.00),
+('e5555555-5555-5555-5555-555555555555', 'EMP-GDN-01', 'Karthik', 'Godown Keeper', '+91 98765 00003', '2024-02-15', 95.00),
+('f6666666-6666-6666-6666-666666666666', 'EMP-STR-01', 'Priya', 'Storeroom Staff', '+91 98765 00004', '2024-01-10', 110.00)
 ON CONFLICT (employee_code) DO NOTHING;
