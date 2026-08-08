@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { soundAlerts } from '../utils/audioAlerts';
 import {
   Users,
   CheckCircle2,
@@ -9,6 +10,8 @@ import {
   AlertTriangle,
   ArrowUpRight,
   ChevronRight,
+  Volume2,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   BarChart,
@@ -36,6 +39,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const completedDeliveriesCount = deliveries.filter(d => d.status === 'DELIVERED').length;
   const todayCollection = 113650;
 
+  // Inventory Stock Threshold (< 50 units trigger audible warning)
+  const currentEmptyCylinderStock = 42; // Low stock alert threshold
+  const isStockLow = currentEmptyCylinderStock < 50;
+
+  // Overspeed & Idle Fleet Warnings
+  const overspeedingVehicles = vehicles.filter(v => v.speed > 60);
+  const idleIgnitionVehicles = vehicles.filter(v => v.speed === 0 && v.ignition);
+
+  useEffect(() => {
+    if (isStockLow && (role === 'OWNER' || role === 'MANAGER')) {
+      soundAlerts.playLowStockAlert();
+    }
+    if (overspeedingVehicles.length > 0 && (role === 'OWNER' || role === 'MANAGER')) {
+      soundAlerts.playSpeedAlert();
+    }
+  }, [isStockLow, overspeedingVehicles.length, role]);
+
   // Chart Data
   const hourlyData = [
     { time: '08:00', deliveries: 12, loading: 40 },
@@ -54,6 +74,58 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-6 pb-8">
+      {/* Real-Time Sound & Push Alert Banner */}
+      {isStockLow && (role === 'OWNER' || role === 'MANAGER') && (
+        <div className="bg-rose-500/10 border border-rose-500/30 text-rose-300 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40">
+              <ShieldAlert className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="font-bold text-xs text-white flex items-center gap-2">
+                🚨 CRITICAL DEPOT STOCK WARNING: Empty Cylinder Stock Low ({currentEmptyCylinderStock} Units)
+              </p>
+              <p className="text-[11px] text-rose-300/80">
+                Stock is below safety threshold (50 Cylinders). Dispatch refilling truck to Indian Oil Peelamedu Bottling Plant.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => soundAlerts.playLowStockAlert()}
+            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer self-start sm:self-auto"
+          >
+            <Volume2 className="w-4 h-4" /> Test Stock Sound Alert
+          </button>
+        </div>
+      )}
+
+      {/* Fleet Overspeed & Idle Ignition Warning Banner */}
+      {idleIgnitionVehicles.length > 0 && (role === 'OWNER' || role === 'MANAGER') && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="font-bold text-xs text-white flex items-center gap-2">
+                ⚠️ FLEET SAFETY ALERT: {idleIgnitionVehicles.length} Vehicle(s) Stopped with Ignition ON
+              </p>
+              <p className="text-[11px] text-amber-300/80">
+                Vehicles {idleIgnitionVehicles.map(v => v.registrationNumber).join(', ')} are idling with engine running for &gt;15 mins.
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => soundAlerts.playSpeedAlert()}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-slate-950 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md cursor-pointer self-start sm:self-auto"
+          >
+            <Volume2 className="w-4 h-4" /> Test Fleet Sound Alert
+          </button>
+        </div>
+      )}
+
       {/* Top Banner: Greeting + Date */}
       <div className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-md">
         <div>
