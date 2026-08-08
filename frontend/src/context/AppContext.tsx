@@ -13,6 +13,7 @@ import type {
   AlertItem,
   AuditLog,
   IntegrationState,
+  VehicleExpense,
 } from '../types';
 
 interface UserSession {
@@ -38,6 +39,7 @@ interface AppContextType {
   batches: LoadingBatch[];
   deliveries: DeliveryItem[];
   bills: BillRecord[];
+  expenses: VehicleExpense[];
   inventory: InventoryMetrics;
   reconciliation: CashReconciliation;
   alerts: AlertItem[];
@@ -51,6 +53,9 @@ interface AppContextType {
   updatePayrollStatus: (payrollId: string, status: PayrollRecord['status']) => void;
   dismissAlert: (alertId: string) => void;
   resolveReconciliation: (amount: number, reason: string) => void;
+  addExpense: (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => void;
+  approveExpense: (expenseId: string) => void;
+  rejectExpense: (expenseId: string) => void;
 
   // Owner-Only Worker Actions
   addEmployee: (emp: Partial<Employee>) => void;
@@ -68,6 +73,7 @@ const initialDeliveries: DeliveryItem[] = vetriDataset.deliveries as DeliveryIte
 const initialBills: BillRecord[] = vetriDataset.bills as BillRecord[];
 const initialAlerts: AlertItem[] = vetriDataset.alerts as AlertItem[];
 const initialAuditLogs: AuditLog[] = vetriDataset.auditLogs as unknown as AuditLog[];
+const initialExpenses: VehicleExpense[] = (vetriDataset as any).expenses as VehicleExpense[];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -92,9 +98,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [batches, setBatches] = useState<LoadingBatch[]>(initialBatches);
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>(initialDeliveries);
   const [bills, setBills] = useState<BillRecord[]>(initialBills);
+  const [expenses, setExpenses] = useState<VehicleExpense[]>(initialExpenses);
   const [alerts, setAlerts] = useState<AlertItem[]>(initialAlerts);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>('v1');
+
+  const addExpense = (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => {
+    const newExp: VehicleExpense = {
+      ...expenseData,
+      id: `exp-${Date.now()}`,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'PENDING',
+    };
+    setExpenses(prev => [newExp, ...prev]);
+    setAuditLogs(prev => [
+      {
+        id: `audit-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        user: `${expenseData.driverName} (${role})`,
+        action: `Submitted Vehicle ${expenseData.type} Expense ₹${expenseData.amount}`,
+        module: 'Fleet Expenses',
+        record: newExp.id,
+        status: 'SUCCESS',
+      },
+      ...prev,
+    ]);
+  };
+
+  const approveExpense = (expenseId: string) => {
+    setExpenses(prev =>
+      prev.map(e => (e.id === expenseId ? { ...e, status: 'APPROVED', approvedBy: currentUser?.name || role } : e))
+    );
+  };
+
+  const rejectExpense = (expenseId: string) => {
+    setExpenses(prev =>
+      prev.map(e => (e.id === expenseId ? { ...e, status: 'REJECTED' } : e))
+    );
+  };
   
   const [reconciliation, setReconciliation] = useState<CashReconciliation>(vetriDataset.reconciliation as CashReconciliation);
   const [inventory] = useState<InventoryMetrics>(vetriDataset.inventory as InventoryMetrics);
@@ -290,6 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         batches,
         deliveries,
         bills,
+        expenses,
         inventory,
         reconciliation,
         alerts,
@@ -301,6 +343,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatePayrollStatus,
         dismissAlert,
         resolveReconciliation,
+        addExpense,
+        approveExpense,
+        rejectExpense,
         addEmployee,
         removeEmployee,
       }}

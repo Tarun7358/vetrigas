@@ -20,6 +20,7 @@ import { InventoryPage } from './pages/InventoryPage';
 import { PerformancePage } from './pages/PerformancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
+import { ExpensesPage } from './pages/ExpensesPage';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, role, setSelectedVehicleId } = useApp();
@@ -84,6 +85,7 @@ const AppContent: React.FC = () => {
             {activeTab === 'workforce' && <WorkforcePage />}
             {activeTab === 'attendance' && <AttendancePage />}
             {activeTab === 'payroll' && <PayrollPage />}
+            {activeTab === 'expenses' && <ExpensesPage />}
             {activeTab === 'fleet' && <FleetPage onNavigate={handleNavigate} />}
             {activeTab === 'camera' && <CameraPage />}
             {activeTab === 'loading' && <LoadingPage />}

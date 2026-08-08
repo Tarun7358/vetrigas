@@ -432,5 +432,55 @@
       "status": "SUCCESS",
       "timestamp": "Today 08:45 AM"
     }
+  ],
+  "expenses": [
+    {
+      "id": "exp-01",
+      "type": "FUEL",
+      "vehicleNumber": "TN 38 AU 4821",
+      "driverName": "Arun",
+      "driverId": "emp-01",
+      "amount": 2850,
+      "date": "08 Aug 2026 09:15 AM",
+      "vendorName": "HP Fuel Outlet - Peelamedu",
+      "odometerReading": 64820,
+      "litersFilled": 29.5,
+      "description": "Diesel Full Tank Top-up before Shift 01 delivery route",
+      "billNumber": "HP-CBE-98124",
+      "receiptImage": "bill_hp_peelamedu_2850.jpg",
+      "status": "APPROVED",
+      "approvedBy": "Vetri"
+    },
+    {
+      "id": "exp-02",
+      "type": "MAINTENANCE",
+      "vehicleNumber": "TN 38 CW 1054",
+      "driverName": "Ramesh",
+      "driverId": "emp-04",
+      "amount": 1400,
+      "date": "07 Aug 2026 04:30 PM",
+      "vendorName": "Sri Ram Auto Mechanics",
+      "description": "Front Brake Pad Replacement & Engine Oil Level Inspection",
+      "billNumber": "SRM-7712",
+      "receiptImage": "bill_sri_ram_1400.jpg",
+      "status": "APPROVED",
+      "approvedBy": "Santhosh"
+    },
+    {
+      "id": "exp-03",
+      "type": "FUEL",
+      "vehicleNumber": "TN 38 BV 9012",
+      "driverName": "Suresh",
+      "driverId": "emp-03",
+      "amount": 3100,
+      "date": "08 Aug 2026 01:20 PM",
+      "vendorName": "Bharat Petroleum - Avinashi Road",
+      "odometerReading": 89410,
+      "litersFilled": 32.0,
+      "description": "Diesel Refilling during afternoon trip",
+      "billNumber": "BP-CBE-44019",
+      "receiptImage": "bill_bp_avinashi_3100.jpg",
+      "status": "PENDING"
+    }
   ]
 }

@@ -15,6 +15,7 @@ import {
   AlertCircle,
   ShieldAlert,
   Settings,
+  Fuel,
   ChevronLeft,
   ChevronRight,
   X,
@@ -46,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'workforce', label: 'Workforce', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Clock },
     { id: 'payroll', label: 'Payroll', icon: CircleDollarSign },
+    { id: 'expenses', label: 'Fuel & Expenses', icon: Fuel },
     { id: 'fleet', label: 'Fleet & Map', icon: Truck },
     { id: 'camera', label: 'Vehicle Camera', icon: Video },
     { id: 'loading', label: 'Loading Control', icon: PackageCheck },
@@ -60,9 +62,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   const allowedTabsPerRole: Record<string, string[]> = {
-    OWNER: ['dashboard', 'workforce', 'attendance', 'payroll', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues', 'audit', 'settings'],
-    MANAGER: ['dashboard', 'workforce', 'attendance', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues'],
-    DRIVER: ['deliveries', 'fleet', 'camera', 'attendance', 'issues'],
+    OWNER: ['dashboard', 'workforce', 'attendance', 'payroll', 'expenses', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues', 'audit', 'settings'],
+    MANAGER: ['dashboard', 'workforce', 'attendance', 'expenses', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues'],
+    DRIVER: ['deliveries', 'expenses', 'fleet', 'camera', 'attendance', 'issues'],
     LOADMAN: ['loading', 'inventory', 'attendance', 'issues'],
   };
 

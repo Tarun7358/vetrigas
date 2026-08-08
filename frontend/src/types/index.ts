@@ -150,3 +150,21 @@ export interface IntegrationState {
   easyTimeProConnected: boolean;
   paymentGatewayConnected: boolean;
 }
+
+export interface VehicleExpense {
+  id: string;
+  type: 'FUEL' | 'MAINTENANCE';
+  vehicleNumber: string;
+  driverName: string;
+  driverId: string;
+  amount: number; // ₹
+  date: string;
+  vendorName: string; // e.g. "HP Petrol Bunk Peelamedu" or "Sri Ram Auto Garage"
+  odometerReading?: number; // km
+  litersFilled?: number; // L
+  description?: string;
+  billNumber?: string;
+  receiptImage?: string; // Bill copy reference
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedBy?: string;
+}
