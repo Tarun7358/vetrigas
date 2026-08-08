@@ -28,7 +28,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { vehicles, deliveries } = useApp();
+  const { vehicles, deliveries, currentUser, role } = useApp();
 
   const totalWorkers = 28;
   const presentToday = 25;
@@ -59,10 +59,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <h1 className="font-display font-bold text-xl text-white">Good Morning, Owner</h1>
+            <h1 className="font-display font-bold text-xl text-white">
+              Good Morning, {currentUser?.name || (role === 'OWNER' ? 'Vetri' : role)}
+            </h1>
+            <span className="text-xs font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded uppercase">
+              {role} Portal
+            </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            Vetri Indane Operations Control Room • Coimbatore Central Distribution
+            {role === 'OWNER' && 'Vetri Executive Control Room • Full Depot Operations & Approvals'}
+            {role === 'MANAGER' && 'Operations Management Console • Fleet Live Tracking & Batch Control'}
+            {role === 'DRIVER' && 'Driver Logistics Console • Assigned Delivery Routes & Payment Collection'}
+            {role === 'LOADMAN' && 'Depot Loading Operations Board • Cylinder Stock & Discrepancy Audits'}
           </p>
         </div>
         <div className="mt-3 md:mt-0 text-left md:text-right bg-slate-950 px-4 py-2 rounded-lg border border-slate-800">

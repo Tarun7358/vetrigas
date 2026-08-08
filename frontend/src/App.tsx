@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -22,12 +22,27 @@ import { ReportsPage } from './pages/ReportsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, setSelectedVehicleId } = useApp();
+  const { isAuthenticated, role, setSelectedVehicleId } = useApp();
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState<boolean>(false);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
   const [alertsOpen, setAlertsOpen] = useState<boolean>(false);
+
+  // Automatically direct user to role-specific landing page upon login
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (role === 'LOADMAN') {
+        setActiveTab('loading');
+      } else if (role === 'DRIVER') {
+        setActiveTab('deliveries');
+      } else if (role === 'MANAGER') {
+        setActiveTab('fleet');
+      } else {
+        setActiveTab('dashboard');
+      }
+    }
+  }, [role, isAuthenticated]);
 
   const handleNavigate = (tab: string, targetId?: string) => {
     setActiveTab(tab);

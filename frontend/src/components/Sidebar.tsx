@@ -20,6 +20,8 @@ import {
   X,
 } from 'lucide-react';
 
+import { useApp } from '../context/AppContext';
+
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -37,7 +39,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen,
 }) => {
-  const navItems = [
+  const { role } = useApp();
+
+  const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'workforce', label: 'Workforce', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Clock },
@@ -54,6 +58,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'audit', label: 'Audit Logs', icon: ShieldAlert },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const allowedTabsPerRole: Record<string, string[]> = {
+    OWNER: ['dashboard', 'workforce', 'attendance', 'payroll', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues', 'audit', 'settings'],
+    MANAGER: ['dashboard', 'workforce', 'attendance', 'fleet', 'camera', 'loading', 'deliveries', 'billing', 'inventory', 'performance', 'reports', 'issues'],
+    DRIVER: ['deliveries', 'fleet', 'camera', 'attendance', 'issues'],
+    LOADMAN: ['loading', 'inventory', 'attendance', 'issues'],
+  };
+
+  const allowedTabs = allowedTabsPerRole[role] || allowedTabsPerRole.OWNER;
+  const navItems = allNavItems.filter(item => allowedTabs.includes(item.id));
 
   const handleSelectTab = (tabId: string) => {
     setActiveTab(tabId);
