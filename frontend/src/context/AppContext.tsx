@@ -266,6 +266,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newEmp: Employee = {
       id: `emp-${Date.now()}`,
       name: empData.name || 'New Worker',
+      email: empData.email || `${(empData.name || 'worker').toLowerCase().replace(/\s+/g, '')}@vetriindane.com`,
+      password: empData.password || 'Vetri@2026',
       role: empData.role || 'Driver',
       phone: empData.phone || '+91 98765 00000',
       joiningDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),

@@ -21,6 +21,8 @@ export interface Vehicle {
 export interface Employee {
   id: string;
   name: string;
+  email: string;
+  password?: string;
   role: 'Driver' | 'Loadman' | 'Manager' | 'Owner';
   phone: string;
   joiningDate: string;

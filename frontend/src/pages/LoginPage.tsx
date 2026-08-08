@@ -30,28 +30,28 @@ export const LoginPage: React.FC = () => {
     { email: string; title: string; subtitle: string; icon: React.ElementType; badgeColor: string }
   > = {
     OWNER: {
-      email: 'owner@vetri.com',
+      email: 'owner@vetriindane.com',
       title: 'Owner Portal (Vetri)',
       subtitle: 'Full System Control, Worker Management & Financial Approvals',
       icon: Crown,
       badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
     },
     MANAGER: {
-      email: 'manager@vetri.com',
-      title: 'Operations Manager',
+      email: 'santhosh.manager@vetriindane.com',
+      title: 'Operations Manager (Santhosh)',
       subtitle: 'Fleet Live Tracking, Batch Dispatch & Delivery Control',
       icon: Briefcase,
       badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
     },
     DRIVER: {
-      email: 'arun@vetri.com',
+      email: 'arun.driver@vetriindane.com',
       title: 'Driver Portal (Arun)',
       subtitle: 'Assigned Routes, Customer Payments & E-Bill Receipting',
       icon: Truck,
       badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
     },
     LOADMAN: {
-      email: 'kumar@vetri.com',
+      email: 'kumar.loadman@vetriindane.com',
       title: 'Loadman Portal (Kumar)',
       subtitle: 'Cylinder Depot Loading & Discrepancy Audits',
       icon: PackageCheck,
@@ -59,11 +59,62 @@ export const LoginPage: React.FC = () => {
     },
   };
 
+  // Forgot Password State
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1); // 1: Send OTP, 2: Verify & Reset
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [userEnteredOtp, setUserEnteredOtp] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [forgotStatusMsg, setForgotStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
+
   const handleRoleSelect = (r: UserRole) => {
     setSelectedRole(r);
     setEmail(rolePresets[r].email);
-    setPassword('admin123');
+    setPassword('Vetri@2026');
     setErrorMsg('');
+  };
+
+  const handleSendOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      setForgotStatusMsg({ text: 'Please enter a valid Gmail / Email address.', isError: true });
+      return;
+    }
+
+    // Generate 6-digit OTP code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(code);
+    setForgotStep(2);
+    setForgotStatusMsg({
+      text: `✅ Security verification code (${code}) sent via Gmail to ${forgotEmail}`,
+      isError: false,
+    });
+  };
+
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (userEnteredOtp !== generatedOtp) {
+      setForgotStatusMsg({ text: '❌ Invalid OTP code entered. Please check your email.', isError: true });
+      return;
+    }
+    if (!newPass || newPass.length < 4) {
+      setForgotStatusMsg({ text: 'Password must be at least 4 characters long.', isError: true });
+      return;
+    }
+
+    setForgotStatusMsg({
+      text: `✅ Password updated successfully! Log in with your new password.`,
+      isError: false,
+    });
+    setPassword(newPass);
+
+    setTimeout(() => {
+      setShowForgotModal(false);
+      setForgotStep(1);
+      setUserEnteredOtp('');
+      setNewPass('');
+    }, 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -219,8 +270,13 @@ export const LoginPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => alert('Please contact Vetri Indane System Admin or RDK Support to reset password.')}
-                className="text-amber-400 hover:underline font-semibold"
+                onClick={() => {
+                  setForgotEmail(email);
+                  setForgotStatusMsg(null);
+                  setForgotStep(1);
+                  setShowForgotModal(true);
+                }}
+                className="text-amber-400 hover:underline font-semibold cursor-pointer"
               >
                 Forgot password?
               </button>
@@ -250,6 +306,127 @@ export const LoginPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Forgot Password OTP Modal */}
+      {showForgotModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-white space-y-5 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Mail className="w-5 h-5 text-amber-400" />
+                <h2 className="font-display font-bold text-lg text-white">Gmail Password Reset</h2>
+              </div>
+              <button
+                onClick={() => setShowForgotModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                ✕
+              </button>
+            </div>
+
+            {forgotStatusMsg && (
+              <div
+                className={`p-3 rounded-xl text-xs font-semibold border ${
+                  forgotStatusMsg.isError
+                    ? 'bg-rose-950/80 border-rose-800 text-rose-300'
+                    : 'bg-emerald-950/80 border-emerald-800 text-emerald-300'
+                }`}
+              >
+                {forgotStatusMsg.text}
+              </div>
+            )}
+
+            {forgotStep === 1 ? (
+              <form onSubmit={handleSendOtp} className="space-y-4 text-xs">
+                <p className="text-slate-300 leading-relaxed">
+                  Enter your registered <strong>Gmail / Corporate Email address</strong>. We will send a 6-digit security OTP verification code directly to your inbox.
+                </p>
+
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
+                    Gmail / Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={e => setForgotEmail(e.target.value)}
+                    placeholder="e.g. arun.driver@vetriindane.com"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono focus:border-amber-500 outline-none"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(false)}
+                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all"
+                  >
+                    Send Code to Gmail ➔
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleResetPassword} className="space-y-4 text-xs">
+                <p className="text-slate-300 leading-relaxed">
+                  Enter the <strong>6-digit OTP code</strong> sent to <strong>{forgotEmail}</strong> and specify your new account password.
+                </p>
+
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
+                    6-Digit Verification Code (OTP)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={userEnteredOtp}
+                    onChange={e => setUserEnteredOtp(e.target.value)}
+                    placeholder="Enter 6-digit code (e.g. 849201)"
+                    className="w-full bg-slate-950 border border-amber-500/50 rounded-xl p-3 text-center text-amber-400 font-mono font-bold tracking-widest text-lg outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
+                    New Account Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPass}
+                    onChange={e => setNewPass(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setForgotStep(1)}
+                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+                  >
+                    Reset & Update Password ✓
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

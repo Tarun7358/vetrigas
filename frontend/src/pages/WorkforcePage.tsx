@@ -14,28 +14,35 @@ export const WorkforcePage: React.FC = () => {
 
   // Add Worker Form State
   const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState<'Driver' | 'Loadman'>('Driver');
+  const [newRole, setNewRole] = useState<'Driver' | 'Loadman' | 'Manager'>('Driver');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('Vetri@2026');
   const [newPhone, setNewPhone] = useState('+91 ');
   const [newHourlyRate, setNewHourlyRate] = useState(75);
 
   const filtered = employees.filter(e =>
     e.name.toLowerCase().includes(search.toLowerCase()) ||
-    e.role.toLowerCase().includes(search.toLowerCase())
+    e.role.toLowerCase().includes(search.toLowerCase()) ||
+    (e.email || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName || !newPhone) return;
+    if (!newName || !newPhone || !newEmail) return;
 
     addEmployee({
       name: newName,
       role: newRole,
+      email: newEmail,
+      password: newPassword,
       phone: newPhone,
       hourlyRate: newHourlyRate,
     });
 
     // Reset & Close
     setNewName('');
+    setNewEmail('');
+    setNewPassword('Vetri@2026');
     setNewPhone('+91 ');
     setNewHourlyRate(75);
     setShowAddModal(false);
@@ -133,7 +140,7 @@ export const WorkforcePage: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-bold text-slate-900">{emp.name}</p>
-                      <p className="text-[11px] text-slate-500">{emp.id} • {emp.phone}</p>
+                      <p className="text-[11px] text-slate-500">{emp.email || emp.phone} ({emp.id})</p>
                     </div>
                   </div>
                 </td>
@@ -247,12 +254,43 @@ export const WorkforcePage: React.FC = () => {
                   </label>
                   <select
                     value={newRole}
-                    onChange={e => setNewRole(e.target.value as 'Driver' | 'Loadman')}
+                    onChange={e => setNewRole(e.target.value as 'Driver' | 'Loadman' | 'Manager')}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
                   >
                     <option value="Driver">Driver (LPG Delivery Route)</option>
                     <option value="Loadman">Loadman (Depot Cylinder Loading)</option>
+                    <option value="Manager">Manager (Operations Controller)</option>
                   </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
+                      Gmail / Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      placeholder="worker@vetriindane.com"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
+                      Initial Login Password
+                    </label>
+                    <input
+                      type="text"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="Vetri@2026"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:outline-none focus:border-amber-500"
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div>
