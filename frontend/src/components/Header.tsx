@@ -1,0 +1,200 @@
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import {
+  Flame,
+  Search,
+  Bell,
+  CheckCircle2,
+  AlertCircle,
+  Menu,
+  ChevronDown,
+  LogOut,
+  User,
+  ShieldCheck,
+} from 'lucide-react';
+
+interface HeaderProps {
+  onOpenSearch: () => void;
+  onOpenAlerts: () => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+  onOpenSearch,
+  onOpenAlerts,
+  sidebarOpen,
+  setSidebarOpen,
+}) => {
+  const { role, currentUser, integrations, toggleIntegration, alerts, logout } = useApp();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const handleLogout = () => {
+    setUserMenuOpen(false);
+    logout();
+  };
+
+  return (
+    <header className="h-16 bg-slate-900 border-b border-slate-800 px-4 md:px-6 flex items-center justify-between z-30 sticky top-0 shadow-md text-white">
+      {/* Left Branding + Sidebar Toggle */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 md:hidden transition-colors"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-amber-500/20 shrink-0">
+            <Flame className="w-5 h-5 sm:w-6 sm:h-6 fill-slate-950 stroke-none" />
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="font-display font-black text-base sm:text-lg tracking-tight text-white leading-none">
+                VETRI INDANE
+              </span>
+              <span className="hidden sm:inline-block text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-1.5 py-0.5 rounded uppercase">
+                Enterprise
+              </span>
+            </div>
+            <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 hidden xs:block sm:block tracking-wide">
+              Powered by RDK Technologies
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Middle Integration Toggles */}
+      <div className="hidden lg:flex items-center gap-3 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800">
+        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Integrations:</span>
+
+        {/* Fleettrack Toggle */}
+        <button
+          onClick={() => toggleIntegration('fleettrackConnected')}
+          className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 transition-all ${
+            integrations.fleettrackConnected
+              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+              : 'bg-rose-950/80 text-rose-400 border border-rose-800'
+          }`}
+          title="Click to toggle Fleettrack GPS Telemetry hardware connectivity status"
+        >
+          {integrations.fleettrackConnected ? (
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          ) : (
+            <AlertCircle className="w-3.5 h-3.5" />
+          )}
+          Fleettrack {integrations.fleettrackConnected ? 'ON' : 'OFF'}
+        </button>
+
+        {/* Easy Time Pro Toggle */}
+        <button
+          onClick={() => toggleIntegration('easyTimeProConnected')}
+          className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1.5 transition-all ${
+            integrations.easyTimeProConnected
+              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+              : 'bg-rose-950/80 text-rose-400 border border-rose-800'
+          }`}
+          title="Click to toggle Easy Time Pro Biometric Hardware connectivity status"
+        >
+          {integrations.easyTimeProConnected ? (
+            <CheckCircle2 className="w-3.5 h-3.5" />
+          ) : (
+            <AlertCircle className="w-3.5 h-3.5" />
+          )}
+          Easy Time Pro {integrations.easyTimeProConnected ? 'ON' : 'OFF'}
+        </button>
+      </div>
+
+      {/* Right Controls: Search, Alerts, Account Profile, Direct Logout */}
+      <div className="flex items-center gap-3">
+        {/* Ctrl + K Search Trigger */}
+        <button
+          onClick={onOpenSearch}
+          className="hidden md:flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs transition-colors"
+        >
+          <Search className="w-3.5 h-3.5" />
+          <span>Search (Ctrl + K)</span>
+        </button>
+
+        {/* Critical Alert Drawer Button */}
+        <button
+          onClick={onOpenAlerts}
+          className="relative p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors border border-slate-700"
+          title="System Exceptions & Alerts"
+        >
+          <Bell className="w-4 h-4" />
+          {alerts.length > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white font-bold text-[10px] rounded-full flex items-center justify-center animate-pulse">
+              {alerts.length}
+            </span>
+          )}
+        </button>
+
+        {/* User Account Profile Badge & Dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="flex items-center gap-2 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg cursor-pointer hover:border-amber-500 transition-colors text-left"
+          >
+            <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-400 shrink-0">
+              <User className="w-4 h-4" />
+            </div>
+            <div className="hidden sm:block">
+              <span className="block text-xs font-bold text-white leading-tight">
+                {currentUser?.name || 'Vetri'}
+              </span>
+              <span className="block text-[10px] text-amber-400 font-mono font-bold">
+                {role} SESSION
+              </span>
+            </div>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Account Dropdown Menu */}
+          {userMenuOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setUserMenuOpen(false)}
+              />
+              <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 py-2.5 border-b border-slate-800 text-xs">
+                  <p className="font-bold text-white text-sm">{currentUser?.name || 'Vetri'}</p>
+                  <p className="text-[11px] text-slate-400 truncate">{currentUser?.email || 'owner@vetri.com'}</p>
+                  <div className="mt-1.5 flex items-center gap-1 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded w-max uppercase">
+                    <ShieldCheck className="w-3 h-3 text-amber-400" />
+                    <span>{role} Authenticated</span>
+                  </div>
+                </div>
+
+                <div className="pt-1 px-1">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-rose-400 hover:bg-rose-950/80 rounded-lg flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out Account</span>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Direct Sign Out Button for Immediate 1-Click Logout */}
+        <button
+          type="button"
+          onClick={logout}
+          className="hidden sm:flex items-center gap-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          title="Sign out of Vetri Indane Portal"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </header>
+  );
+};
