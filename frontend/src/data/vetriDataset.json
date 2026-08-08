@@ -1,0 +1,436 @@
+{
+  "company": {
+    "name": "Vetri Indane Enterprise",
+    "agencyCode": "IND-CBE-48192",
+    "distributor": "Vetri Indane LPG Agency",
+    "address": "104/A, Avinashi Road, Peelamedu, Coimbatore - 641004",
+    "phone": "+91 98765 00001",
+    "developer": "RDK Technologies"
+  },
+  "vehicles": [
+    {
+      "id": "v1",
+      "registrationNumber": "TN 38 AU 4821",
+      "driverName": "Arun",
+      "driverId": "emp-01",
+      "status": "MOVING",
+      "speed": 38,
+      "ignition": true,
+      "todayDistanceKm": 67.4,
+      "completedDeliveries": 17,
+      "totalDeliveries": 24,
+      "lat": 11.0168,
+      "lng": 76.9558,
+      "lastUpdatedSecondsAgo": 5,
+      "hasCamera": true,
+      "cameraStatus": "LIVE"
+    },
+    {
+      "id": "v2",
+      "registrationNumber": "TN 38 BV 9012",
+      "driverName": "Suresh",
+      "driverId": "emp-03",
+      "status": "MOVING",
+      "speed": 44,
+      "ignition": true,
+      "todayDistanceKm": 89.2,
+      "completedDeliveries": 21,
+      "totalDeliveries": 25,
+      "lat": 11.025,
+      "lng": 76.962,
+      "lastUpdatedSecondsAgo": 3,
+      "hasCamera": true,
+      "cameraStatus": "LIVE"
+    },
+    {
+      "id": "v3",
+      "registrationNumber": "TN 38 CW 1054",
+      "driverName": "Ramesh",
+      "driverId": "emp-04",
+      "status": "STOPPED",
+      "speed": 0,
+      "ignition": false,
+      "todayDistanceKm": 45.1,
+      "completedDeliveries": 14,
+      "totalDeliveries": 20,
+      "lat": 11.008,
+      "lng": 76.945,
+      "lastUpdatedSecondsAgo": 12,
+      "hasCamera": true,
+      "cameraStatus": "LIVE"
+    },
+    {
+      "id": "v4",
+      "registrationNumber": "TN 38 DX 6720",
+      "driverName": "Vijay",
+      "driverId": "emp-05",
+      "status": "STOPPED",
+      "speed": 0,
+      "ignition": false,
+      "todayDistanceKm": 12.0,
+      "completedDeliveries": 5,
+      "totalDeliveries": 18,
+      "lat": 11.031,
+      "lng": 76.97,
+      "lastUpdatedSecondsAgo": 25,
+      "hasCamera": true,
+      "cameraStatus": "OFFLINE"
+    }
+  ],
+  "employees": [
+    {
+      "id": "emp-01",
+      "name": "Arun",
+      "role": "Driver",
+      "phone": "+91 98765 43210",
+      "joiningDate": "12 Jan 2024",
+      "attendanceStatus": "Present",
+      "workingHours": "8h 42m",
+      "todayWorkProgress": "17/24",
+      "performanceScore": 95,
+      "status": "Active",
+      "hourlyRate": 85
+    },
+    {
+      "id": "emp-02",
+      "name": "Kumar",
+      "role": "Loadman",
+      "phone": "+91 98765 43211",
+      "joiningDate": "05 Mar 2024",
+      "attendanceStatus": "Present",
+      "workingHours": "9h 05m",
+      "todayWorkProgress": "86/100",
+      "performanceScore": 94,
+      "status": "Active",
+      "hourlyRate": 70
+    },
+    {
+      "id": "emp-03",
+      "name": "Suresh",
+      "role": "Driver",
+      "phone": "+91 98765 43212",
+      "joiningDate": "18 Jun 2023",
+      "attendanceStatus": "Present",
+      "workingHours": "8h 50m",
+      "todayWorkProgress": "21/25",
+      "performanceScore": 96,
+      "status": "Active",
+      "hourlyRate": 90
+    },
+    {
+      "id": "emp-04",
+      "name": "Ramesh",
+      "role": "Driver",
+      "phone": "+91 98765 43213",
+      "joiningDate": "10 Nov 2023",
+      "attendanceStatus": "Present",
+      "workingHours": "7h 15m",
+      "todayWorkProgress": "14/20",
+      "performanceScore": 88,
+      "status": "Active",
+      "hourlyRate": 85
+    },
+    {
+      "id": "emp-05",
+      "name": "Vijay",
+      "role": "Driver",
+      "phone": "+91 98765 43214",
+      "joiningDate": "01 Feb 2024",
+      "attendanceStatus": "Late",
+      "workingHours": "4h 30m",
+      "todayWorkProgress": "5/18",
+      "performanceScore": 82,
+      "status": "Active",
+      "hourlyRate": 80
+    },
+    {
+      "id": "emp-06",
+      "name": "Murugan",
+      "role": "Loadman",
+      "phone": "+91 98765 43215",
+      "joiningDate": "22 Aug 2023",
+      "attendanceStatus": "Present",
+      "workingHours": "8h 40m",
+      "todayWorkProgress": "92/100",
+      "performanceScore": 97,
+      "status": "Active",
+      "hourlyRate": 70
+    },
+    {
+      "id": "emp-07",
+      "name": "Santhosh",
+      "role": "Manager",
+      "phone": "+91 98765 00002",
+      "joiningDate": "01 Jan 2023",
+      "attendanceStatus": "Present",
+      "workingHours": "9h 30m",
+      "todayWorkProgress": "100%",
+      "performanceScore": 99,
+      "status": "Active",
+      "hourlyRate": 120
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att-01",
+      "employeeId": "emp-01",
+      "employeeName": "Arun",
+      "role": "Driver",
+      "checkIn": "08:15 AM",
+      "checkOut": "05:30 PM",
+      "workingHours": "8h 42m",
+      "status": "Present",
+      "source": "Easy Time Pro Biometric",
+      "date": "08 Aug 2026"
+    },
+    {
+      "id": "att-02",
+      "employeeId": "emp-02",
+      "employeeName": "Kumar",
+      "role": "Loadman",
+      "checkIn": "07:55 AM",
+      "checkOut": "05:00 PM",
+      "workingHours": "9h 05m",
+      "status": "Present",
+      "source": "Easy Time Pro Biometric",
+      "date": "08 Aug 2026"
+    },
+    {
+      "id": "att-03",
+      "employeeId": "emp-03",
+      "employeeName": "Suresh",
+      "role": "Driver",
+      "checkIn": "08:00 AM",
+      "checkOut": "05:15 PM",
+      "workingHours": "8h 50m",
+      "status": "Present",
+      "source": "Easy Time Pro Biometric",
+      "date": "08 Aug 2026"
+    },
+    {
+      "id": "att-04",
+      "employeeId": "emp-05",
+      "employeeName": "Vijay",
+      "role": "Driver",
+      "checkIn": "10:30 AM",
+      "checkOut": "05:00 PM",
+      "workingHours": "4h 30m",
+      "status": "Late",
+      "source": "Easy Time Pro Biometric",
+      "date": "08 Aug 2026"
+    }
+  ],
+  "payroll": [
+    {
+      "id": "pay-01",
+      "employeeId": "emp-01",
+      "employeeName": "Arun",
+      "role": "Driver",
+      "regularHours": 172.5,
+      "hourlyRate": 85,
+      "otHours": 14,
+      "otRate": 127.5,
+      "bonus": 600,
+      "deduction": 200,
+      "netSalary": 16847.5,
+      "status": "Approved",
+      "month": "August 2026"
+    },
+    {
+      "id": "pay-02",
+      "employeeId": "emp-02",
+      "employeeName": "Kumar",
+      "role": "Loadman",
+      "regularHours": 180,
+      "hourlyRate": 70,
+      "otHours": 18,
+      "otRate": 105,
+      "bonus": 500,
+      "deduction": 150,
+      "netSalary": 14840,
+      "status": "Approved",
+      "month": "August 2026"
+    },
+    {
+      "id": "pay-03",
+      "employeeId": "emp-03",
+      "employeeName": "Suresh",
+      "role": "Driver",
+      "regularHours": 176,
+      "hourlyRate": 90,
+      "otHours": 20,
+      "otRate": 135,
+      "bonus": 750,
+      "deduction": 0,
+      "netSalary": 19290,
+      "status": "Review",
+      "month": "August 2026"
+    }
+  ],
+  "batches": [
+    {
+      "id": "batch-01",
+      "batchNumber": "BATCH LB1021",
+      "driverName": "Arun",
+      "vehicleNumber": "TN 38 AU 4821",
+      "loadmanName": "Kumar",
+      "requiredCount": 25,
+      "loadedCount": 23,
+      "status": "DISCREPANCY",
+      "discrepancyReason": "Depot inventory shortage - 2 cylinders pending refilling",
+      "discrepancyDiff": -2,
+      "timestamp": "08:30 AM"
+    },
+    {
+      "id": "batch-02",
+      "batchNumber": "BATCH LB1022",
+      "driverName": "Suresh",
+      "vehicleNumber": "TN 38 BV 9012",
+      "loadmanName": "Murugan",
+      "requiredCount": 25,
+      "loadedCount": 25,
+      "status": "COMPLETED",
+      "discrepancyDiff": 0,
+      "timestamp": "08:45 AM"
+    },
+    {
+      "id": "batch-03",
+      "batchNumber": "BATCH LB1023",
+      "driverName": "Ramesh",
+      "vehicleNumber": "TN 38 CW 1054",
+      "loadmanName": "Kumar",
+      "requiredCount": 20,
+      "loadedCount": 20,
+      "status": "COMPLETED",
+      "discrepancyDiff": 0,
+      "timestamp": "09:10 AM"
+    }
+  ],
+  "deliveries": [
+    {
+      "id": "del-01",
+      "deliveryNumber": "VI10251",
+      "customerName": "Raj Kumar",
+      "customerPhone": "+91 98401 23456",
+      "customerAddress": "No. 42, Cross Cut Road, Gandhipuram, Coimbatore - 641012",
+      "cylinderCount": 1,
+      "amount": 940,
+      "driverName": "Arun",
+      "vehicleNumber": "TN 38 AU 4821",
+      "status": "OUT FOR DELIVERY",
+      "distanceKm": 2.4,
+      "paymentStatus": "PENDING"
+    },
+    {
+      "id": "del-02",
+      "deliveryNumber": "VI10252",
+      "customerName": "Kavitha Raman",
+      "customerPhone": "+91 97890 12345",
+      "customerAddress": "Plot 18, Lakshmi Mills Colony, Peelamedu, Coimbatore",
+      "cylinderCount": 2,
+      "amount": 1880,
+      "driverName": "Suresh",
+      "vehicleNumber": "TN 38 BV 9012",
+      "status": "DELIVERED",
+      "distanceKm": 1.1,
+      "paymentStatus": "PAID"
+    },
+    {
+      "id": "del-03",
+      "deliveryNumber": "VI10253",
+      "customerName": "Grand Palace Restaurant",
+      "customerPhone": "+91 94430 99887",
+      "customerAddress": "108, DB Road, RS Puram, Coimbatore - 641002",
+      "cylinderCount": 5,
+      "amount": 9750,
+      "driverName": "Arun",
+      "vehicleNumber": "TN 38 AU 4821",
+      "status": "DELIVERED",
+      "distanceKm": 4.8,
+      "paymentStatus": "PAID"
+    }
+  ],
+  "bills": [
+    {
+      "id": "bill-01",
+      "billNumber": "VI-2026-001025",
+      "customerName": "Kavitha Raman",
+      "amount": 1880,
+      "paymentMethod": "UPI",
+      "transactionId": "UPI-97890123-7712",
+      "driverName": "Suresh",
+      "date": "08 Aug 2026 11:20 AM",
+      "status": "PAID",
+      "cylinderCount": 2
+    },
+    {
+      "id": "bill-02",
+      "billNumber": "VI-2026-001026",
+      "customerName": "Grand Palace Restaurant",
+      "amount": 9750,
+      "paymentMethod": "CASH",
+      "transactionId": "CASH-REC-4819",
+      "driverName": "Arun",
+      "date": "08 Aug 2026 01:15 PM",
+      "status": "PAID",
+      "cylinderCount": 5
+    }
+  ],
+  "inventory": {
+    "available": 420,
+    "loaded": 80,
+    "withDrivers": 32,
+    "delivered": 218,
+    "returned": 18,
+    "damaged": 4,
+    "total": 772
+  },
+  "reconciliation": {
+    "expectedTotal": 115420,
+    "upiReceived": 82450,
+    "cashExpected": 32970,
+    "cashSubmitted": 32500,
+    "difference": 470,
+    "status": "DISCREPANCY"
+  },
+  "alerts": [
+    {
+      "id": "alt-01",
+      "type": "CRITICAL",
+      "title": "Cash Collection Discrepancy",
+      "message": "Cash expected ₹32,970 vs submitted ₹32,500 (Shortage ₹470) on Driver Arun route",
+      "module": "Billing",
+      "timestamp": "10 mins ago",
+      "targetId": "reconcile-01"
+    },
+    {
+      "id": "alt-02",
+      "type": "WARNING",
+      "title": "Batch Loading Count Difference",
+      "message": "Batch LB1021 required 25 cylinders but only 23 loaded (-2 discrepancy)",
+      "module": "Loading Control",
+      "timestamp": "1 hour ago",
+      "targetId": "batch-01"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "aud-01",
+      "user": "Vetri",
+      "action": "USER_AUTHENTICATION_SUCCESS",
+      "module": "Security",
+      "record": "Owner Session Established",
+      "status": "SUCCESS",
+      "timestamp": "Today 08:00 AM"
+    },
+    {
+      "id": "aud-02",
+      "user": "Santhosh",
+      "action": "BATCH_DISPATCH_APPROVED",
+      "module": "Loading Control",
+      "record": "BATCH LB1022",
+      "status": "SUCCESS",
+      "timestamp": "Today 08:45 AM"
+    }
+  ]
+}

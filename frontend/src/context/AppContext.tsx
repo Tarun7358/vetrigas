@@ -57,131 +57,17 @@ interface AppContextType {
   removeEmployee: (empId: string) => void;
 }
 
-const initialVehicles: Vehicle[] = [
-  {
-    id: 'v1',
-    registrationNumber: 'TN XX 1234',
-    driverName: 'Arun',
-    driverId: 'emp-01',
-    status: 'MOVING',
-    speed: 34,
-    ignition: true,
-    todayDistanceKm: 67.4,
-    completedDeliveries: 17,
-    totalDeliveries: 24,
-    lat: 11.0168,
-    lng: 76.9558,
-    lastUpdatedSecondsAgo: 8,
-    hasCamera: true,
-    cameraStatus: 'LIVE',
-  },
-  {
-    id: 'v2',
-    registrationNumber: 'TN XX 5678',
-    driverName: 'Suresh',
-    driverId: 'emp-03',
-    status: 'MOVING',
-    speed: 42,
-    ignition: true,
-    todayDistanceKm: 89.2,
-    completedDeliveries: 21,
-    totalDeliveries: 25,
-    lat: 11.025,
-    lng: 76.962,
-    lastUpdatedSecondsAgo: 4,
-    hasCamera: true,
-    cameraStatus: 'LIVE',
-  },
-  {
-    id: 'v3',
-    registrationNumber: 'TN XX 9012',
-    driverName: 'Ramesh',
-    driverId: 'emp-04',
-    status: 'STOPPED',
-    speed: 0,
-    ignition: false,
-    todayDistanceKm: 45.1,
-    completedDeliveries: 14,
-    totalDeliveries: 20,
-    lat: 11.008,
-    lng: 76.945,
-    lastUpdatedSecondsAgo: 12,
-    hasCamera: true,
-    cameraStatus: 'LIVE',
-  },
-];
+import vetriDataset from '../data/vetriDataset.json';
 
-const initialEmployees: Employee[] = [
-  {
-    id: 'emp-01',
-    name: 'Arun',
-    role: 'Driver',
-    phone: '+91 98765 43210',
-    joiningDate: '12 Jan 2024',
-    attendanceStatus: 'Present',
-    workingHours: '8h 42m',
-    todayWorkProgress: '17/24',
-    performanceScore: 92,
-    status: 'Active',
-    hourlyRate: 75,
-  },
-  {
-    id: 'emp-02',
-    name: 'Kumar',
-    role: 'Loadman',
-    phone: '+91 98765 43211',
-    joiningDate: '05 Mar 2024',
-    attendanceStatus: 'Present',
-    workingHours: '9h 05m',
-    todayWorkProgress: '86/100',
-    performanceScore: 94,
-    status: 'Active',
-    hourlyRate: 65,
-  },
-  {
-    id: 'emp-03',
-    name: 'Suresh',
-    role: 'Driver',
-    phone: '+91 98765 43212',
-    joiningDate: '18 Jun 2023',
-    attendanceStatus: 'Present',
-    workingHours: '8h 50m',
-    todayWorkProgress: '21/25',
-    performanceScore: 96,
-    status: 'Active',
-    hourlyRate: 80,
-  },
-];
-
-const initialAttendance: AttendanceRecord[] = [
-  { id: 'att-01', employeeId: 'emp-01', employeeName: 'Arun', role: 'Driver', checkIn: '08:15 AM', checkOut: '05:30 PM', workingHours: '8h 42m', status: 'Present', source: 'Easy Time Pro', date: '08 Aug 2026' },
-  { id: 'att-02', employeeId: 'emp-02', employeeName: 'Kumar', role: 'Loadman', checkIn: '07:55 AM', checkOut: '05:00 PM', workingHours: '9h 05m', status: 'Present', source: 'Easy Time Pro', date: '08 Aug 2026' },
-];
-
-const initialPayroll: PayrollRecord[] = [
-  { id: 'pay-01', employeeId: 'emp-01', employeeName: 'Arun', role: 'Driver', regularHours: 172.5, hourlyRate: 75, otHours: 12, otRate: 112.5, bonus: 500, deduction: 200, netSalary: 14587.50, status: 'Review', month: 'August 2026' },
-  { id: 'pay-02', employeeId: 'emp-02', employeeName: 'Kumar', role: 'Loadman', regularHours: 180, hourlyRate: 65, otHours: 15, otRate: 97.5, bonus: 400, deduction: 150, netSalary: 13512.50, status: 'Review', month: 'August 2026' },
-];
-
-const initialBatches: LoadingBatch[] = [
-  { id: 'batch-01', batchNumber: 'BATCH LB1021', driverName: 'Arun', vehicleNumber: 'TN XX 1234', loadmanName: 'Kumar', requiredCount: 25, loadedCount: 23, status: 'DISCREPANCY', discrepancyReason: 'Stock shortage', discrepancyDiff: -2, timestamp: '08:30 AM' },
-];
-
-const initialDeliveries: DeliveryItem[] = [
-  { id: 'del-01', deliveryNumber: 'VI10251', customerName: 'Raj Kumar', customerPhone: '+91 98401 23456', customerAddress: 'No. 42, Cross Cut Road, Gandhipuram, Coimbatore', cylinderCount: 1, amount: 940, driverName: 'Arun', vehicleNumber: 'TN XX 1234', status: 'OUT FOR DELIVERY', distanceKm: 2.4, paymentStatus: 'PENDING' },
-];
-
-const initialBills: BillRecord[] = [
-  { id: 'bill-01', billNumber: 'VI-2026-001025', customerName: 'Raj Kumar', amount: 940, paymentMethod: 'UPI', transactionId: 'UPI-98401234-8841', driverName: 'Arun', date: '08 Aug 2026 04:42 PM', status: 'PAID', cylinderCount: 1 },
-];
-
-const initialAlerts: AlertItem[] = [
-  { id: 'alt-01', type: 'CRITICAL', title: 'Cash mismatch', message: 'Cash expected ₹32,970 vs submitted ₹32,500 (Shortage ₹470)', module: 'Billing', timestamp: '10 mins ago', targetId: 'reconcile-01' },
-];
-
-const initialAuditLogs: AuditLog[] = [
-  { id: 'audit-01', timestamp: '08 Aug 17:02', user: 'Owner', action: 'System Login', module: 'Auth', record: 'Session Started', status: 'SUCCESS' },
-];
+const initialVehicles: Vehicle[] = vetriDataset.vehicles as Vehicle[];
+const initialEmployees: Employee[] = vetriDataset.employees as Employee[];
+const initialAttendance: AttendanceRecord[] = vetriDataset.attendance as AttendanceRecord[];
+const initialPayroll: PayrollRecord[] = vetriDataset.payroll as PayrollRecord[];
+const initialBatches: LoadingBatch[] = vetriDataset.batches as LoadingBatch[];
+const initialDeliveries: DeliveryItem[] = vetriDataset.deliveries as DeliveryItem[];
+const initialBills: BillRecord[] = vetriDataset.bills as BillRecord[];
+const initialAlerts: AlertItem[] = vetriDataset.alerts as AlertItem[];
+const initialAuditLogs: AuditLog[] = vetriDataset.auditLogs as unknown as AuditLog[];
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -210,24 +96,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>('v1');
   
-  const [reconciliation, setReconciliation] = useState<CashReconciliation>({
-    expectedTotal: 115420,
-    upiReceived: 82450,
-    cashExpected: 32970,
-    cashSubmitted: 32500,
-    difference: 470,
-    status: 'DISCREPANCY',
-  });
-
-  const [inventory] = useState<InventoryMetrics>({
-    available: 420,
-    loaded: 80,
-    withDrivers: 32,
-    delivered: 218,
-    returned: 18,
-    damaged: 4,
-    total: 772,
-  });
+  const [reconciliation, setReconciliation] = useState<CashReconciliation>(vetriDataset.reconciliation as CashReconciliation);
+  const [inventory] = useState<InventoryMetrics>(vetriDataset.inventory as InventoryMetrics);
 
   const login = (selectedRole: UserRole, email: string) => {
     setIsAuthenticated(true);
