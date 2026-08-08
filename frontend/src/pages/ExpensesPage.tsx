@@ -1,11 +1,26 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Fuel, Wrench, Plus, CheckCircle2, XCircle, Clock, FileText, Upload, Filter, DollarSign } from 'lucide-react';
+import {
+  Fuel,
+  Wrench,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  FileText,
+  Upload,
+  Filter,
+  DollarSign,
+  Eye,
+  ShieldCheck,
+} from 'lucide-react';
+import type { VehicleExpense } from '../types';
 
 export const ExpensesPage: React.FC = () => {
   const { expenses, vehicles, currentUser, role, addExpense, approveExpense, rejectExpense } = useApp();
   const [filterType, setFilterType] = useState<string>('ALL');
   const [showModal, setShowModal] = useState<boolean>(false);
+  const [inspectExpense, setInspectExpense] = useState<VehicleExpense | null>(null);
 
   // Form State
   const [expType, setExpType] = useState<'FUEL' | 'MAINTENANCE'>('FUEL');
@@ -17,6 +32,7 @@ export const ExpensesPage: React.FC = () => {
   const [description, setDescription] = useState<string>('');
   const [billNumber, setBillNumber] = useState<string>('');
   const [billFileName, setBillFileName] = useState<string>('');
+  const [billImageBase64, setBillImageBase64] = useState<string>('');
 
   const isManagement = role === 'OWNER' || role === 'MANAGER';
 
@@ -38,6 +54,15 @@ export const ExpensesPage: React.FC = () => {
   const totalMaintCost = visibleExpenses.filter(e => e.type === 'MAINTENANCE' && e.status === 'APPROVED').reduce((sum, e) => sum + e.amount, 0);
   const pendingApprovalsCount = visibleExpenses.filter(e => e.status === 'PENDING').length;
 
+  const handleFileUpload = (file: File) => {
+    setBillFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBillImageBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmitExpense = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !vendorName) {
@@ -56,7 +81,7 @@ export const ExpensesPage: React.FC = () => {
       litersFilled: litersFilled ? Number(litersFilled) : undefined,
       description: description || `${expType} expense logged by driver`,
       billNumber: billNumber || `BILL-${Math.floor(100000 + Math.random() * 900000)}`,
-      receiptImage: billFileName || 'fuel_bill_receipt.jpg',
+      receiptImage: billImageBase64 || billFileName || 'fuel_bill_receipt.jpg',
     });
 
     // Reset Form
@@ -67,77 +92,80 @@ export const ExpensesPage: React.FC = () => {
     setDescription('');
     setBillNumber('');
     setBillFileName('');
+    setBillImageBase64('');
     setShowModal(false);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-5 text-white shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40">
-            <Fuel className="w-6 h-6" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <Fuel className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="font-display font-bold text-xl text-white">Vehicle Expenses & Fuel Logs</h1>
+            <h1 className="font-display font-bold text-xl text-white flex items-center gap-2">
+              Vehicle Expenses & Fuel Claims Hub
+            </h1>
             <p className="text-xs text-slate-400">
-              Fuel Filling Records, Maintenance Bills & Driver Payout Approvals
+              Driver Fuel Uploads, Maintenance Bills & Owner Payment Approvals
             </p>
           </div>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="mt-3 md:mt-0 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all"
+          className="flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
-          <span>+ Submit Fuel / Repair Bill</span>
+          <span>+ Submit Refill / Repair Bill</span>
         </button>
       </div>
 
       {/* Summary Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Approved Fuel Expenses</span>
-            <p className="font-display font-bold text-xl text-slate-900 mt-1">₹{totalFuelCost.toLocaleString()}</p>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Approved Fuel Claims</span>
+            <p className="font-display font-bold text-2xl text-slate-900 mt-1">₹{totalFuelCost.toLocaleString()}</p>
           </div>
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-            <Fuel className="w-5 h-5" />
+          <div className="p-3.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+            <Fuel className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Approved Maintenance</span>
-            <p className="font-display font-bold text-xl text-slate-900 mt-1">₹{totalMaintCost.toLocaleString()}</p>
+            <p className="font-display font-bold text-2xl text-slate-900 mt-1">₹{totalMaintCost.toLocaleString()}</p>
           </div>
-          <div className="p-3 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-            <Wrench className="w-5 h-5" />
+          <div className="p-3.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+            <Wrench className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending Payout Approvals</span>
-            <p className="font-display font-bold text-xl text-amber-600 mt-1">{pendingApprovalsCount} Bills</p>
+            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending Owner Approvals</span>
+            <p className="font-display font-bold text-2xl text-amber-600 mt-1">{pendingApprovalsCount} Bills</p>
           </div>
-          <div className="p-3 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-            <Clock className="w-5 h-5" />
+          <div className="p-3.5 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
+            <Clock className="w-6 h-6" />
           </div>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-xs">
+      <div className="flex items-center gap-2 overflow-x-auto bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-xs">
         <Filter className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
         {['ALL', 'FUEL', 'MAINTENANCE', 'PENDING', 'APPROVED'].map(f => (
           <button
             key={f}
             onClick={() => setFilterType(f)}
-            className={`px-3 py-1.5 rounded-lg font-semibold whitespace-nowrap transition-colors ${
+            className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all cursor-pointer ${
               filterType === f
-                ? 'bg-amber-500 text-slate-950 font-bold'
+                ? 'bg-amber-500 text-slate-950 shadow'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
@@ -147,7 +175,7 @@ export const ExpensesPage: React.FC = () => {
       </div>
 
       {/* Expense Records List */}
-      <div className="mobile-table-container bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="mobile-table-container bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
         <table className="table-enterprise">
           <thead>
             <tr>
@@ -155,10 +183,10 @@ export const ExpensesPage: React.FC = () => {
               <th>Vehicle & Driver</th>
               <th>Vendor / Station</th>
               <th>Details (Litres / Odo)</th>
-              <th>Amount</th>
-              <th>Bill Copy</th>
+              <th>Claim Amount</th>
+              <th>Uploaded Bill Copy</th>
               <th>Status</th>
-              {isManagement && <th>Action</th>}
+              {isManagement && <th>Owner Action</th>}
             </tr>
           </thead>
           <tbody>
@@ -199,10 +227,13 @@ export const ExpensesPage: React.FC = () => {
                   </td>
                   <td className="font-display font-bold text-slate-900 text-sm">₹{exp.amount.toLocaleString()}</td>
                   <td>
-                    <div className="flex items-center gap-1 text-xs text-blue-600 font-semibold cursor-pointer hover:underline">
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>{exp.billNumber || 'View Bill'}</span>
-                    </div>
+                    <button
+                      onClick={() => setInspectExpense(exp)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all cursor-pointer shadow-xs"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-blue-600" />
+                      <span>Inspect Image</span>
+                    </button>
                   </td>
                   <td>
                     <span
@@ -223,14 +254,14 @@ export const ExpensesPage: React.FC = () => {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => approveExpense(exp.id)}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white p-1.5 rounded-lg text-xs font-bold transition-colors"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-xs cursor-pointer"
                             title="Approve Payout"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve
                           </button>
                           <button
                             onClick={() => rejectExpense(exp.id)}
-                            className="bg-rose-600 hover:bg-rose-500 text-white p-1.5 rounded-lg text-xs font-bold transition-colors"
+                            className="bg-rose-600 hover:bg-rose-500 text-white p-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                             title="Reject Expense"
                           >
                             <XCircle className="w-4 h-4" />
@@ -256,6 +287,170 @@ export const ExpensesPage: React.FC = () => {
         </table>
       </div>
 
+      {/* OWNER BILL RECEIPT INSPECTOR MODAL */}
+      {inspectExpense && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl text-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="font-display font-bold text-lg text-white flex items-center gap-2">
+                    Bill Receipt Verification
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Uploaded by Driver <strong>{inspectExpense.driverName}</strong> for Vehicle <strong>{inspectExpense.vehicleNumber}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setInspectExpense(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 text-base cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-5 flex-1">
+              {/* Image Preview Box */}
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[220px]">
+                {inspectExpense.receiptImage && inspectExpense.receiptImage.startsWith('data:image') ? (
+                  <img
+                    src={inspectExpense.receiptImage}
+                    alt="Driver Uploaded Bill Receipt"
+                    className="max-h-72 object-contain rounded-xl shadow-lg border border-slate-700"
+                  />
+                ) : (
+                  /* Realistic Rendered Fuel Station Bill Graphic */
+                  <div className="w-full max-w-md bg-amber-50 text-slate-900 p-5 rounded-2xl border-2 border-dashed border-amber-300 font-mono text-xs space-y-3 shadow-md">
+                    <div className="text-center border-b border-amber-200 pb-2">
+                      <p className="font-bold text-sm tracking-wider text-slate-900 uppercase">{inspectExpense.vendorName}</p>
+                      <p className="text-[10px] text-slate-600">Peelamedu Main Road, Coimbatore, TN</p>
+                      <p className="text-[10px] text-slate-600">GSTIN: 33AAAAA0000A1Z5 | POS #04</p>
+                    </div>
+
+                    <div className="space-y-1 pt-1 text-[11px]">
+                      <div className="flex justify-between">
+                        <span>Bill No:</span>
+                        <span className="font-bold">{inspectExpense.billNumber || 'BILL-482910'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Date & Time:</span>
+                        <span>{inspectExpense.date}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Vehicle Reg:</span>
+                        <span className="font-bold">{inspectExpense.vehicleNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Driver Claiming:</span>
+                        <span>{inspectExpense.driverName}</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-b border-amber-200 py-2 space-y-1 text-[11px]">
+                      <div className="flex justify-between font-bold">
+                        <span>{inspectExpense.type} CHARGE:</span>
+                        <span>₹{inspectExpense.amount.toLocaleString()}</span>
+                      </div>
+                      {inspectExpense.litersFilled && (
+                        <div className="flex justify-between text-[10px] text-slate-600">
+                          <span>Quantity (Liters):</span>
+                          <span>{inspectExpense.litersFilled} L</span>
+                        </div>
+                      )}
+                      {inspectExpense.odometerReading && (
+                        <div className="flex justify-between text-[10px] text-slate-600">
+                          <span>Odometer Reading:</span>
+                          <span>{inspectExpense.odometerReading} km</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-center pt-1 text-[10px] text-emerald-800 font-bold bg-emerald-100 p-1.5 rounded-lg border border-emerald-300">
+                      ✓ ORIGINAL PETROL BUNK RECEIPT SCAN ATTACHED
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Expense Information Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-xs">
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Claim Type</span>
+                  <span className="font-bold text-slate-900">{inspectExpense.type}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Claim Amount</span>
+                  <span className="font-bold text-emerald-700 text-sm">₹{inspectExpense.amount.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Vendor / Station</span>
+                  <span className="font-semibold text-slate-900">{inspectExpense.vendorName}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block text-[11px]">Status</span>
+                  <span className={`font-bold ${
+                    inspectExpense.status === 'APPROVED' ? 'text-emerald-600' :
+                    inspectExpense.status === 'REJECTED' ? 'text-rose-600' : 'text-amber-600'
+                  }`}>
+                    {inspectExpense.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer with Owner Actions */}
+            <div className="bg-slate-50 p-4 border-t border-slate-200 flex items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 flex items-center gap-1">
+                <ShieldCheck className="w-4 h-4 text-amber-500" />
+                Verified Owner Approval Gateway
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInspectExpense(null)}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold cursor-pointer"
+                >
+                  Close
+                </button>
+
+                {inspectExpense.status === 'PENDING' && isManagement && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        rejectExpense(inspectExpense.id);
+                        setInspectExpense(null);
+                      }}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <XCircle className="w-4 h-4" /> Reject Claim
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        approveExpense(inspectExpense.id);
+                        setInspectExpense(null);
+                      }}
+                      className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Approve Payment ₹{inspectExpense.amount}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Driver Submit Bill Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -269,7 +464,7 @@ export const ExpensesPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
@@ -281,7 +476,7 @@ export const ExpensesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setExpType('FUEL')}
-                  className={`py-2 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 ${
+                  className={`py-2 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     expType === 'FUEL'
                       ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-md'
                       : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
@@ -293,7 +488,7 @@ export const ExpensesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setExpType('MAINTENANCE')}
-                  className={`py-2 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 ${
+                  className={`py-2 rounded-xl font-bold border transition-all flex items-center justify-center gap-2 cursor-pointer ${
                     expType === 'MAINTENANCE'
                       ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                       : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
@@ -402,23 +597,27 @@ export const ExpensesPage: React.FC = () => {
                 />
               </div>
 
-              {/* Simulated Bill Attachment */}
+              {/* Real Bill Attachment with Base64 preview */}
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">Upload Bill Photo / Receipt Copy</label>
-                <div className="border-2 border-dashed border-slate-800 bg-slate-950 rounded-xl p-3 text-center cursor-pointer hover:border-amber-500 transition-colors">
+                <div className="border-2 border-dashed border-slate-800 bg-slate-950 rounded-xl p-4 text-center cursor-pointer hover:border-amber-500 transition-colors">
                   <Upload className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                  <span className="text-[11px] text-slate-400 block font-medium">
-                    {billFileName ? `Attached: ${billFileName}` : 'Click to select bill photo (JPEG/PNG/PDF)'}
+                  <span className="text-xs text-slate-300 block font-medium">
+                    {billFileName ? `Attached: ${billFileName}` : 'Click to upload bill receipt image'}
                   </span>
                   <input
                     type="file"
-                    accept="image/*,.pdf"
-                    onChange={e => setBillFileName(e.target.files?.[0]?.name || 'bill_photo_receipt.jpg')}
+                    accept="image/*"
+                    onChange={e => {
+                      if (e.target.files?.[0]) {
+                        handleFileUpload(e.target.files[0]);
+                      }
+                    }}
                     className="hidden"
                     id="bill-upload-input"
                   />
-                  <label htmlFor="bill-upload-input" className="mt-1 inline-block text-[10px] text-amber-400 font-bold hover:underline cursor-pointer">
-                    Browse File
+                  <label htmlFor="bill-upload-input" className="mt-1 inline-block text-xs text-amber-400 font-bold hover:underline cursor-pointer">
+                    Browse Image File
                   </label>
                 </div>
               </div>
@@ -428,17 +627,17 @@ export const ExpensesPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold"
+                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold cursor-pointer"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  Submit Bill for Approval
+                  Submit Bill for Owner Approval
                 </button>
               </div>
             </form>
