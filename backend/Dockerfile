@@ -1,25 +1,16 @@
-# Dockerfile for Express Backend API
-FROM node:18-alpine AS builder
-
+# Dedicated Backend Dockerfile for Render Deployment
+FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci
+RUN npm install
 
-COPY tsconfig.json ./
-COPY src ./src
+COPY . .
 
 RUN npm run build
 
-FROM node:18-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY --from=builder /app/dist ./dist
-
 EXPOSE 5000
+ENV PORT=5000
+ENV NODE_ENV=production
 
-CMD ["node", "dist/server.js"]
+CMD ["npm", "start"]
