@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { Employee } from '../types';
-import { Users, Search, CheckCircle, X, UserPlus, Trash2, ShieldAlert } from 'lucide-react';
+import { Users, Search, X, UserPlus, Trash2, ShieldAlert } from 'lucide-react';
+import { calculateProductivityReport } from '../utils/productivityAudit';
 
 export const WorkforcePage: React.FC = () => {
   const { employees, role, addEmployee, removeEmployee } = useApp();
@@ -122,59 +123,80 @@ export const WorkforcePage: React.FC = () => {
             <tr>
               <th>Employee</th>
               <th>Role</th>
-              <th>Attendance</th>
-              <th>Working Hours</th>
-              <th>Today's Work</th>
+              <th>Shift & Net Hours</th>
+              <th>Idle Deduction</th>
+              <th>Today's Velocity</th>
               <th>Performance</th>
               <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map(emp => (
-              <tr key={emp.id}>
-                <td>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-slate-900 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">
-                      {emp.name.substring(0, 2).toUpperCase()}
+            {filtered.map(emp => {
+              // Calculate productivity report for worker
+              const idleMins = emp.role === 'Driver' ? 45 : emp.role === 'Loadman' ? 15 : 0;
+              const grossHours = 9.0;
+              const delivered = emp.role === 'Driver' ? 18 : 86;
+              const audit = calculateProductivityReport(emp.id, emp.name, emp.role, grossHours, delivered, idleMins);
+
+              return (
+                <tr key={emp.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-slate-900 text-amber-400 font-bold text-xs flex items-center justify-center border border-amber-500/40">
+                        {emp.name.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-900">{emp.name}</p>
+                        <p className="text-[11px] text-slate-500">{emp.email || emp.phone} ({emp.id})</p>
+                      </div>
                     </div>
+                  </td>
+                  <td>
+                    <span
+                      className={`badge-status ${
+                        emp.role === 'Driver'
+                          ? 'badge-blue'
+                          : emp.role === 'Loadman'
+                          ? 'badge-amber'
+                          : 'badge-grey'
+                      }`}
+                    >
+                      {emp.role}
+                    </span>
+                  </td>
+                  <td>
                     <div>
-                      <p className="font-bold text-slate-900">{emp.name}</p>
-                      <p className="text-[11px] text-slate-500">{emp.email || emp.phone} ({emp.id})</p>
+                      <p className="font-mono text-xs font-extrabold text-emerald-700">Net: {audit.netHoursFormatted}</p>
+                      <p className="text-[10px] text-slate-500">Gross: {emp.workingHours || '9h 00m'}</p>
                     </div>
-                  </div>
-                </td>
-                <td>
-                  <span
-                    className={`badge-status ${
-                      emp.role === 'Driver'
-                        ? 'badge-blue'
-                        : emp.role === 'Loadman'
-                        ? 'badge-amber'
-                        : 'badge-grey'
-                    }`}
-                  >
-                    {emp.role}
-                  </span>
-                </td>
-                <td>
-                  <span className="badge-status badge-green flex items-center gap-1 w-fit">
-                    <CheckCircle className="w-3 h-3 text-emerald-600" /> {emp.attendanceStatus}
-                  </span>
-                </td>
-                <td className="font-mono text-xs font-semibold text-slate-800">{emp.workingHours}</td>
-                <td className="font-mono text-xs font-bold text-blue-700">{emp.todayWorkProgress}</td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <div className="w-12 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                      <div className="bg-emerald-500 h-full" style={{ width: `${emp.performanceScore}%` }}></div>
+                  </td>
+                  <td>
+                    {audit.unproductiveIdleMinutes > 0 ? (
+                      <span className="badge-status badge-red text-[10px] font-mono font-bold">
+                        -{audit.deductedHoursFormatted} ({audit.fuelWastedLiters}L Idle)
+                      </span>
+                    ) : (
+                      <span className="badge-status badge-green text-[10px] font-mono font-bold">0m Idle</span>
+                    )}
+                  </td>
+                  <td>
+                    <div>
+                      <p className="font-mono text-xs font-bold text-blue-700">{audit.deliveryVelocityPerHour} Cyl/Hr</p>
+                      <p className="text-[10px] text-slate-500">{audit.cylindersDelivered} Total Units</p>
                     </div>
-                    <span className="font-mono font-bold text-xs text-slate-900">{emp.performanceScore}</span>
-                  </div>
-                </td>
-                <td>
-                  <span className="badge-status badge-green">{emp.status}</span>
-                </td>
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+                        <div className="bg-emerald-500 h-full" style={{ width: `${emp.performanceScore}%` }}></div>
+                      </div>
+                      <span className="font-mono font-bold text-xs text-slate-900">{emp.performanceScore}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="badge-status badge-green">{emp.status}</span>
+                  </td>
                 <td>
                   <div className="flex items-center gap-3">
                     <button
@@ -197,8 +219,9 @@ export const WorkforcePage: React.FC = () => {
                   </div>
                 </td>
               </tr>
-            ))}
-          </tbody>
+            );
+          })}
+        </tbody>
         </table>
       </div>
 

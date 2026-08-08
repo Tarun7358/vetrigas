@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, ShieldCheck, CheckCircle2, Calendar, Filter } from 'lucide-react';
+import { calculateProductivityReport } from '../utils/productivityAudit';
 
 export const AttendancePage: React.FC = () => {
   const { attendance, role, currentUser, integrations, toggleIntegration } = useApp();
@@ -97,43 +98,63 @@ export const AttendancePage: React.FC = () => {
               <th>Role</th>
               <th>Check-in</th>
               <th>Check-out</th>
-              <th>Working Hours</th>
+              <th>Shift vs Net Paid Hours</th>
+              <th>Anti-Idle Audit</th>
               <th>Status</th>
               <th>Source</th>
             </tr>
           </thead>
           <tbody>
             {visibleAttendance.length > 0 ? (
-              visibleAttendance.map(att => (
-                <tr key={att.id}>
-                  <td>
-                    <div className="font-bold text-slate-900">{att.employeeName}</div>
-                    <div className="text-[11px] text-slate-500">{att.employeeId}</div>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge-status ${
-                        att.role === 'Driver' ? 'badge-blue' : 'badge-amber'
-                      }`}
-                    >
-                      {att.role}
-                    </span>
-                  </td>
-                  <td className="font-mono text-xs font-semibold text-slate-700">{att.checkIn}</td>
-                  <td className="font-mono text-xs font-semibold text-slate-700">{att.checkOut}</td>
-                  <td className="font-mono text-xs font-bold text-emerald-700">{att.workingHours}</td>
-                  <td>
-                    <span className="badge-status badge-green flex items-center gap-1 w-fit">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {att.status}
-                    </span>
-                  </td>
-                  <td>
-                    <span className="badge-status badge-blue flex items-center gap-1 font-bold text-[11px]">
-                      <ShieldCheck className="w-3.5 h-3.5 text-blue-600" /> Easy Time Pro
-                    </span>
-                  </td>
-                </tr>
-              ))
+              visibleAttendance.map(att => {
+                const idleMins = att.role === 'Driver' ? 45 : 15;
+                const audit = calculateProductivityReport(att.employeeId, att.employeeName, att.role, 9.0, 18, idleMins);
+
+                return (
+                  <tr key={att.id}>
+                    <td>
+                      <div className="font-bold text-slate-900">{att.employeeName}</div>
+                      <div className="text-[11px] text-slate-500">{att.employeeId}</div>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge-status ${
+                          att.role === 'Driver' ? 'badge-blue' : 'badge-amber'
+                        }`}
+                      >
+                        {att.role}
+                      </span>
+                    </td>
+                    <td className="font-mono text-xs font-semibold text-slate-700">{att.checkIn}</td>
+                    <td className="font-mono text-xs font-semibold text-slate-700">{att.checkOut}</td>
+                    <td>
+                      <div className="font-mono text-xs">
+                        <span className="font-bold text-emerald-700">Net: {audit.netHoursFormatted}</span>
+                        <span className="text-[10px] text-slate-400 block">Gross: {att.workingHours}</span>
+                      </div>
+                    </td>
+                    <td>
+                      {audit.unproductiveIdleMinutes > 0 ? (
+                        <span className="badge-status badge-red text-[10px] font-mono font-bold">
+                          -{audit.deductedHoursFormatted} Deducted ({audit.fuelWastedLiters}L Idle)
+                        </span>
+                      ) : (
+                        <span className="badge-status badge-green text-[10px] font-mono font-bold">0m Idle</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="badge-status badge-green flex items-center gap-1 w-fit">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {att.status}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="badge-status badge-blue flex items-center gap-1 font-bold text-[11px]">
+                        <ShieldCheck className="w-3.5 h-3.5 text-blue-600" /> Easy Time Pro
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td colSpan={7} className="text-center py-8 text-slate-400 text-xs italic">
