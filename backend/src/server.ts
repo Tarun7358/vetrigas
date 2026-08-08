@@ -164,7 +164,7 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
   const isIgnition = Boolean(ignition);
   const targetReg = vehicleRegistration || 'TN 38 AU 4821';
 
-  console.log(`📡 [Fleettrack GPS Telemetry Payload] Device/IMEI: ${deviceId || imei} | Vehicle: ${targetReg} | Speed: ${numSpeed} km/h | Ignition: ${isIgnition}`);
+  console.log(`[INFO] [GPS TELEMETRY] Payload: Device/IMEI: ${deviceId || imei} | Vehicle: ${targetReg} | Speed: ${numSpeed} km/h | Ignition: ${isIgnition}`);
 
   if (lat && lng) {
     try {
@@ -176,13 +176,13 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
 
       // Automated Telemetry Alarm Triggers
       if (numSpeed > 60) {
-        console.warn(`🚨 [OVERSPEED WARNING] Vehicle ${targetReg} exceeded safety limit: ${numSpeed} km/h`);
+        console.warn(`[WARN] [OVERSPEED ALARM] Vehicle ${targetReg} exceeded limit: ${numSpeed} km/h`);
       }
       if (isIgnition && numSpeed === 0 && Number(idleMinutes) > 15) {
-        console.warn(`⚠️ [ANTI-IDLE WARNING] Vehicle ${targetReg} idling with ignition ON for >15 mins! Wasting ~${((Number(idleMinutes)/60)*1.8).toFixed(1)}L fuel.`);
+        console.warn(`[WARN] [ANTI-IDLE ALARM] Vehicle ${targetReg} idling with ignition ON >15 mins. Fuel waste estimate: ${((Number(idleMinutes)/60)*1.8).toFixed(1)}L.`);
       }
     } catch (err) {
-      console.error('Fleettrack webhook SQLite update error:', err);
+      console.error('[ERROR] [GPS TELEMETRY] SQLite update error:', err);
     }
   }
 
@@ -361,6 +361,6 @@ app.get('*', (req: Request, res: Response) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Vetri Indane Express API Server running on port ${PORT}`);
-  console.log(`⚡ Engineered by RDK Technologies`);
+  console.log(`[INFO] Vetri Indane Express API Server active on port ${PORT}`);
+  console.log(`[INFO] Architecture: Node.js / Express / SQLite Database`);
 });

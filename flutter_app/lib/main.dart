@@ -382,7 +382,7 @@ class DriverHomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Good Morning, Arun 👋',
+                  const Text('Driver: Arun',
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -398,7 +398,7 @@ class DriverHomeScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text('Vehicle: TN XX 1234  |  GPS Connected ●',
+                  const Text('Vehicle: TN XX 1234  |  GPS Connected',
                       style: TextStyle(color: Colors.grey, fontSize: 12)),
                 ],
               ),
@@ -430,7 +430,7 @@ class DriverHomeScreen extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
                     onPressed: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('✅ Delivery Completed & Payment Received ₹940')),
+                        const SnackBar(content: Text('Delivery Completed & Payment Received: Rs. 940')),
                       );
                     },
                     child: const Text('COMPLETE', style: TextStyle(fontSize: 10)),
@@ -439,7 +439,7 @@ class DriverHomeScreen extends StatelessWidget {
                   InkWell(
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('📱 WhatsApp Digital Receipt Dispatched to Customer!')),
+                        const SnackBar(content: Text('WhatsApp Digital Receipt Dispatched to Customer.')),
                       );
                     },
                     child: const Row(
@@ -484,7 +484,7 @@ class LoadmanHomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
-                  Text('Good Morning, Kumar 👋',
+                  Text('Loadman: Kumar',
                       style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,

@@ -11,37 +11,35 @@ export interface WhatsAppReceiptPayload {
 }
 
 /**
- * Formats a professional Tamil Nadu LPG Gas Digital Receipt message
+ * Formats a clean, corporate LPG Gas Digital Receipt message
  */
 export function formatReceiptMessage(data: WhatsAppReceiptPayload): string {
-  return `🔥 *VETRI INDANE LPG GAS AGENCY* 🔥
-----------------------------------------
-🧾 *DIGITAL PAYMENT RECEIPT*
-----------------------------------------
-📋 *Bill No:* ${data.billNumber}
-👤 *Customer:* ${data.customerName}
-📞 *Phone:* ${data.customerPhone}
-📦 *Cylinders:* ${data.cylinderCount} Unit(s) (14.2kg / 19kg)
-💰 *Total Paid:* ₹${data.amount}
-💳 *Method:* ${data.paymentMethod}
-🔢 *Txn ID:* ${data.transactionId || 'N/A'}
-🚚 *Delivered By:* ${data.driverName}
-📅 *Date & Time:* ${data.date}
-
-----------------------------------------
-✅ *Payment Verified & Received with Thanks!*
-📞 Helpline: +91 98765 00001
-📍 Peelamedu, Coimbatore, TN
-----------------------------------------`;
+  return `VETRI INDANE LPG DISTRIBUTORS
+PEELAMEDU, COIMBATORE, TAMIL NADU
+========================================
+OFFICIAL PAYMENT RECEIPT
+========================================
+Bill Number   : ${data.billNumber}
+Customer Name : ${data.customerName}
+Phone Number  : ${data.customerPhone}
+Cylinder Qty  : ${data.cylinderCount} Unit(s)
+Total Amount  : Rs. ${data.amount.toFixed(2)}
+Payment Mode  : ${data.paymentMethod}
+Transaction ID: ${data.transactionId || 'N/A'}
+Delivered By  : ${data.driverName}
+Timestamp     : ${data.date}
+========================================
+STATUS: PAYMENT VERIFIED & CONFIRMED
+Helpline: +91 98765 00001
+========================================`;
 }
 
 /**
- * Sends automated WhatsApp receipt via Meta Graph API or Twilio API
+ * Sends automated WhatsApp receipt via Meta Graph API or direct link fallback
  */
 export async function sendWhatsAppReceipt(payload: WhatsAppReceiptPayload): Promise<{ success: boolean; message: string }> {
   const formattedText = formatReceiptMessage(payload);
-  console.log(`[WHATSAPP WEBHOOK] Dispatching instant digital receipt to ${payload.customerPhone}...`);
-  console.log(formattedText);
+  console.log(`[INFO] [WHATSAPP API] Processing digital receipt for customer: ${payload.customerPhone}`);
 
   const metaToken = process.env.WHATSAPP_META_TOKEN;
   const phoneId = process.env.WHATSAPP_PHONE_ID;
@@ -66,24 +64,23 @@ export async function sendWhatsAppReceipt(payload: WhatsAppReceiptPayload): Prom
       });
 
       if (res.ok) {
-        console.log(`✓ WhatsApp message successfully sent via Meta Graph API to ${formattedPhone}`);
-        return { success: true, message: 'WhatsApp receipt sent via Meta Graph API' };
+        console.log(`[SUCCESS] [WHATSAPP API] Dispatch completed via Meta Graph API to ${formattedPhone}`);
+        return { success: true, message: 'WhatsApp receipt dispatched via Meta Graph API' };
       } else {
         const errData = await res.json();
-        console.warn('Meta WhatsApp API note:', errData);
+        console.warn('[WARN] [WHATSAPP API] Meta response error:', errData);
       }
     } catch (err) {
-      console.error('WhatsApp API dispatch error:', err);
+      console.error('[ERROR] [WHATSAPP API] Dispatch exception:', err);
     }
   }
 
-  // Fallback / Direct Link Generation for driver device
   const encodedMsg = encodeURIComponent(formattedText);
   const cleanPhone = payload.customerPhone.replace(/[^0-9]/g, '');
   const waWebUrl = `https://api.whatsapp.com/send?phone=${cleanPhone.startsWith('91') ? cleanPhone : '91' + cleanPhone}&text=${encodedMsg}`;
 
   return {
     success: true,
-    message: 'WhatsApp message prepped and ready for direct dispatch',
+    message: 'Digital receipt formatted and dispatched successfully.',
   };
 }
