@@ -103,11 +103,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>('v1');
 
+const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : '';
+
   // Initial Sync with Express/SQLite Backend
   useEffect(() => {
     const fetchBackendData = async () => {
       try {
-        const empRes = await fetch('http://localhost:5000/api/employees');
+        const empRes = await fetch(`${API_BASE}/api/employees`);
         if (empRes.ok) {
           const data = await empRes.json();
           if (data.employees && data.employees.length > 0) {
@@ -115,7 +119,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        const expRes = await fetch('http://localhost:5000/api/expenses');
+        const expRes = await fetch(`${API_BASE}/api/expenses`);
         if (expRes.ok) {
           const data = await expRes.json();
           if (data.expenses && data.expenses.length > 0) {
@@ -123,7 +127,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        const vehRes = await fetch('http://localhost:5000/api/gps/vehicles');
+        const vehRes = await fetch(`${API_BASE}/api/gps/vehicles`);
         if (vehRes.ok) {
           const data = await vehRes.json();
           if (data.vehicles && data.vehicles.length > 0) {
@@ -131,7 +135,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        const delRes = await fetch('http://localhost:5000/api/deliveries');
+        const delRes = await fetch(`${API_BASE}/api/deliveries`);
         if (delRes.ok) {
           const data = await delRes.json();
           if (data.deliveries && data.deliveries.length > 0) {
@@ -139,7 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        const batRes = await fetch('http://localhost:5000/api/batches');
+        const batRes = await fetch(`${API_BASE}/api/batches`);
         if (batRes.ok) {
           const data = await batRes.json();
           if (data.batches && data.batches.length > 0) {

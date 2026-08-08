@@ -4,11 +4,17 @@ import { seedDatabase } from './seed';
 import { runQuery, fetchAll, fetchOne } from './db';
 import { hashPassword, verifyPassword } from './crypto';
 
+import path from 'path';
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve static frontend assets for single-port Render deployment
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendPath));
 
 // Seed Database Schema on server start
 seedDatabase();
@@ -298,6 +304,11 @@ app.post('/api/batches', async (req: Request, res: Response) => {
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to insert loading batch into SQLite' });
   }
+});
+
+// SPA Fallback Route for React Frontend
+app.get('*', (req: Request, res: Response) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
 app.listen(PORT, () => {
