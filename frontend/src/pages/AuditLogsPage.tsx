@@ -23,7 +23,7 @@ export const AuditLogsPage: React.FC = () => {
       </div>
 
       {/* Audit Log Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="mobile-table-container bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <table className="table-enterprise">
           <thead>
             <tr>

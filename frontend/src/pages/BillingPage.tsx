@@ -113,7 +113,7 @@ export const BillingPage: React.FC = () => {
       </div>
 
       {/* Bill Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="mobile-table-container bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div className="p-4 border-b border-slate-200 font-display font-bold text-sm text-slate-900">
           Recent Invoices & Payment Ledger
         </div>

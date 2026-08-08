@@ -109,7 +109,7 @@ export const WorkforcePage: React.FC = () => {
       )}
 
       {/* Workforce Directory Table */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+      <div className="mobile-table-container bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <table className="table-enterprise">
           <thead>
             <tr>
