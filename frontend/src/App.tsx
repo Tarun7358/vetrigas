@@ -21,6 +21,7 @@ import { PerformancePage } from './pages/PerformancePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { ExpensesPage } from './pages/ExpensesPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, role, setSelectedVehicleId } = useApp();
@@ -96,18 +97,7 @@ const AppContent: React.FC = () => {
             {activeTab === 'reports' && <ReportsPage />}
             {activeTab === 'issues' && <DashboardPage onNavigate={handleNavigate} />}
             {activeTab === 'audit' && <AuditLogsPage />}
-            {activeTab === 'settings' && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <h2 className="font-display font-bold text-lg text-slate-900">Platform Settings</h2>
-                <p className="text-xs text-slate-500 mt-1">Vetri Indane Enterprise Configuration (RDK Technologies)</p>
-                <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-2">
-                  <p><strong>System Version:</strong> v2.4.0 (Production Build)</p>
-                  <p><strong>Technology Partner:</strong> RDK Technologies</p>
-                  <p><strong>Client Organization:</strong> Vetri Indane LPG Distribution</p>
-                  <p><strong>Development Fee Standard:</strong> ₹1,80,000</p>
-                </div>
-              </div>
-            )}
+            {activeTab === 'settings' && <SettingsPage />}
           </div>
         </main>
       </div>
