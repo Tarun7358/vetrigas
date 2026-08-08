@@ -160,16 +160,79 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
   res.json({ success: true, processedAt: new Date().toISOString() });
 });
 
-app.post('/integrations/easytimepro', (req: Request, res: Response) => {
-  const { employeeId, checkInTimestamp } = req.body;
-  console.log(`[Easy Time Pro Biometrics Webhook] Emp: ${employeeId} Checked In at ${checkInTimestamp}`);
-  res.json({ success: true, synced: true });
+// VEHICLE EXPENSES ENDPOINTS (Fuel & Maintenance)
+app.get('/api/expenses', async (req: Request, res: Response) => {
+  try {
+    const expenses = await fetchAll('SELECT * FROM vehicle_expenses ORDER BY date DESC');
+    res.json({ success: true, expenses });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch expenses' });
+  }
 });
 
-app.post('/integrations/payment', (req: Request, res: Response) => {
-  const { billNumber, amount, transactionId, status } = req.body;
-  console.log(`[UPI Payment Provider Webhook] Bill: ${billNumber} | ₹${amount} | Txn: ${transactionId} | Status: ${status}`);
-  res.json({ success: true, paymentConfirmed: status === 'PAID' });
+app.post('/api/expenses', async (req: Request, res: Response) => {
+  const { vehicleId, driverName, type, amount, liters, odometerReading, description, billPhotoUrl } = req.body;
+  const id = `exp-${Date.now()}`;
+  const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const status = 'PENDING';
+
+  try {
+    await runQuery(
+      `INSERT INTO vehicle_expenses (id, vehicleId, driverName, type, amount, liters, odometerReading, description, billPhotoUrl, date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, vehicleId, driverName, type, Number(amount), Number(liters) || 0, Number(odometerReading) || 0, description || '', billPhotoUrl || '', date, status]
+    );
+
+    console.log(`[SQL DATABASE INSERT] Expense logged in SQLite: ${driverName} - ${type} ₹${amount}`);
+    res.json({ success: true, expense: { id, vehicleId, driverName, type, amount, liters, odometerReading, description, billPhotoUrl, date, status } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to insert expense into SQLite' });
+  }
+});
+
+app.put('/api/expenses/:id/status', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status, userRole } = req.body;
+
+  if (userRole !== 'OWNER' && userRole !== 'MANAGER') {
+    return res.status(403).json({ success: false, message: 'Access Denied: Only Owner or Manager can review expenses.' });
+  }
+
+  try {
+    await runQuery('UPDATE vehicle_expenses SET status = ? WHERE id = ?', [status, id]);
+    console.log(`[SQL DATABASE UPDATE] Expense ${id} status updated to ${status} by ${userRole}`);
+    res.json({ success: true, message: `Expense ${id} ${status}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to update expense status' });
+  }
+});
+
+// BILLS & COLLECTIONS ENDPOINTS
+app.get('/api/bills', async (req: Request, res: Response) => {
+  try {
+    const bills = await fetchAll('SELECT * FROM bills ORDER BY date DESC');
+    res.json({ success: true, bills });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch bills' });
+  }
+});
+
+app.post('/api/bills', async (req: Request, res: Response) => {
+  const { billNumber, customerName, amount, paymentMethod, transactionId, driverName, cylinderCount } = req.body;
+  const id = `bill-${Date.now()}`;
+  const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const status = 'PAID';
+
+  try {
+    await runQuery(
+      `INSERT INTO bills (id, billNumber, customerName, amount, paymentMethod, transactionId, driverName, date, status, cylinderCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, billNumber, customerName, Number(amount), paymentMethod, transactionId || '', driverName, date, status, Number(cylinderCount) || 1]
+    );
+
+    console.log(`[SQL DATABASE INSERT] Bill created in SQLite: ${billNumber} ₹${amount} by ${driverName}`);
+    res.json({ success: true, bill: { id, billNumber, customerName, amount, paymentMethod, transactionId, driverName, date, status, cylinderCount } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to insert bill into SQLite' });
+  }
 });
 
 app.listen(PORT, () => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type {
   UserRole,
   Vehicle,
@@ -103,13 +103,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>('v1');
 
-  const addExpense = (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => {
+  // Initial Sync with Express/SQLite Backend
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      try {
+        const empRes = await fetch('http://localhost:5000/api/employees');
+        if (empRes.ok) {
+          const data = await empRes.json();
+          if (data.employees && data.employees.length > 0) {
+            setEmployees(data.employees);
+          }
+        }
+
+        const expRes = await fetch('http://localhost:5000/api/expenses');
+        if (expRes.ok) {
+          const data = await expRes.json();
+          if (data.expenses && data.expenses.length > 0) {
+            setExpenses(data.expenses);
+          }
+        }
+
+        const billRes = await fetch('http://localhost:5000/api/bills');
+        if (billRes.ok) {
+          const data = await billRes.json();
+          if (data.bills && data.bills.length > 0) {
+            setBills(data.bills);
+          }
+        }
+      } catch (err) {
+        console.warn('Backend SQLite sync note: Using persistent local dataset fallback');
+      }
+    };
+
+    fetchBackendData();
+  }, []);
+
+  const addExpense = async (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => {
     const newExp: VehicleExpense = {
       ...expenseData,
       id: `exp-${Date.now()}`,
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'PENDING',
     };
+
+    try {
+      await fetch('http://localhost:5000/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(expenseData),
+      });
+    } catch (err) {
+      console.warn('SQLite expense post failed, saved locally.');
+    }
+
     setExpenses(prev => [newExp, ...prev]);
     setAuditLogs(prev => [
       {
@@ -125,13 +171,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
-  const approveExpense = (expenseId: string) => {
+  const approveExpense = async (expenseId: string) => {
+    try {
+      await fetch(`http://localhost:5000/api/expenses/${expenseId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'APPROVED', userRole: role }),
+      });
+    } catch (err) {
+      console.warn('SQLite expense status sync error');
+    }
+
     setExpenses(prev =>
       prev.map(e => (e.id === expenseId ? { ...e, status: 'APPROVED', approvedBy: currentUser?.name || role } : e))
     );
   };
 
-  const rejectExpense = (expenseId: string) => {
+  const rejectExpense = async (expenseId: string) => {
+    try {
+      await fetch(`http://localhost:5000/api/expenses/${expenseId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'REJECTED', userRole: role }),
+      });
+    } catch (err) {
+      console.warn('SQLite expense status sync error');
+    }
+
     setExpenses(prev =>
       prev.map(e => (e.id === expenseId ? { ...e, status: 'REJECTED' } : e))
     );
@@ -258,7 +324,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Owner-Only Actions
-  const addEmployee = (empData: Partial<Employee>) => {
+  const addEmployee = async (empData: Partial<Employee>) => {
     if (role !== 'OWNER') {
       alert('Access Denied: Only OWNER can add new workers to the platform.');
       return;
@@ -279,6 +345,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hourlyRate: Number(empData.hourlyRate) || 75,
     };
 
+    try {
+      await fetch('http://localhost:5000/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newEmp, userRole: role }),
+      });
+    } catch (err) {
+      console.warn('SQLite employee insert sync note: Saved locally');
+    }
+
     setEmployees(prev => [newEmp, ...prev]);
     setAuditLogs(prev => [
       {
@@ -294,12 +370,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
-  const removeEmployee = (empId: string) => {
+  const removeEmployee = async (empId: string) => {
     if (role !== 'OWNER') {
       alert('Access Denied: Only OWNER can remove workers from the platform.');
       return;
     }
     const target = employees.find(e => e.id === empId);
+
+    try {
+      await fetch(`http://localhost:5000/api/employees/${empId}?userRole=${role}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.warn('SQLite employee delete sync note');
+    }
+
     setEmployees(prev => prev.filter(e => e.id !== empId));
     setAuditLogs(prev => [
       {
@@ -309,7 +394,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         action: `Removed Worker ${target?.name || empId}`,
         module: 'Workforce',
         record: empId,
-        status: 'WARNING',
+        status: 'SUCCESS',
       },
       ...prev,
     ]);
