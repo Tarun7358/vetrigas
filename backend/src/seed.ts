@@ -1,4 +1,5 @@
 import { runQuery, fetchOne } from './db';
+import { hashPassword } from './crypto';
 
 export async function seedDatabase() {
   try {
@@ -89,12 +90,16 @@ export async function seedDatabase() {
       ];
 
       for (const emp of initialEmployees) {
+        const hashedPassword = hashPassword(emp[4] as string);
+        const empRecord = [...emp];
+        empRecord[4] = hashedPassword;
+
         await runQuery(
           `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          emp
+          empRecord
         );
       }
-      console.log('✓ Initial Employee data seeded into SQLite Database!');
+      console.log('✓ Initial Employee data seeded into SQLite Database with PBKDF2 salted password hashing!');
     }
 
     // 6. Seed initial vehicles if table is empty

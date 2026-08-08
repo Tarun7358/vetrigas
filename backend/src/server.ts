@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { seedDatabase } from './seed';
 import { runQuery, fetchAll, fetchOne } from './db';
+import { hashPassword, verifyPassword } from './crypto';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,7 +31,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   try {
     const user = await fetchOne('SELECT * FROM employees WHERE email = ?', [email]);
     if (user) {
-      res.json({ success: true, user, token: `token-vetri-${Date.now()}` });
+      const isPasswordValid = verifyPassword(password, user.password);
+      if (isPasswordValid) {
+        const { password: _, ...safeUser } = user;
+        return res.json({ success: true, user: safeUser, token: `token-vetri-${Date.now()}` });
+      } else {
+        return res.status(401).json({ success: false, message: 'Invalid credentials. Password verification failed.' });
+      }
     } else {
       // Fallback for role preset matches
       res.json({ success: true, user: { email, role: role || 'OWNER', name: 'Vetri User' }, token: `token-vetri-${Date.now()}` });
@@ -43,7 +50,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 // GET Employees from SQLite
 app.get('/api/employees', async (req: Request, res: Response) => {
   try {
-    const employees = await fetchAll('SELECT * FROM employees');
+    const employees = await fetchAll('SELECT id, name, role, email, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate FROM employees');
     res.json({ success: true, employees });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Database query failed' });
@@ -61,11 +68,12 @@ app.post('/api/employees', async (req: Request, res: Response) => {
   const id = `emp-${Date.now()}`;
   const joiningDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const rate = Number(hourlyRate) || 75;
+  const hashedPassword = hashPassword(password || 'Vetri@2026');
 
   try {
     await runQuery(
       `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, role, email, password || 'Vetri@2026', phone, joiningDate, 'Present', '0h 0m', '0/20', 90, 'Active', rate]
+      [id, name, role, email, hashedPassword, phone, joiningDate, 'Present', '0h 0m', '0/20', 90, 'Active', rate]
     );
 
     console.log(`[SQL DATABASE INSERT] New worker added to SQLite: ${name} (${email})`);
