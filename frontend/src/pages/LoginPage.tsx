@@ -124,7 +124,7 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Quick Role Selection Tab Bar */}
-        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-4 gap-1 text-[11px] font-bold">
+        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-2 xs:grid-cols-4 gap-1.5 text-[11px] font-bold">
           {(['OWNER', 'MANAGER', 'DRIVER', 'LOADMAN'] as UserRole[]).map(r => {
             const isSelected = selectedRole === r;
             return (

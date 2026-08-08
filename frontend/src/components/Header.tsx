@@ -107,8 +107,17 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Right Controls: Search, Alerts, Account Profile, Direct Logout */}
-      <div className="flex items-center gap-3">
-        {/* Ctrl + K Search Trigger */}
+      <div className="flex items-center gap-1.5 sm:gap-3">
+        {/* Mobile Search Button */}
+        <button
+          onClick={onOpenSearch}
+          className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 md:hidden border border-slate-700 transition-colors"
+          title="Search"
+        >
+          <Search className="w-4 h-4" />
+        </button>
+
+        {/* Desktop Ctrl + K Search Trigger */}
         <button
           onClick={onOpenSearch}
           className="hidden md:flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700 px-3 py-1.5 rounded-lg text-xs transition-colors"
@@ -136,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={() => setUserMenuOpen(!userMenuOpen)}
-            className="flex items-center gap-2 bg-slate-950 border border-slate-700 px-3 py-1.5 rounded-lg cursor-pointer hover:border-amber-500 transition-colors text-left"
+            className="flex items-center gap-1.5 sm:gap-2 bg-slate-950 border border-slate-700 px-2 sm:px-3 py-1.5 rounded-lg cursor-pointer hover:border-amber-500 transition-colors text-left"
           >
             <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-amber-400 shrink-0">
               <User className="w-4 h-4" />
@@ -184,15 +193,15 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Direct Sign Out Button for Immediate 1-Click Logout */}
+        {/* Direct Sign Out Button */}
         <button
           type="button"
           onClick={logout}
-          className="hidden sm:flex items-center gap-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
+          className="flex items-center gap-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/80 p-2 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer"
           title="Sign out of Vetri Indane Portal"
         >
           <LogOut className="w-3.5 h-3.5" />
-          <span>Sign Out</span>
+          <span className="hidden sm:inline">Sign Out</span>
         </button>
       </div>
     </header>
