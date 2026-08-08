@@ -419,17 +419,39 @@ class DriverHomeScreen extends StatelessWidget {
               contentPadding: const EdgeInsets.all(16),
               title: const Text('Raj Kumar — #VI10251',
                   style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('1 x LPG Cylinder  •  2.4 km away\nAmount: ₹940'),
-              trailing: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening Payment Screen...')),
-                  );
-                },
-                child: const Text('COMPLETE'),
+              subtitle: const Text('1 x LPG Cylinder  •  2.4 km away\nAmount: ₹940  •  Phone: +91 98421 11223'),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4)),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('✅ Delivery Completed & Payment Received ₹940')),
+                      );
+                    },
+                    child: const Text('COMPLETE', style: TextStyle(fontSize: 10)),
+                  ),
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('📱 WhatsApp Digital Receipt Dispatched to Customer!')),
+                      );
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.chat, size: 12, color: Colors.greenAccent),
+                        SizedBox(width: 4),
+                        Text('RECEIPT', style: TextStyle(color: Colors.greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

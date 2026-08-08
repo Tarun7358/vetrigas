@@ -3,6 +3,7 @@ import cors from 'cors';
 import { seedDatabase } from './seed';
 import { runQuery, fetchAll, fetchOne } from './db';
 import { hashPassword, verifyPassword } from './crypto';
+import { sendWhatsAppReceipt } from './whatsapp';
 
 import path from 'path';
 
@@ -156,22 +157,70 @@ app.post('/api/gps/update', async (req: Request, res: Response) => {
   }
 });
 
-// Fleettrack Integration Webhook Hook
+// Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
 app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
-  const { deviceId, speed, ignition, lat, lng } = req.body;
-  console.log(`[Fleettrack GPS Webhook] Device: ${deviceId} | Speed: ${speed}km/h | Ignition: ${ignition}`);
-  
+  const { deviceId, imei, vehicleRegistration, speed, ignition, lat, lng, fuelLevel, idleMinutes } = req.body;
+  const numSpeed = Number(speed) || 0;
+  const isIgnition = Boolean(ignition);
+  const targetReg = vehicleRegistration || 'TN 38 AU 4821';
+
+  console.log(`📡 [Fleettrack GPS Telemetry Payload] Device/IMEI: ${deviceId || imei} | Vehicle: ${targetReg} | Speed: ${numSpeed} km/h | Ignition: ${isIgnition}`);
+
   if (lat && lng) {
     try {
+      const isMoving = numSpeed > 0 ? 'MOVING' : 'STOPPED';
       await runQuery(
-        `UPDATE vehicles SET lat = ?, lng = ?, speed = ?, ignition = ? WHERE id = 'v1'`,
-        [Number(lat), Number(lng), Number(speed) || 0, ignition ? 1 : 0]
+        `UPDATE vehicles SET lat = ?, lng = ?, speed = ?, ignition = ?, status = ? WHERE registrationNumber = ? OR id = ?`,
+        [Number(lat), Number(lng), numSpeed, isIgnition ? 1 : 0, isMoving, targetReg, deviceId || 'v1']
       );
+
+      // Automated Telemetry Alarm Triggers
+      if (numSpeed > 60) {
+        console.warn(`🚨 [OVERSPEED WARNING] Vehicle ${targetReg} exceeded safety limit: ${numSpeed} km/h`);
+      }
+      if (isIgnition && numSpeed === 0 && Number(idleMinutes) > 15) {
+        console.warn(`⚠️ [ANTI-IDLE WARNING] Vehicle ${targetReg} idling with ignition ON for >15 mins! Wasting ~${((Number(idleMinutes)/60)*1.8).toFixed(1)}L fuel.`);
+      }
     } catch (err) {
       console.error('Fleettrack webhook SQLite update error:', err);
     }
   }
-  res.json({ success: true, processedAt: new Date().toISOString() });
+
+  res.json({
+    success: true,
+    vehicleRegistration: targetReg,
+    telemetryStatus: 'PROCESSED',
+    processedAt: new Date().toISOString(),
+  });
+});
+
+// WHATSAPP INSTANT DIGITAL RECEIPT ENDPOINT
+app.post('/api/whatsapp/send-receipt', async (req: Request, res: Response) => {
+  const { customerPhone, customerName, billNumber, amount, paymentMethod, transactionId, driverName, cylinderCount } = req.body;
+
+  if (!customerPhone) {
+    return res.status(400).json({ success: false, error: 'Customer phone number is required.' });
+  }
+
+  try {
+    const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const result = await sendWhatsAppReceipt({
+      customerPhone,
+      customerName: customerName || 'Valued LPG Customer',
+      billNumber: billNumber || `VI-${Date.now().toString().slice(-6)}`,
+      amount: Number(amount) || 940,
+      paymentMethod: paymentMethod || 'UPI',
+      transactionId: transactionId || 'TXN-DIRECT',
+      driverName: driverName || 'Field Agent',
+      cylinderCount: Number(cylinderCount) || 1,
+      date,
+    });
+
+    res.json(result);
+  } catch (err) {
+    console.error('Failed to send WhatsApp receipt:', err);
+    res.status(500).json({ success: false, error: 'WhatsApp delivery failed' });
+  }
 });
 
 // VEHICLE EXPENSES ENDPOINTS (Fuel & Maintenance)
