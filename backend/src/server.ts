@@ -243,6 +243,63 @@ app.post('/api/bills', async (req: Request, res: Response) => {
   }
 });
 
+// DELIVERIES ENDPOINTS
+app.get('/api/deliveries', async (req: Request, res: Response) => {
+  try {
+    const deliveries = await fetchAll('SELECT * FROM deliveries');
+    res.json({ success: true, deliveries });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch deliveries' });
+  }
+});
+
+app.post('/api/deliveries', async (req: Request, res: Response) => {
+  const { customerName, address, phone, category, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime } = req.body;
+  const id = `del-${Date.now()}`;
+  const status = 'PENDING';
+
+  try {
+    await runQuery(
+      `INSERT INTO deliveries (id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, deliveredTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, customerName, address, phone, category, status, paymentType, Number(amount), assignedDriverId || '', assignedDriverName || '', scheduledTime || '12:00 PM', '']
+    );
+
+    console.log(`[SQL DATABASE INSERT] Delivery registered in SQLite for ${customerName}`);
+    res.json({ success: true, delivery: { id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, deliveredTime: '' } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to insert delivery into SQLite' });
+  }
+});
+
+// LOADING BATCHES ENDPOINTS
+app.get('/api/batches', async (req: Request, res: Response) => {
+  try {
+    const batches = await fetchAll('SELECT * FROM loading_batches ORDER BY timestamp DESC');
+    res.json({ success: true, batches });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch loading batches' });
+  }
+});
+
+app.post('/api/batches', async (req: Request, res: Response) => {
+  const { vehicleRegistration, driverName, filledCylinders, emptyReturned, loadmanName } = req.body;
+  const id = `batch-${Date.now()}`;
+  const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const status = 'LOADED';
+
+  try {
+    await runQuery(
+      `INSERT INTO loading_batches (id, vehicleRegistration, driverName, filledCylinders, emptyReturned, loadmanName, timestamp, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, vehicleRegistration, driverName, Number(filledCylinders), Number(emptyReturned), loadmanName, timestamp, status]
+    );
+
+    console.log(`[SQL DATABASE INSERT] Loading batch logged in SQLite: ${vehicleRegistration} - ${filledCylinders} units by ${loadmanName}`);
+    res.json({ success: true, batch: { id, vehicleRegistration, driverName, filledCylinders, emptyReturned, loadmanName, timestamp, status } });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to insert loading batch into SQLite' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Vetri Indane Express API Server running on port ${PORT}`);
   console.log(`⚡ Engineered by RDK Technologies`);

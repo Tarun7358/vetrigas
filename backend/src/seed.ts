@@ -75,7 +75,54 @@ export async function seedDatabase() {
       )
     `);
 
-    // 5. Seed initial employees if table is empty
+    // 5. Deliveries Table
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS deliveries (
+        id TEXT PRIMARY KEY,
+        customerName TEXT,
+        address TEXT,
+        phone TEXT,
+        category TEXT,
+        status TEXT,
+        paymentType TEXT,
+        amount REAL,
+        assignedDriverId TEXT,
+        assignedDriverName TEXT,
+        scheduledTime TEXT,
+        deliveredTime TEXT
+      )
+    `);
+
+    // 6. Loading Batches Table
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS loading_batches (
+        id TEXT PRIMARY KEY,
+        vehicleRegistration TEXT,
+        driverName TEXT,
+        filledCylinders INTEGER,
+        emptyReturned INTEGER,
+        loadmanName TEXT,
+        timestamp TEXT,
+        status TEXT
+      )
+    `);
+
+    // 7. Attendance Log Table
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS attendance (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT,
+        employeeName TEXT,
+        role TEXT,
+        date TEXT,
+        checkIn TEXT,
+        checkOut TEXT,
+        workingHours TEXT,
+        status TEXT
+      )
+    `);
+
+    // Seed initial employees if table is empty
     const empCheck = await fetchOne('SELECT COUNT(*) as count FROM employees');
     if (empCheck && empCheck.count === 0) {
       const initialEmployees = [
@@ -104,7 +151,7 @@ export async function seedDatabase() {
       console.log('✓ Initial Employee data seeded into SQLite Database with PBKDF2 salted password hashing!');
     }
 
-    // 6. Seed initial vehicles if table is empty
+    // Seed initial vehicles if table is empty
     const vehCheck = await fetchOne('SELECT COUNT(*) as count FROM vehicles');
     if (vehCheck && vehCheck.count === 0) {
       const initialVehicles = [
@@ -121,6 +168,23 @@ export async function seedDatabase() {
         );
       }
       console.log('✓ Initial GPS Vehicle data seeded into SQLite Database!');
+    }
+
+    // Seed initial deliveries if table is empty
+    const delCheck = await fetchOne('SELECT COUNT(*) as count FROM deliveries');
+    if (delCheck && delCheck.count === 0) {
+      const initialDeliveries = [
+        ['del-101', 'Kavitha S.', '14 Avinashi Road, Peelamedu, Coimbatore', '+91 98421 11223', '14.2kg Domestic', 'DELIVERED', 'UPI', 940, 'emp-01', 'Arun', '10:30 AM', '10:28 AM'],
+        ['del-102', 'Hotel Anandha Bhavan', '88 Crosscut Road, Gandhipuram', '+91 98421 44556', '19kg Commercial', 'DELIVERED', 'CASH', 1850, 'emp-01', 'Arun', '11:15 AM', '11:10 AM'],
+        ['del-103', 'Murugan Bakery', '102 DB Road, RS Puram', '+91 98421 77889', '19kg Commercial', 'PENDING', 'UPI', 1850, 'emp-01', 'Arun', '02:00 PM', '']
+      ];
+
+      for (const d of initialDeliveries) {
+        await runQuery(
+          `INSERT INTO deliveries (id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, deliveredTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          d
+        );
+      }
     }
 
     console.log('✓ Local SQLite Database schema & initial dataset verified successfully!');

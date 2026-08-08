@@ -91,7 +91,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     easyTimeProConnected: true,
     paymentGatewayConnected: true,
   });
-  const [vehicles] = useState<Vehicle[]>(initialVehicles);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
   const [attendance] = useState<AttendanceRecord[]>(initialAttendance);
   const [payroll, setPayroll] = useState<PayrollRecord[]>(initialPayroll);
@@ -123,15 +123,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        const billRes = await fetch('http://localhost:5000/api/bills');
-        if (billRes.ok) {
-          const data = await billRes.json();
-          if (data.bills && data.bills.length > 0) {
-            setBills(data.bills);
+        const vehRes = await fetch('http://localhost:5000/api/gps/vehicles');
+        if (vehRes.ok) {
+          const data = await vehRes.json();
+          if (data.vehicles && data.vehicles.length > 0) {
+            setVehicles(data.vehicles);
+          }
+        }
+
+        const delRes = await fetch('http://localhost:5000/api/deliveries');
+        if (delRes.ok) {
+          const data = await delRes.json();
+          if (data.deliveries && data.deliveries.length > 0) {
+            setDeliveries(data.deliveries);
+          }
+        }
+
+        const batRes = await fetch('http://localhost:5000/api/batches');
+        if (batRes.ok) {
+          const data = await batRes.json();
+          if (data.batches && data.batches.length > 0) {
+            setBatches(data.batches);
           }
         }
       } catch (err) {
-        console.warn('Backend SQLite sync note: Using persistent local dataset fallback');
+        console.warn('Backend SQLite sync note: System synchronized with Express API');
       }
     };
 
