@@ -1,24 +1,48 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
+import sqlite3 from 'sqlite3';
+import path from 'path';
+import fs from 'fs';
 
-dotenv.config();
+// Store SQLite database in database/vetri_indane.db
+const dbDir = path.join(__dirname, '../../database');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
 
-const connectionString = process.env.DATABASE_URL || 'postgres://vetri_admin:VetriSecurePassword2026!@localhost:5432/vetri_indane_db';
+const dbPath = path.join(dbDir, 'vetri_indane.db');
+console.log(`[SQL DATABASE] Initializing Local SQLite Database file at: ${dbPath}`);
 
-export const pool = new Pool({
-  connectionString,
-  ssl: process.env.NODE_ENV === 'production' && !connectionString.includes('localhost') ? { rejectUnauthorized: false } : false,
+export const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('Failed to open local SQLite database:', err);
+  } else {
+    console.log('✓ Connected to Local SQLite Database successfully (database/vetri_indane.db)');
+  }
 });
 
-export const query = async (text: string, params?: any[]) => {
-  try {
-    const start = Date.now();
-    const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('Executed query', { text: text.substring(0, 50), duration, rows: res.rowCount });
-    return res;
-  } catch (error) {
-    console.warn('PostgreSQL Query Error (fallback active):', error);
-    throw error;
-  }
+// Helper wrapper functions for Promisified SQLite queries
+export const runQuery = (sql: string, params: any[] = []): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err);
+      else resolve(this);
+    });
+  });
+};
+
+export const fetchAll = (sql: string, params: any[] = []): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(sql, params, (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows || []);
+    });
+  });
+};
+
+export const fetchOne = (sql: string, params: any[] = []): Promise<any> => {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
 };
