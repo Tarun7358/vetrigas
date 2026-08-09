@@ -93,6 +93,8 @@ export interface DeliveryItem {
   paymentStatus: 'PAID' | 'PENDING' | 'FAILED';
   billNumber?: string;
   deliveryTime?: string;
+  cashProofUrl?: string;
+  cashProofStatus?: 'VERIFIED' | 'PENDING_REVIEW';
 }
 
 export interface BillRecord {

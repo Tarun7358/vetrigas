@@ -51,7 +51,8 @@ interface AppContextType {
   setSelectedVehicleId: (id: string | null) => void;
   
   // Actions
-  completeDelivery: (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string) => void;
+  completeDelivery: (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string, cashProofUrl?: string) => void;
+  verifyCashProof: (deliveryId: string) => void;
   reportBatchIssue: (batchId: string, loadedCount: number, reason: string) => void;
   updatePayrollStatus: (payrollId: string, status: PayrollRecord['status']) => void;
   dismissAlert: (alertId: string) => void;
@@ -395,7 +396,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const completeDelivery = async (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string) => {
+  const completeDelivery = async (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string, cashProofUrl?: string) => {
     const txn = transactionId || `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`;
     const billNo = `VI-2026-00${Math.floor(10258 + Math.random() * 100)}`;
     const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -420,6 +421,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             paymentStatus: 'PAID',
             billNumber: billNo,
             deliveryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            cashProofUrl: cashProofUrl || del.cashProofUrl,
+            cashProofStatus: paymentMethod === 'CASH' ? 'PENDING_REVIEW' : 'VERIFIED',
           };
 
           const newBill: BillRecord = {
@@ -444,6 +447,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           setBills(prevBills => [newBill, ...prevBills]);
           return updatedDel;
+        }
+        return del;
+      })
+    );
+  };
+
+  const verifyCashProof = (deliveryId: string) => {
+    setDeliveries(prev =>
+      prev.map(del => {
+        if (del.id === deliveryId) {
+          return { ...del, cashProofStatus: 'VERIFIED' };
         }
         return del;
       })
@@ -726,6 +740,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedVehicleId,
         setSelectedVehicleId,
         completeDelivery,
+        verifyCashProof,
         reportBatchIssue,
         updatePayrollStatus,
         dismissAlert,

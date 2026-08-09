@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X } from 'lucide-react';
+import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X, Navigation, QrCode, DollarSign, ShieldCheck, Camera } from 'lucide-react';
 import { EBillModal } from '../components/EBillModal';
-import type { BillRecord } from '../types';
+import type { BillRecord, DeliveryItem } from '../types';
 import { sendWhatsAppReceipt } from '../utils/whatsappReceipt';
 import { soundAlerts } from '../utils/audioAlerts';
 import { offlineSync } from '../utils/offlineSync';
 
 export const DeliveriesPage: React.FC = () => {
-  const { deliveries, bills, completeDelivery, addOrder } = useApp();
+  const { deliveries, bills, completeDelivery, verifyCashProof, addOrder, role, currentUser } = useApp();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBill, setSelectedBill] = useState<BillRecord | null>(null);
 
+  // Modals state
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
+  const [fulfillItem, setFulfillItem] = useState<DeliveryItem | null>(null);
+  const [inspectCashItem, setInspectCashItem] = useState<DeliveryItem | null>(null);
+
+  // Payment Fulfill Form State
+  const [paymentMode, setPaymentMode] = useState<'UPI' | 'CASH'>('UPI');
+  const [cashProofImage, setCashProofImage] = useState<string>('');
+  const [cashProofFileName, setCashProofFileName] = useState<string>('');
+
+  // Order Booking Form State
   const [newCustName, setNewCustName] = useState<string>('');
   const [newCustPhone, setNewCustPhone] = useState<string>('');
   const [newCustAddress, setNewCustAddress] = useState<string>('');
@@ -22,6 +32,9 @@ export const DeliveriesPage: React.FC = () => {
 
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
+
+  const isDriver = role === 'DRIVER';
+  const isManagementOrStaff = role === 'OWNER' || role === 'MANAGER' || role === 'GODOWN_KEEPER' || role === 'STOREROOM_STAFF';
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,31 +69,51 @@ export const DeliveriesPage: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const handleImageUpload = (file: File) => {
+    setCashProofFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCashProofImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleConfirmFulfillment = () => {
+    if (!fulfillItem) return;
+
+    if (paymentMode === 'CASH' && !cashProofImage) {
+      alert('Proof Required: Please capture/upload photo proof of the cash payment for office staff review.');
+      return;
+    }
+
+    completeDelivery(fulfillItem.id, paymentMode, undefined, cashProofImage || undefined);
+    soundAlerts.playSuccessSyncChime();
+
+    // Trigger WhatsApp digital receipt dispatch
+    sendWhatsAppReceipt({
+      customerName: fulfillItem.customerName,
+      customerPhone: fulfillItem.customerPhone,
+      billNumber: `MEMO-${Math.floor(100000 + Math.random() * 900000)}`,
+      cylinderCount: fulfillItem.cylinderCount,
+      amount: fulfillItem.amount,
+      paymentMethod: paymentMode === 'UPI' ? 'UPI / Dynamic QR' : 'Cash (Proof Attached)',
+      driverName: fulfillItem.driverName,
+      vehicleNumber: fulfillItem.vehicleNumber,
+    });
+
+    setFulfillItem(null);
+    setCashProofImage('');
+    setCashProofFileName('');
+  };
+
   const filtered = statusFilter === 'ALL'
-    ? deliveries
-    : deliveries.filter(d => d.status === statusFilter);
+    ? (isDriver ? deliveries.filter(d => d.driverName.toLowerCase() === (currentUser?.name || '').toLowerCase() || d.driverName === 'Arun') : deliveries)
+    : (isDriver ? deliveries.filter(d => d.driverName.toLowerCase() === (currentUser?.name || '').toLowerCase() || d.driverName === 'Arun') : deliveries).filter(d => d.status === statusFilter);
 
   const handleOpenEBill = (billNo?: string) => {
     if (!billNo) return;
     const b = bills.find(x => x.billNumber === billNo);
     if (b) setSelectedBill(b);
-  };
-
-  const handleCompleteAndNotify = (delId: string, customerName: string, phone: string, amount: number, cylinderCount: number, driverName: string, vehicleNumber: string) => {
-    completeDelivery(delId, 'UPI');
-    soundAlerts.playSuccessSyncChime();
-
-    // Trigger WhatsApp digital receipt dispatch
-    sendWhatsAppReceipt({
-      customerName,
-      customerPhone: phone,
-      billNumber: `MEMO-${Math.floor(100000 + Math.random() * 900000)}`,
-      cylinderCount,
-      amount,
-      paymentMethod: 'UPI / Dynamic QR',
-      driverName,
-      vehicleNumber,
-    });
   };
 
   return (
@@ -96,19 +129,27 @@ export const DeliveriesPage: React.FC = () => {
               Delivery Operations & Customer Dispatch
             </h1>
             <p className="text-xs text-slate-400">
-              Real-Time LPG Delivery Board, Offline PWA Queue & WhatsApp Digital Receipts
+              {isDriver ? 'Assigned Field Deliveries, Address Navigation & Payment Collection' : 'Real-Time LPG Delivery Board, Order Posting & Cash Verification Hub'}
             </p>
           </div>
         </div>
 
         {/* Network & Offline PWA Sync Status & Order Booking */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowOrderModal(true)}
-            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
-          >
-            + Book New Client Order
-          </button>
+          {isManagementOrStaff && (
+            <button
+              onClick={() => setShowOrderModal(true)}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-4 py-2 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
+            >
+              + Book New Client Order
+            </button>
+          )}
+
+          {isDriver && (
+            <span className="bg-slate-800 text-amber-400 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold">
+              FIELD DRIVER MODE
+            </span>
+          )}
 
           {!isOnline ? (
             <div className="bg-amber-500/20 border border-amber-500/40 text-amber-300 px-3 py-1.5 rounded-xl text-xs flex items-center gap-2 animate-pulse">
@@ -173,9 +214,22 @@ export const DeliveriesPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-2 text-slate-700">
-                  <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[11px] leading-tight text-slate-600">{del.customerAddress}</p>
+                {/* Customer Address & GPS Route Navigation Link */}
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+                  <div className="flex items-start gap-2 text-slate-700">
+                    <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-[11px] leading-tight text-slate-700 font-medium">{del.customerAddress}</p>
+                  </div>
+
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(del.customerAddress + ', Coimbatore')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold py-1.5 rounded-lg text-[11px] shadow-xs transition-colors"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    <span>📍 Navigate to Customer Location</span>
+                  </a>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
@@ -199,17 +253,36 @@ export const DeliveriesPage: React.FC = () => {
                     <p className="font-semibold text-amber-700 font-mono">{del.vehicleNumber}</p>
                   </div>
                 </div>
+
+                {/* Cash Proof Review Banner for Office Staff / Owner */}
+                {del.paymentMethod === 'CASH' && del.cashProofUrl && (
+                  <div className="bg-amber-50 border border-amber-200 p-2 rounded-xl flex items-center justify-between text-[11px]">
+                    <span className="text-amber-900 font-bold flex items-center gap-1">
+                      <Camera className="w-3.5 h-3.5 text-amber-600" />
+                      {del.cashProofStatus === 'VERIFIED' ? '✓ Cash Verified' : 'Cash Proof Attached'}
+                    </span>
+                    <button
+                      onClick={() => setInspectCashItem(del)}
+                      className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[10px] cursor-pointer"
+                    >
+                      Inspect Photo
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Action Buttons */}
             <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-              {del.status === 'OUT FOR DELIVERY' ? (
+              {del.status === 'OUT FOR DELIVERY' || del.status === 'ASSIGNED' || del.status === 'READY' ? (
                 <button
-                  onClick={() => handleCompleteAndNotify(del.id, del.customerName, del.customerPhone, del.amount, del.cylinderCount, del.driverName, del.vehicleNumber)}
+                  onClick={() => {
+                    setFulfillItem(del);
+                    setPaymentMode('UPI');
+                  }}
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Complete & Send WhatsApp Receipt
+                  <CheckCircle2 className="w-4 h-4" /> Collect Money & Complete Delivery
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
@@ -241,6 +314,185 @@ export const DeliveriesPage: React.FC = () => {
           </div>
         ))}
       </div>
+
+      {/* DRIVER COMPLETE DELIVERY & PAYMENT COLLECTION MODAL */}
+      {fulfillItem && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 text-white space-y-5 shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h2 className="font-display font-bold text-lg text-white flex items-center gap-2">
+                  Complete LPG Delivery #{fulfillItem.deliveryNumber}
+                </h2>
+                <p className="text-xs text-slate-400">Customer: <strong>{fulfillItem.customerName}</strong> ({fulfillItem.cylinderCount} Cylinders)</p>
+              </div>
+              <button onClick={() => setFulfillItem(null)} className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Payment Method Selector Tabs */}
+            <div className="space-y-4 text-xs">
+              <label className="block text-slate-400 font-semibold">Select Customer Payment Collection Method *</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('UPI')}
+                  className={`py-3 px-4 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    paymentMode === 'UPI'
+                      ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-600/30'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+                >
+                  <QrCode className="w-5 h-5" />
+                  <span>UPI / Dynamic QR Scan</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('CASH')}
+                  className={`py-3 px-4 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    paymentMode === 'CASH'
+                      ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+                >
+                  <DollarSign className="w-5 h-5" />
+                  <span>Cash Collection</span>
+                </button>
+              </div>
+
+              {/* UPI Dynamic QR View */}
+              {paymentMode === 'UPI' && (
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-5 text-center space-y-3">
+                  <p className="text-xs font-bold text-amber-400">Scan & Pay ₹{fulfillItem.amount} via UPI (GPay / PhonePe / Paytm)</p>
+                  <div className="w-36 h-36 mx-auto bg-white p-2.5 rounded-2xl shadow-inner flex items-center justify-center border-2 border-emerald-500">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=vetrigas@okaxis%26pn=VetriIndane%26am=${fulfillItem.amount}%26cu=INR`}
+                      alt="UPI Payment QR"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <p className="text-[11px] text-slate-400">Digital E-Bill receipt will be dispatched via WhatsApp upon confirmation.</p>
+                </div>
+              )}
+
+              {/* Cash Collection Proof Upload View */}
+              {paymentMode === 'CASH' && (
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-400 font-semibold">Cash Amount Collected:</span>
+                    <span className="font-display font-bold text-amber-400 text-sm">₹{fulfillItem.amount}</span>
+                  </div>
+
+                  <div className="border-2 border-dashed border-slate-800 bg-slate-900 rounded-xl p-4 text-center cursor-pointer hover:border-amber-500 transition-colors">
+                    <Camera className="w-6 h-6 text-amber-400 mx-auto mb-1" />
+                    <span className="text-xs text-slate-300 block font-medium">
+                      {cashProofFileName ? `Attached: ${cashProofFileName}` : '📷 Capture / Upload Cash Proof Image'}
+                    </span>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Photo of collected cash currency notes or signed cash memo voucher</p>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        if (e.target.files?.[0]) {
+                          handleImageUpload(e.target.files[0]);
+                        }
+                      }}
+                      className="hidden"
+                      id="cash-proof-upload"
+                    />
+                    <label htmlFor="cash-proof-upload" className="mt-2 inline-block text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1 rounded-lg cursor-pointer">
+                      Browse or Snap Photo
+                    </label>
+                  </div>
+
+                  {cashProofImage && (
+                    <div className="text-center">
+                      <img src={cashProofImage} alt="Cash Proof Preview" className="max-h-32 mx-auto rounded-lg border border-slate-700 shadow-md" />
+                      <p className="text-[10px] text-emerald-400 mt-1 font-bold">✓ Cash Proof Image Attached for Office Staff Audit</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Submit Button */}
+              <button
+                type="button"
+                onClick={handleConfirmFulfillment}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Confirm Payment & Mark Order Delivered
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INSPECT CASH PROOF MODAL (OFFICE STAFF & OWNER REVIEW) */}
+      {inspectCashItem && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md text-slate-900 shadow-2xl overflow-hidden">
+            <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+              <span className="font-bold text-sm text-amber-400 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4" /> Cash Collection Audit Review
+              </span>
+              <button onClick={() => setInspectCashItem(null)} className="text-slate-400 hover:text-white p-1">
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div className="bg-slate-950 text-white p-3 rounded-2xl flex flex-col items-center">
+                {inspectCashItem.cashProofUrl && inspectCashItem.cashProofUrl.startsWith('data:image') ? (
+                  <img src={inspectCashItem.cashProofUrl} alt="Driver Cash Proof" className="max-h-56 object-contain rounded-xl border border-slate-700 shadow-md" />
+                ) : (
+                  <div className="text-center p-4 bg-amber-50 text-slate-900 rounded-xl border border-amber-300 font-mono">
+                    <p className="font-bold">₹{inspectCashItem.amount} CASH RECEIVED</p>
+                    <p className="text-[10px] text-slate-600">Collected by Driver {inspectCashItem.driverName}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Delivery ID:</span>
+                  <span className="font-bold">#{inspectCashItem.deliveryNumber}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Customer:</span>
+                  <span className="font-bold">{inspectCashItem.customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Collected Amount:</span>
+                  <span className="font-bold text-emerald-700">₹{inspectCashItem.amount}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Field Driver:</span>
+                  <span>{inspectCashItem.driverName} ({inspectCashItem.vehicleNumber})</span>
+                </div>
+              </div>
+
+              {inspectCashItem.cashProofStatus !== 'VERIFIED' ? (
+                <button
+                  onClick={() => {
+                    verifyCashProof(inspectCashItem.id);
+                    setInspectCashItem(null);
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl shadow-md cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Approve & Verify Cash Proof
+                </button>
+              ) : (
+                <p className="text-center text-emerald-700 font-bold bg-emerald-50 p-2 rounded-xl border border-emerald-200">
+                  ✓ Cash Collection Verified by Office Staff
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New Client Order Entry Modal (Storeroom Staff & Godown Keeper) */}
       {showOrderModal && (
