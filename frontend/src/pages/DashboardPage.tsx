@@ -34,13 +34,15 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = () => {
-  const { vehicles, deliveries, currentUser, role } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role } = useApp();
 
-  const totalWorkers = 28;
-  const presentToday = 25;
+  const totalWorkers = employees.length;
+  const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
+  const driversCount = employees.filter(e => (e.role || '').toLowerCase().includes('driver')).length;
+  const loadmenCount = employees.filter(e => (e.role || '').toLowerCase().includes('loadman')).length;
   const activeVehicles = vehicles.filter(v => v.status === 'MOVING' || v.status === 'STOPPED').length;
   const completedDeliveriesCount = deliveries.filter(d => d.status === 'DELIVERED').length;
-  const todayCollection = 113650;
+  const todayCollection = bills.reduce((sum, b) => sum + (b.amount || 0), 0) || deliveries.filter(d => d.status === 'DELIVERED').reduce((sum, d) => sum + (d.amount || 0), 0);
 
   // Inventory Stock Threshold (< 50 units trigger audible warning)
   const currentEmptyCylinderStock = 42; // Low stock alert threshold
@@ -440,7 +442,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                 <Users className="w-4 h-4 text-blue-400" />
               </div>
               <div className="kpi-value">{totalWorkers}</div>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">20 Drivers • 8 Loadmen</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">{driversCount} Drivers • {loadmenCount} Loadmen</p>
             </div>
 
             <div className="kpi-card">

@@ -67,7 +67,22 @@ interface AppContextType {
 import vetriDataset from '../data/vetriDataset.json';
 
 const initialVehicles: Vehicle[] = vetriDataset.vehicles as Vehicle[];
-const initialEmployees: Employee[] = vetriDataset.employees as Employee[];
+const initialEmployees: Employee[] = [
+  {
+    id: 'emp-00',
+    name: 'Vetri',
+    role: 'Owner',
+    email: 'owner@vetriindane.com',
+    phone: '+91 96008 70814',
+    joiningDate: '01 Jan 2023',
+    attendanceStatus: 'Present',
+    workingHours: '9h 00m',
+    todayWorkProgress: '100%',
+    performanceScore: 100,
+    status: 'Active',
+    hourlyRate: 150,
+  },
+];
 const initialAttendance: AttendanceRecord[] = vetriDataset.attendance as AttendanceRecord[];
 const initialPayroll: PayrollRecord[] = vetriDataset.payroll as PayrollRecord[];
 const initialBatches: LoadingBatch[] = vetriDataset.batches as LoadingBatch[];
@@ -143,7 +158,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const empRes = await fetch(`${API_BASE}/api/employees`);
       if (empRes.ok) {
         const data = await empRes.json();
-        if (data.employees && data.employees.length > 0) {
+        if (Array.isArray(data.employees)) {
           setEmployees(data.employees);
         }
       }
