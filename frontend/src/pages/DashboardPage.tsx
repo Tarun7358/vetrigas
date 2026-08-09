@@ -23,6 +23,7 @@ import {
   Activity,
   Fingerprint,
   Zap,
+  Trash2,
 } from 'lucide-react';
 import {
   BarChart,
@@ -42,7 +43,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle } = useApp();
 
   const totalWorkers = employees.length;
   const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
@@ -80,6 +81,28 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [assignedDriver, setAssignedDriver] = useState('Arun');
   const [assignedVehicle, setAssignedVehicle] = useState('TN 38 AU 4821');
   const [orderSuccessMsg, setOrderSuccessMsg] = useState('');
+
+  // Fleet Config Modal State (Owner/Management)
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState(false);
+  const [newRegNo, setNewRegNo] = useState('');
+  const [newDriverName, setNewDriverName] = useState('');
+  const [newGpsId, setNewGpsId] = useState('');
+  const [newHasCam, setNewHasCam] = useState(true);
+
+  const handleAddVehicleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRegNo) return;
+    await addVehicle({
+      registrationNumber: newRegNo,
+      driverName: newDriverName || 'Unassigned Driver',
+      gpsDeviceId: newGpsId,
+      hasCamera: newHasCam,
+    });
+    setShowAddVehicleModal(false);
+    setNewRegNo('');
+    setNewDriverName('');
+    setNewGpsId('');
+  };
 
   // Hardware Telemetry Real-time Tickers
   const [hwSecGps, setHwSecGps] = useState(2);
@@ -660,6 +683,60 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   </div>
                 </div>
               )}
+
+              {/* OWNER FLEET VEHICLE CONFIGURATION MANAGER */}
+              {role === 'OWNER' && (
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-white shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-display font-extrabold text-base text-white flex items-center gap-2">
+                          Fleet Vehicle Configuration & Management
+                        </h3>
+                        <p className="text-xs text-slate-400">Add new vehicles or delete existing trucks dynamically (Owner Only)</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAddVehicleModal(true)}
+                      className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" /> Add New Fleet Vehicle
+                    </button>
+                  </div>
+
+                  {/* Fleet Grid List */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {vehicles.map(v => (
+                      <div key={v.id} className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between gap-2 shadow-inner">
+                        <div className="space-y-1 overflow-hidden">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-extrabold text-amber-400 text-sm truncate">🚚 {v.registrationNumber}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded font-bold shrink-0 ${v.status === 'MOVING' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+                              {v.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-300 truncate">Driver: <strong className="text-white">{v.driverName}</strong></p>
+                          <p className="text-[11px] text-slate-400 font-mono truncate">GPS: {v.gpsDeviceId || 'EH21-GPS'} • Cam: {v.hasCamera ? 'Live' : 'Off'}</p>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Are you sure you want to remove vehicle ${v.registrationNumber} from the agency fleet?`)) {
+                              await removeVehicle(v.id);
+                            }
+                          }}
+                          className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer shrink-0"
+                          title="Delete Vehicle"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -943,6 +1020,90 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add New Vehicle Modal (Owner/Management) */}
+      {showAddVehicleModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="font-display font-extrabold text-base text-amber-400 flex items-center gap-2">
+                <Truck className="w-5 h-5 text-amber-400" /> Register New Fleet Truck
+              </h3>
+              <button
+                onClick={() => setShowAddVehicleModal(false)}
+                className="text-slate-400 hover:text-white font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddVehicleSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Registration Number *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="TN 38 XY 9999"
+                  value={newRegNo}
+                  onChange={e => setNewRegNo(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-amber-400 font-mono font-bold focus:border-amber-500 outline-none uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Assigned Driver Name</label>
+                <input
+                  type="text"
+                  placeholder="Arun / Suresh / Unassigned"
+                  value={newDriverName}
+                  onChange={e => setNewDriverName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold focus:border-amber-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">IoT GPS Device IMEI / Serial Number</label>
+                <input
+                  type="text"
+                  placeholder="GPS-EH21-8849"
+                  value={newGpsId}
+                  onChange={e => setNewGpsId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono focus:border-amber-500 outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-between bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <span className="text-slate-300 font-semibold">Fitted with Live Dashcam?</span>
+                <button
+                  type="button"
+                  onClick={() => setNewHasCam(!newHasCam)}
+                  className={`px-3 py-1.5 rounded-lg font-bold text-xs cursor-pointer ${
+                    newHasCam ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {newHasCam ? 'YES (Live AI Cam)' : 'NO'}
+                </button>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddVehicleModal(false)}
+                  className="px-4 py-2 text-slate-400 hover:text-white font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Save Vehicle to Fleet
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

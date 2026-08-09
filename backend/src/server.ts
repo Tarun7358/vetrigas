@@ -293,6 +293,25 @@ app.post('/api/vehicles', async (req: Request, res: Response) => {
   }
 });
 
+// Delete Fleet Vehicle Record
+app.delete('/api/vehicles/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { userRole } = req.query;
+  const callerRole = ((userRole || '') as string).toUpperCase();
+
+  if (callerRole !== 'OWNER' && callerRole !== 'MANAGER' && callerRole !== 'STOREROOM_STAFF') {
+    return res.status(403).json({ success: false, message: 'Access Denied: Only Owner or Management can remove vehicles.' });
+  }
+
+  try {
+    await runQuery('DELETE FROM vehicles WHERE id = ? OR registrationNumber = ?', [id, id]);
+    console.log(`[SQL DATABASE VEHICLE DELETED] Vehicle ${id} removed.`);
+    res.json({ success: true, message: `Vehicle ${id} removed.` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to delete vehicle' });
+  }
+});
+
 // Update GPS coordinates from IoT Tracker / Fleettrack SIM IMEI in SQLite
 app.post('/api/gps/update', async (req: Request, res: Response) => {
   const { vehicleId, lat, lng, speed, ignition, status } = req.body;

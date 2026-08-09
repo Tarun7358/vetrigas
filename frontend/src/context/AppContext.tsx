@@ -64,6 +64,7 @@ interface AppContextType {
   addOrder: (orderData: { customerName: string; address: string; phone: string; category?: string; amount: number; assignedDriverName: string; cylinderCount?: number; vehicleNumber?: string }) => Promise<void>;
   addStockIntake: (stockData: { category: string; quantity: number; monthYear?: string; intakeDate?: string; challanNumber?: string; supplier?: string }) => Promise<void>;
   addVehicle: (vehicleData: { registrationNumber: string; driverName: string; gpsDeviceId?: string; simCardNumber?: string; hasCamera?: boolean }) => Promise<void>;
+  removeVehicle: (vehicleId: string) => Promise<void>;
 
   // Owner-Only Worker Actions
   addEmployee: (emp: Partial<Employee>) => void;
@@ -781,6 +782,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const removeVehicle = async (vehicleId: string) => {
+    const roleUpper = (role || '').toUpperCase();
+    if (roleUpper !== 'OWNER' && roleUpper !== 'MANAGER' && roleUpper !== 'STOREROOM_STAFF') {
+      alert('Access Denied: Only Owner or Management can remove vehicles.');
+      return;
+    }
+
+    const target = vehicles.find(v => v.id === vehicleId || v.registrationNumber === vehicleId);
+
+    setVehicles(prev => prev.filter(v => v.id !== vehicleId && v.registrationNumber !== vehicleId));
+
+    try {
+      await fetch(`${API_BASE}/api/vehicles/${vehicleId}?userRole=${roleUpper}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.warn('Vehicle deleted locally.');
+    }
+
+    setAuditLogs(prev => [
+      {
+        id: `audit-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        user: currentUser?.name || role,
+        action: `Removed Fleet Vehicle ${target?.registrationNumber || vehicleId}`,
+        module: 'Fleet',
+        record: vehicleId,
+        status: 'SUCCESS',
+      },
+      ...prev,
+    ]);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -820,6 +854,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addOrder,
         addStockIntake,
         addVehicle,
+        removeVehicle,
         addEmployee,
         removeEmployee,
       }}

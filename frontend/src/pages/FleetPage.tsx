@@ -13,6 +13,7 @@ import {
   Package,
   RefreshCw,
   PlusCircle,
+  Trash2,
 } from 'lucide-react';
 import { soundAlerts } from '../utils/audioAlerts';
 
@@ -47,7 +48,7 @@ interface FleetPageProps {
 }
 
 export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
-  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations, role, employees, addVehicle } = useApp();
+  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations, role, employees, addVehicle, removeVehicle } = useApp();
   const [liveVehicles, setLiveVehicles] = useState(vehicles);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -311,16 +312,28 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
               <div className="space-y-2 pt-2">
                 <button
                   onClick={() => onNavigate('camera')}
-                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors shadow-md shadow-amber-500/20"
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors shadow-md shadow-amber-500/20 cursor-pointer"
                 >
                   [ VIEW CAMERA ]
                 </button>
                 <button
                   onClick={() => onNavigate('deliveries')}
-                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors border border-slate-700"
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-2 rounded-lg text-xs flex items-center justify-center gap-2 transition-colors border border-slate-700 cursor-pointer"
                 >
                   [ VIEW DELIVERIES ]
                 </button>
+                {canAddVehicle && (
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Are you sure you want to remove vehicle ${selectedVehicle.registrationNumber} from fleet?`)) {
+                        await removeVehicle(selectedVehicle.id);
+                      }
+                    }}
+                    className="w-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 font-bold py-2 rounded-lg text-xs flex items-center justify-center gap-1.5 transition-colors border border-rose-500/30 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Remove Vehicle from Fleet
+                  </button>
+                )}
               </div>
             </div>
           ) : (
