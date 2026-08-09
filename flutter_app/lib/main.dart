@@ -89,7 +89,17 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
         _isLoading = false;
       });
 
-      if (selectedRole == 'DRIVER') {
+      if (selectedRole == 'OWNER') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const OwnerHomeScreen()),
+        );
+      } else if (selectedRole == 'MANAGER') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ManagerHomeScreen()),
+        );
+      } else if (selectedRole == 'DRIVER') {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
@@ -100,14 +110,9 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
           MaterialPageRoute(builder: (_) => const LoadmanHomeScreen()),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFF1E293B),
-            content: Text(
-              'LoggedIn as $selectedRole. Accessing Operations Desk...',
-              style: const TextStyle(color: Color(0xFFF59E0B)),
-            ),
-          ),
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const StoreroomHomeScreen()),
         );
       }
     });
@@ -544,3 +549,355 @@ class LoadmanHomeScreen extends StatelessWidget {
     );
   }
 }
+
+class OwnerHomeScreen extends StatelessWidget {
+  const OwnerHomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A192F),
+      appBar: AppBar(
+        title: const Text('Owner Control Room'),
+        backgroundColor: const Color(0xFF0A192F),
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.shield, color: Color(0xFFF59E0B)),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Executive KPI Banner
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('VETRI INDANE ENTERPRISE',
+                        style: TextStyle(
+                            color: Color(0xFFF59E0B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1)),
+                    Chip(
+                      label: Text('OWNER ACCESS',
+                          style: TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold)),
+                      backgroundColor: Color(0xFFF59E0B),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text('Daily Gross Revenue',
+                    style: TextStyle(color: Colors.grey, fontSize: 12)),
+                const Text('₹ 1,42,850.00',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    _MetricChip(title: 'Active Fleet', value: '12 / 14 Vehicles'),
+                    _MetricChip(title: 'Deliveries Today', value: '184 Completed'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Owner Quick Action Modules
+          const Text('EXECUTIVE CONTROL PANELS',
+              style: TextStyle(
+                  color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1)),
+          const SizedBox(height: 10),
+
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionCard(
+                  title: 'Fleet Track',
+                  subtitle: '12 Vehicles Live',
+                  icon: Icons.local_shipping,
+                  color: Colors.blueAccent,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Opening Live GPS Fleet Tracker...')),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickActionCard(
+                  title: 'Expense Approvals',
+                  subtitle: '3 Pending Review',
+                  icon: Icons.receipt_long,
+                  color: Colors.amber,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Opening Expense Approval Audit...')),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _QuickActionCard(
+                  title: 'Workforce Roster',
+                  subtitle: '24 Staff Active',
+                  icon: Icons.people_alt,
+                  color: const Color(0xFF10B981),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Opening Workforce Management Directory...')),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickActionCard(
+                  title: 'LPG Inventory',
+                  subtitle: '657 Cylinders',
+                  icon: Icons.inventory_2,
+                  color: Colors.purpleAccent,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Opening Depot Stock Reconciliation...')),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Pending Approvals Log
+          Card(
+            color: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('PRIORITY AUDIT ALERTS',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.local_gas_station, color: Colors.amber),
+                    title: const Text('Diesel Refuel: TN 38 AU 4821',
+                        style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                    subtitle: const Text('Driver Arun  •  ₹3,400 (42.5 L)',
+                        style: TextStyle(color: Colors.grey, fontSize: 11)),
+                    trailing: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green, foregroundColor: Colors.white),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Fuel Expense Approved by Owner.')),
+                        );
+                      },
+                      child: const Text('APPROVE', style: TextStyle(fontSize: 10)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ManagerHomeScreen extends StatelessWidget {
+  const ManagerHomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A192F),
+      appBar: AppBar(
+        title: const Text('Operations Manager (Santhosh)'),
+        backgroundColor: const Color(0xFF0A192F),
+        foregroundColor: Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            color: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('DISPATCH & ROUTE CONTROL',
+                      style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 12)),
+                  SizedBox(height: 8),
+                  Text('Active Routes: 6  |  Total Deliveries: 220',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  SizedBox(height: 4),
+                  Text('On-Time Completion Rate: 94.2%', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('FLEET DISPATCH MONITOR',
+              style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Card(
+            color: const Color(0xFF1E293B),
+            child: ListTile(
+              leading: const Icon(Icons.local_shipping, color: Colors.greenAccent),
+              title: const Text('Route A — Coimbatore Central',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              subtitle: const Text('Driver: Arun  •  Vehicle: TN 38 AU 4821\nCompleted: 17/24 Deliveries',
+                  style: TextStyle(color: Colors.grey, fontSize: 11)),
+              trailing: const Chip(
+                label: Text('EN ROUTE', style: TextStyle(color: Colors.black, fontSize: 9, fontWeight: FontWeight.bold)),
+                backgroundColor: Colors.greenAccent,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class StoreroomHomeScreen extends StatelessWidget {
+  const StoreroomHomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A192F),
+      appBar: AppBar(
+        title: const Text('Godown & Storeroom Desk'),
+        backgroundColor: const Color(0xFF0A192F),
+        foregroundColor: Colors.white,
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            color: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('DEPOT CYLINDER INVENTORY',
+                      style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 12)),
+                  SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('14.2 kg Domestic:', style: TextStyle(color: Colors.white)),
+                      Text('480 Filled  •  120 Empty', style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('19 kg Commercial:', style: TextStyle(color: Colors.white)),
+                      Text('145 Filled  •  35 Empty', style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricChip extends StatelessWidget {
+  final String title;
+  final String value;
+  const _MetricChip({required this.title, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFF1E293B),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, color: color, size: 28),
+              const SizedBox(height: 12),
+              Text(title,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(subtitle, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
