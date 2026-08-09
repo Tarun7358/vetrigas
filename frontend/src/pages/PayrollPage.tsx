@@ -21,10 +21,11 @@ export const PayrollPage: React.FC = () => {
   const isOwnerOrManager = (role || '').toUpperCase() === 'OWNER' || (role || '').toUpperCase() === 'MANAGER';
   const isDriverOrLoadman = (role || '').toUpperCase() === 'DRIVER' || (role || '').toUpperCase() === 'LOADMAN';
 
-  // Filter payroll records if logged in as driver or loadman
+  // Filter payroll records: exclude Owner and filter if logged in as driver or loadman
+  const workerPayroll = payroll.filter(p => (p.role || '').toLowerCase() !== 'owner' && (p.employeeName || '').toLowerCase() !== 'vetri');
   const userCleanName = (currentUser?.name || '').trim().toLowerCase();
   const displayPayroll = isDriverOrLoadman
-    ? payroll.filter(p => {
+    ? workerPayroll.filter(p => {
         const pName = p.employeeName.trim().toLowerCase();
         return (
           pName === userCleanName ||
@@ -34,7 +35,7 @@ export const PayrollPage: React.FC = () => {
           pName.includes('arun')
         );
       })
-    : payroll;
+    : workerPayroll;
 
   const estimatedTotal = displayPayroll.reduce((sum, p) => sum + (p.netSalary || 0), 0);
   const approvedTotal = displayPayroll.filter(p => p.status === 'Approved' || p.approvedByOwner).reduce((sum, p) => sum + (p.ownerAdjustedSalary || p.netSalary || 0), 0);

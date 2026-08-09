@@ -45,8 +45,9 @@ interface DashboardPageProps {
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle, integrations } = useApp();
 
-  const totalWorkers = employees.length;
-  const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
+  const workerEmployees = employees.filter(e => (e.role || '').toLowerCase() !== 'owner');
+  const totalWorkers = workerEmployees.length;
+  const presentToday = workerEmployees.filter(e => e.attendanceStatus === 'Present').length;
   const driversCount = employees.filter(e => (e.role || '').toLowerCase().includes('driver')).length;
   const loadmenCount = employees.filter(e => (e.role || '').toLowerCase().includes('loadman')).length;
   const activeVehicles = vehicles.filter(v => v.status === 'MOVING' || v.status === 'STOPPED').length;
@@ -460,12 +461,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.length === 0 ? (
+                  {workerEmployees.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center text-slate-400 py-4 font-semibold text-xs">No active staff accounts registered.</td>
                     </tr>
                   ) : (
-                    employees.map(emp => {
+                    workerEmployees.map(emp => {
                       const roleNorm = (emp.role || '').toLowerCase();
                       const isOwner = roleNorm.includes('owner');
                       let shiftProgressStr = '100%';

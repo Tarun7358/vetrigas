@@ -21,11 +21,13 @@ export const WorkforcePage: React.FC = () => {
   const [newPhone, setNewPhone] = useState('+91 ');
   const [newHourlyRate, setNewHourlyRate] = useState(75);
 
-  const filtered = employees.filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase()) ||
-    e.role.toLowerCase().includes(search.toLowerCase()) ||
-    (e.email || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = employees
+    .filter(e => (e.role || '').toLowerCase() !== 'owner')
+    .filter(e =>
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
+      e.role.toLowerCase().includes(search.toLowerCase()) ||
+      (e.email || '').toLowerCase().includes(search.toLowerCase())
+    );
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();

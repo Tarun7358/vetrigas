@@ -4,6 +4,7 @@ import { TrendingUp } from 'lucide-react';
 
 export const PerformancePage: React.FC = () => {
   const { employees, deliveries } = useApp();
+  const workerEmployees = employees.filter(e => (e.role || '').toLowerCase() !== 'owner');
 
   return (
     <div className="space-y-6">
@@ -25,7 +26,7 @@ export const PerformancePage: React.FC = () => {
       <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
         <h2 className="font-display font-bold text-base text-slate-900">Performance Summary Matrix</h2>
         <div className="space-y-3">
-          {employees.map(emp => {
+          {workerEmployees.map(emp => {
             const roleNorm = (emp.role || '').toLowerCase();
             const isOwner = roleNorm.includes('owner');
             
