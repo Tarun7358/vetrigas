@@ -11,6 +11,7 @@ frontend/dist/
 backend/dist/
 frontend/build/
 backend/build/
+release/
 *.tsbuildinfo
 
 # Flutter & Android build artifacts
