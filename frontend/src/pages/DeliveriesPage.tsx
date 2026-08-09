@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X, Navigation, QrCode, DollarSign, ShieldCheck, Camera } from 'lucide-react';
+import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X, Navigation, QrCode, DollarSign, ShieldCheck, Camera, Compass } from 'lucide-react';
 import { EBillModal } from '../components/EBillModal';
 import type { BillRecord, DeliveryItem } from '../types';
 import { sendWhatsAppReceipt } from '../utils/whatsappReceipt';
@@ -11,6 +11,10 @@ export const DeliveriesPage: React.FC = () => {
   const { deliveries, bills, completeDelivery, verifyCashProof, addOrder, role, currentUser } = useApp();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBill, setSelectedBill] = useState<BillRecord | null>(null);
+
+  // Live Navigation State
+  const [activeNavDelivery, setActiveNavDelivery] = useState<DeliveryItem | null>(null);
+  const [currentCoords, setCurrentCoords] = useState<{ lat: number; lng: number; speed: number } | null>(null);
 
   // Modals state
   const [showOrderModal, setShowOrderModal] = useState<boolean>(false);
@@ -35,6 +39,38 @@ export const DeliveriesPage: React.FC = () => {
 
   const isDriver = role === 'DRIVER';
   const isManagementOrStaff = role === 'OWNER' || role === 'MANAGER' || role === 'GODOWN_KEEPER' || role === 'STOREROOM_STAFF';
+
+  // Live GPS Geolocation Watcher for Navigation
+  useEffect(() => {
+    let watchId: number | null = null;
+
+    if (activeNavDelivery && 'geolocation' in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        pos => {
+          setCurrentCoords({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            speed: Math.round((pos.coords.speed || 0) * 3.6),
+          });
+        },
+        err => console.warn('Geolocation navigation warning:', err),
+        { enableHighAccuracy: true }
+      );
+    } else {
+      setCurrentCoords({ lat: 11.0168, lng: 76.9558, speed: 38 });
+    }
+
+    return () => {
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+    };
+  }, [activeNavDelivery]);
+
+  const handleStartNavigation = (del: DeliveryItem) => {
+    setActiveNavDelivery(del);
+    // Also launch Google Maps navigation turn-by-turn
+    const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(del.customerAddress + ', Coimbatore')}`;
+    window.open(mapUrl, '_blank');
+  };
 
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,11 +125,26 @@ export const DeliveriesPage: React.FC = () => {
     completeDelivery(fulfillItem.id, paymentMode, undefined, cashProofImage || undefined);
     soundAlerts.playSuccessSyncChime();
 
+    // Auto-generate instant E-Bill object for immediate modal preview & download
+    const billNo = `VI-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+    const newBillRecord: BillRecord = {
+      id: `bill-${Date.now()}`,
+      billNumber: billNo,
+      customerName: fulfillItem.customerName,
+      amount: fulfillItem.amount,
+      paymentMethod: paymentMode === 'UPI' ? 'UPI' : 'CASH',
+      transactionId: `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
+      driverName: fulfillItem.driverName,
+      date: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      status: 'PAID',
+      cylinderCount: fulfillItem.cylinderCount,
+    };
+
     // Trigger WhatsApp digital receipt dispatch
     sendWhatsAppReceipt({
       customerName: fulfillItem.customerName,
       customerPhone: fulfillItem.customerPhone,
-      billNumber: `MEMO-${Math.floor(100000 + Math.random() * 900000)}`,
+      billNumber: billNo,
       cylinderCount: fulfillItem.cylinderCount,
       amount: fulfillItem.amount,
       paymentMethod: paymentMode === 'UPI' ? 'UPI / Dynamic QR' : 'Cash (Proof Attached)',
@@ -101,9 +152,12 @@ export const DeliveriesPage: React.FC = () => {
       vehicleNumber: fulfillItem.vehicleNumber,
     });
 
+    // Close fulfillment modal, stop live nav, and pop open E-Bill Modal
     setFulfillItem(null);
+    setActiveNavDelivery(null);
     setCashProofImage('');
     setCashProofFileName('');
+    setSelectedBill(newBillRecord);
   };
 
   const filtered = statusFilter === 'ALL'
@@ -129,7 +183,7 @@ export const DeliveriesPage: React.FC = () => {
               Delivery Operations & Customer Dispatch
             </h1>
             <p className="text-xs text-slate-400">
-              {isDriver ? 'Assigned Field Deliveries, Address Navigation & Payment Collection' : 'Real-Time LPG Delivery Board, Order Posting & Cash Verification Hub'}
+              {isDriver ? 'Assigned Field Deliveries, Turn-by-Turn Route Navigation & Payment Collection' : 'Real-Time LPG Delivery Board, Order Posting & Cash Verification Hub'}
             </p>
           </div>
         </div>
@@ -164,6 +218,58 @@ export const DeliveriesPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* LIVE DRIVER GPS ROUTE NAVIGATION HUD BANNER */}
+      {activeNavDelivery && (
+        <div className="bg-slate-950 border-2 border-emerald-500 rounded-3xl p-5 text-white shadow-2xl space-y-4 animate-in slide-in-from-top-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 animate-pulse">
+                <Compass className="w-6 h-6 animate-spin" />
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-emerald-400 font-bold">LIVE GPS ROUTE NAVIGATION ACTIVE</span>
+                <h3 className="font-display font-extrabold text-lg text-white">En Route to: {activeNavDelivery.customerName}</h3>
+                <p className="text-xs text-slate-300 flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5 text-amber-400" /> {activeNavDelivery.customerAddress}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs font-mono">
+              <div className="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                <span className="text-slate-400">Speed: </span>
+                <span className="text-emerald-400 font-bold">{currentCoords?.speed || 40} KM/H</span>
+              </div>
+              <div className="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                <span className="text-slate-400">GPS: </span>
+                <span className="text-amber-400">{currentCoords?.lat.toFixed(4) || '11.0168'} N, {currentCoords?.lng.toFixed(4) || '76.9558'} E</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(activeNavDelivery.customerAddress + ', Coimbatore')}`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-colors"
+            >
+              <Navigation className="w-4 h-4" /> Open Turn-by-Turn Maps Directions
+            </a>
+
+            <button
+              onClick={() => {
+                setFulfillItem(activeNavDelivery);
+                setPaymentMode('UPI');
+              }}
+              className="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-6 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer transition-all"
+            >
+              <CheckCircle2 className="w-4 h-4" /> Arrived at Destination — Collect Payment
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto bg-white p-3 rounded-2xl border border-slate-200 shadow-sm text-xs">
@@ -221,15 +327,13 @@ export const DeliveriesPage: React.FC = () => {
                     <p className="text-[11px] leading-tight text-slate-700 font-medium">{del.customerAddress}</p>
                   </div>
 
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(del.customerAddress + ', Coimbatore')}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="w-full inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold py-1.5 rounded-lg text-[11px] shadow-xs transition-colors"
+                  <button
+                    onClick={() => handleStartNavigation(del)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded-xl text-[11px] shadow-sm transition-colors cursor-pointer"
                   >
                     <Navigation className="w-3.5 h-3.5" />
-                    <span>📍 Navigate to Customer Location</span>
-                  </a>
+                    <span>📍 Start GPS Route Navigation</span>
+                  </button>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
