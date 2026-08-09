@@ -332,11 +332,17 @@ app.post('/api/gps/update', async (req: Request, res: Response) => {
 });
 
 // Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
+let lastGpsPacketTimestamp: number | null = null;
+let lastBiometricPunchTimestamp: number | null = null;
+
+// Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
 app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
   const { deviceId, imei, vehicleRegistration, speed, ignition, lat, lng, fuelLevel, idleMinutes } = req.body;
   const numSpeed = Number(speed) || 0;
   const isIgnition = Boolean(ignition);
   const targetReg = vehicleRegistration || 'TN 38 AU 4821';
+
+  lastGpsPacketTimestamp = Date.now();
 
   console.log(`[INFO] [GPS TELEMETRY] Payload: Device/IMEI: ${deviceId || imei} | Vehicle: ${targetReg} | Speed: ${numSpeed} km/h | Ignition: ${isIgnition}`);
 
@@ -373,6 +379,8 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
 app.post('/integrations/biometrics/clock-in', async (req: Request, res: Response) => {
   const { employeeId, email, deviceId, templateHash, status, timestamp } = req.body;
   const targetId = employeeId || 'emp-01';
+
+  lastBiometricPunchTimestamp = Date.now();
 
   console.log(`[INFO] [BIOMETRIC HARDWARE] Fingerprint Scan Received | Device: ${deviceId || 'BIO-GODOWN-01'} | Employee: ${targetId} | Status: ${status || 'VERIFIED'}`);
 
@@ -714,21 +722,25 @@ app.put('/api/payroll/:id', async (req: Request, res: Response) => {
 
 // ── REAL-TIME HARDWARE TELEMETRY HEARTBEAT ENDPOINT ──────────────────────────
 app.get('/api/telemetry/status', (req: Request, res: Response) => {
+  const now = Date.now();
+  const gpsOnline = lastGpsPacketTimestamp !== null && (now - lastGpsPacketTimestamp) < 60000;
+  const bioOnline = lastBiometricPunchTimestamp !== null && (now - lastBiometricPunchTimestamp) < 60000;
+
   res.json({
     success: true,
     fleettrackGps: {
-      status: 'ONLINE',
-      latencyMs: 12,
-      activeUnits: 4,
+      status: gpsOnline ? 'ONLINE' : 'OFFLINE',
+      latencyMs: gpsOnline ? 12 : 0,
+      activeUnits: gpsOnline ? 1 : 0,
       protocol: 'TCP Port 8088 (Teltonika M2M)',
-      lastPacketSecAgo: 2,
+      lastPacketSecAgo: lastGpsPacketTimestamp ? Math.floor((now - lastGpsPacketTimestamp) / 1000) : null,
     },
     easyTimeProBiometrics: {
-      status: 'ONLINE',
-      latencyMs: 18,
+      status: bioOnline ? 'ONLINE' : 'OFFLINE',
+      latencyMs: bioOnline ? 18 : 0,
       terminalIp: '192.168.1.105 (Peelamedu Depot)',
       sdk: 'ZKTeco Push SDK v3.0',
-      lastPunchSecAgo: 14,
+      lastPunchSecAgo: lastBiometricPunchTimestamp ? Math.floor((now - lastBiometricPunchTimestamp) / 1000) : null,
     },
   });
 });
