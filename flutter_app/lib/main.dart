@@ -74,11 +74,11 @@ class RoleSelectScreen extends StatefulWidget {
 }
 
 class _RoleSelectScreenState extends State<RoleSelectScreen> {
-  String selectedRole = 'DRIVER';
+  String selectedRole = 'OWNER';
   final TextEditingController _emailController =
-      TextEditingController(text: 'arun.driver@vetriindane.com');
+      TextEditingController(text: 'owner@vetriindane.com');
   final TextEditingController _passwordController =
-      TextEditingController(text: 'Arun@2026');
+      TextEditingController(text: 'Vetri@2026');
   bool _obscurePassword = true;
   bool _isLoading = false;
 

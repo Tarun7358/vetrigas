@@ -122,20 +122,11 @@ export async function seedDatabase() {
       )
     `);
 
-    // Seed initial employees if table is empty
+    // Seed initial employee (Owner ONLY)
     const empCheck = await fetchOne('SELECT COUNT(*) as count FROM employees');
     if (empCheck && empCheck.count === 0) {
       const initialEmployees = [
-        ['emp-00', 'Vetri', 'Owner', 'owner@vetriindane.com', 'Vetri@2026', '+91 96008 70814', '01 Jan 2023', 'Present', '9h 00m', '100%', 100, 'Active', 150],
-        ['emp-01', 'Arun', 'Driver', 'arun.driver@vetriindane.com', 'Arun@2026', '+91 98765 43210', '12 Jan 2024', 'Present', '8h 42m', '17/24', 95, 'Active', 85],
-        ['emp-02', 'Kumar', 'Loadman', 'kumar.loadman@vetriindane.com', 'Kumar@2026', '+91 98765 43211', '05 Mar 2024', 'Present', '9h 05m', '86/100', 94, 'Active', 70],
-        ['emp-03', 'Suresh', 'Driver', 'suresh.driver@vetriindane.com', 'Suresh@2026', '+91 98765 43212', '18 Jun 2023', 'Present', '8h 50m', '21/25', 96, 'Active', 90],
-        ['emp-04', 'Ramesh', 'Driver', 'ramesh.driver@vetriindane.com', 'Ramesh@2026', '+91 98765 43213', '10 Nov 2023', 'Present', '7h 15m', '14/20', 88, 'Active', 85],
-        ['emp-05', 'Vijay', 'Driver', 'vijay.driver@vetriindane.com', 'Vijay@2026', '+91 98765 43214', '01 Feb 2024', 'Late', '4h 30m', '5/18', 82, 'Active', 80],
-        ['emp-06', 'Murugan', 'Loadman', 'murugan.loadman@vetriindane.com', 'Murugan@2026', '+91 98765 43215', '22 Aug 2023', 'Present', '8h 40m', '92/100', 97, 'Active', 70],
-        ['emp-07', 'Santhosh', 'Manager', 'santhosh.manager@vetriindane.com', 'Santhosh@2026', '+91 98765 00002', '01 Jan 2023', 'Present', '9h 30m', '100%', 99, 'Active', 120],
-        ['emp-08', 'Karthik', 'Godown Keeper', 'karthik.godown@vetriindane.com', 'Karthik@2026', '+91 98765 00003', '15 Feb 2024', 'Present', '8h 30m', 'Stock Verified', 96, 'Active', 95],
-        ['emp-09', 'Priya', 'Storeroom Staff', 'priya.office@vetriindane.com', 'Priya@2026', '+91 98765 00004', '10 Jan 2024', 'Present', '9h 00m', 'Analytics Sync', 98, 'Active', 110]
+        ['emp-00', 'Vetri', 'Owner', 'owner@vetriindane.com', 'Vetri@2026', '+91 96008 70814', '01 Jan 2023', 'Present', '9h 00m', '100%', 100, 'Active', 150]
       ];
 
       for (const emp of initialEmployees) {
@@ -148,8 +139,12 @@ export async function seedDatabase() {
           empRecord
         );
       }
-      console.log('✓ Initial Employee data seeded into SQLite Database with PBKDF2 salted password hashing!');
+      console.log('✓ Owner Employee account seeded into SQLite Database with PBKDF2 salted password hashing!');
     }
+
+    // Explicitly delete any legacy demo worker accounts except Owner (emp-00)
+    await runQuery(`DELETE FROM employees WHERE id != 'emp-00' AND role != 'Owner'`);
+    console.log('✓ Purged all employee accounts from SQLite database except Owner (emp-00).');
 
     // Seed initial vehicles if table is empty
     const vehCheck = await fetchOne('SELECT COUNT(*) as count FROM vehicles');
