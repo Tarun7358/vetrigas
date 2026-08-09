@@ -673,7 +673,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           </div>
                           <div className="flex justify-between border-b border-slate-900 pb-1">
                             <span className="text-slate-400">Monitored Trucks:</span>
-                            <span className="text-slate-200">{vehicles.length} Vehicles ({vehicles.slice(0, 2).map(v => v.registrationNumber).join(', ')}{vehicles.length > 2 ? '...' : ''})</span>
+                            <span className={integrations.fleettrackConnected && vehicles.length > 0 ? 'text-slate-200' : 'text-rose-400 font-medium'}>
+                              {integrations.fleettrackConnected
+                                ? (vehicles.length > 0 ? `${vehicles.length} Vehicles (${vehicles.slice(0, 2).map(v => v.registrationNumber).join(', ')}${vehicles.length > 2 ? '...' : ''})` : '0 Vehicles Registered')
+                                : '0 Active Streams (Hardware Standby)'
+                              }
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Live Packet Rate:</span>

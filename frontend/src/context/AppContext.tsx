@@ -73,7 +73,7 @@ interface AppContextType {
 
 import vetriDataset from '../data/vetriDataset.json';
 
-const initialVehicles: Vehicle[] = (vetriDataset.vehicles as Vehicle[]) || [];
+const initialVehicles: Vehicle[] = [];
 const initialEmployees: Employee[] = [
   {
     id: 'emp-00',
