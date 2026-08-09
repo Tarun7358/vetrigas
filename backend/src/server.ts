@@ -29,6 +29,7 @@ const ALLOWED_ORIGINS = [
   'https://vetriindane.com',
   'https://www.vetriindane.com',
   // Netlify deployment URLs
+  'https://lovely-sunburst-74bfc0.netlify.app',
   'https://vetriindane.netlify.app',
   'https://vetri-indane.netlify.app',
   // Render backend (internal)
