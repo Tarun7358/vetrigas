@@ -135,6 +135,29 @@ export async function seedDatabase() {
       )
     `);
 
+    // 9. Payroll Table (Automated Incentives & Owner Month-End Validation)
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS payroll (
+        id TEXT PRIMARY KEY,
+        employeeId TEXT,
+        employeeName TEXT,
+        role TEXT,
+        regularHours REAL,
+        hourlyRate REAL,
+        otHours REAL,
+        otRate REAL,
+        cylinderIncentive REAL,
+        bonus REAL,
+        deduction REAL,
+        netSalary REAL,
+        ownerAdjustedSalary REAL,
+        ownerNotes TEXT,
+        approvedByOwner INTEGER,
+        status TEXT,
+        month TEXT
+      )
+    `);
+
     // Seed initial employee (Owner ONLY)
     const empCheck = await fetchOne('SELECT COUNT(*) as count FROM employees');
     if (empCheck && empCheck.count === 0) {
