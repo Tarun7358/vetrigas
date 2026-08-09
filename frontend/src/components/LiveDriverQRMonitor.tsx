@@ -5,9 +5,13 @@ import { EBillModal } from './EBillModal';
 import type { BillRecord, DeliveryItem } from '../types';
 
 export const LiveDriverQRMonitor: React.FC = () => {
-  const { deliveries, bills, confirmOwnerGPayPayment } = useApp();
+  const { deliveries, bills, confirmOwnerGPayPayment, role } = useApp();
   const [selectedQRItem, setSelectedQRItem] = useState<DeliveryItem | null>(null);
   const [selectedEBill, setSelectedEBill] = useState<BillRecord | null>(null);
+
+  // Permission flags strictly enforcing hierarchy: OWNER > STOREROOM_STAFF > MANAGER > GODOWN_KEEPER > LOADMAN > DRIVER
+  const canConfirmOrEdit = role === 'OWNER' || role === 'STOREROOM_STAFF' || role === 'MANAGER';
+  const isHighAdmin = role === 'OWNER' || role === 'STOREROOM_STAFF';
 
   // Filter completed deliveries or bills with payments
   const completedDeliveries = deliveries.filter(d => d.status === 'DELIVERED');
@@ -139,12 +143,18 @@ export const LiveDriverQRMonitor: React.FC = () => {
                 {/* Actions */}
                 <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-2 text-xs">
                   {isPendingGPay ? (
-                    <button
-                      onClick={() => confirmOwnerGPayPayment(del.id)}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5" /> ✓ Confirm Owner GPay Received
-                    </button>
+                    canConfirmOrEdit ? (
+                      <button
+                        onClick={() => confirmOwnerGPayPayment(del.id)}
+                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> ✓ Confirm Owner GPay Received (Staff/Owner)
+                      </button>
+                    ) : (
+                      <div className="w-full bg-purple-950/60 border border-purple-800 text-purple-300 font-bold py-1.5 rounded-xl text-[11px] text-center">
+                        ⏳ Pending Staff/Owner GPay Verification
+                      </div>
+                    )
                   ) : isUPI ? (
                     <button
                       onClick={() => setSelectedQRItem(del)}
@@ -231,9 +241,23 @@ export const LiveDriverQRMonitor: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">Status:</span>
-                  <span className="text-emerald-400 font-bold">✓ PAYMENT VERIFIED</span>
+                  <span className="text-emerald-400 font-bold">
+                    {selectedQRItem.paymentStatus === 'PENDING' ? '⏳ PENDING VERIFICATION' : '✓ PAYMENT VERIFIED'}
+                  </span>
                 </div>
               </div>
+
+              {isHighAdmin && selectedQRItem.paymentStatus === 'PENDING' && (
+                <button
+                  onClick={() => {
+                    confirmOwnerGPayPayment(selectedQRItem.id);
+                    setSelectedQRItem(null);
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" /> Admin Override: Confirm GPay Payment Received
+                </button>
+              )}
             </div>
 
             <button
