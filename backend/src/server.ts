@@ -364,10 +364,10 @@ app.post('/api/vehicles', async (req: Request, res: Response) => {
 
   try {
     await runQuery(
-      `INSERT INTO vehicles (id, registrationNumber, driverName, driverId, status, speed, ignition, todayDistanceKm, completedDeliveries, totalDeliveries, lat, lng, hasCamera, cameraStatus)
-       VALUES (?, ?, ?, ?, 'STOPPED', 0, 0, 0, 0, 0, 11.0168, 76.9558, ?, ?)
-       ON CONFLICT(registrationNumber) DO UPDATE SET driverName = excluded.driverName, hasCamera = excluded.hasCamera`,
-      [vehicleId, regNo, dName, driverId || 'emp-01', hasCamera ? 1 : 0, cameraStatus || 'OFFLINE']
+      `INSERT INTO vehicles (id, registrationNumber, driverName, driverId, gpsDeviceId, simCardNumber, status, speed, ignition, todayDistanceKm, completedDeliveries, totalDeliveries, lat, lng, hasCamera, cameraStatus)
+       VALUES (?, ?, ?, ?, ?, ?, 'STOPPED', 0, 0, 0, 0, 0, 11.0168, 76.9558, ?, ?)
+       ON CONFLICT(registrationNumber) DO UPDATE SET driverName = excluded.driverName, gpsDeviceId = excluded.gpsDeviceId, simCardNumber = excluded.simCardNumber, hasCamera = excluded.hasCamera`,
+      [vehicleId, regNo, dName, driverId || 'emp-01', gpsDeviceId || null, simCardNumber || null, hasCamera ? 1 : 0, cameraStatus || 'OFFLINE']
     );
 
     console.log(`[SQL DATABASE VEHICLE ADDED] ${regNo} (GPS IMEI: ${gpsDeviceId || 'N/A'}, Driver: ${dName})`);
@@ -435,8 +435,8 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
     try {
       const isMoving = numSpeed > 0 ? 'MOVING' : 'STOPPED';
       await runQuery(
-        `UPDATE vehicles SET lat = ?, lng = ?, speed = ?, ignition = ?, status = ? WHERE registrationNumber = ? OR id = ?`,
-        [Number(lat), Number(lng), numSpeed, isIgnition ? 1 : 0, isMoving, targetReg, deviceId || 'v1']
+        `UPDATE vehicles SET lat = ?, lng = ?, speed = ?, ignition = ?, status = ? WHERE gpsDeviceId = ? OR gpsDeviceId = ? OR registrationNumber = ? OR id = ?`,
+        [Number(lat), Number(lng), numSpeed, isIgnition ? 1 : 0, isMoving, deviceId || '', imei || '', targetReg, deviceId || 'v1']
       );
 
       // Automated Telemetry Alarm Triggers

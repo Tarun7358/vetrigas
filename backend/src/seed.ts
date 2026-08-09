@@ -29,6 +29,8 @@ export async function seedDatabase() {
         registrationNumber TEXT UNIQUE NOT NULL,
         driverName TEXT,
         driverId TEXT,
+        gpsDeviceId TEXT,
+        simCardNumber TEXT,
         status TEXT,
         speed INTEGER,
         ignition INTEGER,
@@ -41,6 +43,10 @@ export async function seedDatabase() {
         cameraStatus TEXT
       )
     `);
+
+    // Ensure columns exist for existing databases
+    try { await runQuery(`ALTER TABLE vehicles ADD COLUMN gpsDeviceId TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE vehicles ADD COLUMN simCardNumber TEXT`); } catch (e) {}
 
     // 3. Vehicle Expenses Table Schema
     await runQuery(`
