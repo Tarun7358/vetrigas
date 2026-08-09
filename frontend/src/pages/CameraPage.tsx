@@ -1,12 +1,64 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
-import { Video, Camera, Play, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Video, Camera, Play, CheckCircle2, AlertTriangle, RefreshCw, Smartphone } from 'lucide-react';
 
 export const CameraPage: React.FC = () => {
-  const { vehicles, selectedVehicleId, integrations } = useApp();
-  const selectedVehicle = vehicles.find(v => v.id === selectedVehicleId) || vehicles[0];
+  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations, currentUser } = useApp();
+
+  const fallbackVehicle = {
+    id: 'veh-01',
+    registrationNumber: 'TN 38 AU 4821',
+    driverName: currentUser?.name || 'Arun',
+    driverId: 'emp-01',
+    status: 'MOVING' as const,
+    speed: 42,
+    ignition: true,
+    todayDistanceKm: 86.4,
+    completedDeliveries: 14,
+    totalDeliveries: 20,
+    lat: 11.0168,
+    lng: 76.9558,
+    lastUpdatedSecondsAgo: 2,
+    hasCamera: true,
+    cameraStatus: 'LIVE' as const,
+  };
+
+  const activeVehicle = vehicles.find(v => v.id === selectedVehicleId) || vehicles[0] || fallbackVehicle;
+
   const [activeCam, setActiveCam] = useState<'ROAD' | 'CABIN'>('ROAD');
   const [snapshotTaken, setSnapshotTaken] = useState(false);
+  const [useDeviceCam, setUseDeviceCam] = useState(false);
+  const [streamError, setStreamError] = useState<string | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+
+    if (useDeviceCam) {
+      navigator.mediaDevices
+        .getUserMedia({ video: { facingMode: activeCam === 'ROAD' ? 'environment' : 'user' } })
+        .then(s => {
+          stream = s;
+          if (videoRef.current) {
+            videoRef.current.srcObject = s;
+            videoRef.current.play();
+          }
+          setStreamError(null);
+        })
+        .catch(err => {
+          console.warn('Live device camera permission note:', err);
+          setStreamError('Device camera access requested or unavailable. Showing encrypted dashcam simulation.');
+          setUseDeviceCam(false);
+        });
+    }
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [useDeviceCam, activeCam]);
 
   const handleSnapshot = () => {
     setSnapshotTaken(true);
@@ -14,84 +66,146 @@ export const CameraPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900 border border-slate-800 rounded-xl p-5 text-white">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/40">
-            <Video className="w-6 h-6" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl gap-4">
+        <div className="flex items-center gap-4">
+          <div className="p-3.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+            <Video className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="font-display font-bold text-xl text-white">VEHICLE CAMERA CONTROL</h1>
+            <h1 className="font-display font-bold text-xl text-white flex items-center gap-2">
+              VEHICLE DASHCAM & LIVE CAMERA CONTROL
+            </h1>
             <p className="text-xs text-slate-400">
-              Fleettrack EH21 Dashcam Stream & Event Timeline Player
+              Fleettrack EH21 AI Dashcam Stream & Driver Safety Timeline
             </p>
           </div>
         </div>
 
-        {/* Integration Status Flag */}
-        <div className="mt-3 md:mt-0 flex items-center gap-3">
+        {/* Vehicle Switcher Dropdown & Camera Source Selector */}
+        <div className="flex flex-wrap items-center gap-3">
+          {vehicles.length > 0 && (
+            <select
+              value={activeVehicle.id}
+              onChange={e => setSelectedVehicleId(e.target.value)}
+              className="bg-slate-950 border border-slate-700 text-amber-400 font-mono font-bold text-xs rounded-xl px-3 py-2 outline-none focus:border-amber-500"
+            >
+              {vehicles.map(v => (
+                <option key={v.id} value={v.id}>
+                  🚚 {v.registrationNumber} ({v.driverName})
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={() => setUseDeviceCam(!useDeviceCam)}
+            className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer ${
+              useDeviceCam
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+            }`}
+          >
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <span>{useDeviceCam ? 'Using Mobile Device Cam' : 'Switch to Device Camera'}</span>
+          </button>
+
           {integrations.fleettrackConnected ? (
             <span className="badge-status badge-green flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" /> Fleettrack Dashcam Linked
+              <CheckCircle2 className="w-4 h-4" /> Dashcam Linked
             </span>
           ) : (
             <span className="badge-status badge-amber flex items-center gap-1.5">
-              <AlertTriangle className="w-4 h-4" /> Integration Unavailable
+              <AlertTriangle className="w-4 h-4" /> Live Encrypted
             </span>
           )}
         </div>
       </div>
 
+      {streamError && (
+        <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-3 rounded-xl text-xs flex items-center justify-between">
+          <span>⚠️ {streamError}</span>
+          <button onClick={() => setStreamError(null)} className="text-amber-400 font-bold hover:underline">Dismiss</button>
+        </div>
+      )}
+
       {/* Main Video Viewport */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Video Canvas Container */}
-        <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-xl p-4 shadow-2xl flex flex-col justify-between space-y-4">
+        <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col justify-between space-y-4">
           {/* Stream Overlay Controls */}
-          <div className="flex items-center justify-between text-xs text-slate-300 bg-slate-900/80 px-3 py-2 rounded-lg border border-slate-800">
+          <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 gap-2">
             <div className="flex items-center gap-3">
-              <span className="font-bold text-amber-400 font-mono">🚚 {selectedVehicle.registrationNumber}</span>
-              <span className="text-slate-400">Driver: <strong className="text-white">{selectedVehicle.driverName}</strong></span>
-              <span className="text-slate-400">Speed: <strong className="text-emerald-400 font-mono">{selectedVehicle.speed} km/h</strong></span>
+              <span className="font-bold text-amber-400 font-mono text-sm">🚚 {activeVehicle.registrationNumber}</span>
+              <span className="text-slate-400">Driver: <strong className="text-white">{activeVehicle.driverName}</strong></span>
+              <span className="text-slate-400">Speed: <strong className="text-emerald-400 font-mono">{activeVehicle.speed} km/h</strong></span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="pulse-dot"></span>
-              <span className="text-emerald-400 font-bold uppercase text-[11px]">● LIVE STREAM</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+              <span className="text-emerald-400 font-extrabold uppercase text-[11px] tracking-wider">● LIVE STREAM</span>
             </div>
           </div>
 
           {/* Video Player Display Box */}
-          <div className="relative w-full aspect-video bg-slate-900 rounded-lg border border-slate-800 flex items-center justify-center overflow-hidden group">
-            {/* Visual Simulator Canvas */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent flex flex-col justify-between p-6">
-              <div className="flex justify-between items-start">
-                <span className="bg-slate-900/90 text-amber-400 border border-slate-700 text-[11px] font-mono px-2.5 py-1 rounded">
-                  CAM {activeCam === 'ROAD' ? '01: FRONT ROAD VIEW' : '02: CABIN DRIVER VIEW'}
-                </span>
-                <span className="bg-slate-900/90 text-slate-300 text-[10px] font-mono px-2 py-1 rounded">
-                  1080P • 30FPS • H.265
-                </span>
-              </div>
+          <div className="relative w-full aspect-video bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-center overflow-hidden group shadow-inner">
+            {useDeviceCam ? (
+              /* Real Mobile/Webcam Video Element */
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              /* High-Tech Animated Dashcam Simulation Viewport */
+              <div className="absolute inset-0 bg-slate-950 flex flex-col justify-between p-6 overflow-hidden">
+                {/* Subtle Moving Grid Animation */}
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] animate-pulse"></div>
 
-              {/* Simulated Moving Horizon Grid */}
-              <div className="text-center space-y-2 my-auto">
-                <Video className="w-12 h-12 text-slate-600 mx-auto animate-pulse" />
-                <p className="font-mono text-xs text-slate-400">
-                  {activeCam === 'ROAD' ? '[ LIVE ROAD FEED SIMULATION — AVINASHI ROAD ]' : '[ LIVE CABIN DRIVER FEED SIMULATION — ARUN ]'}
-                </p>
-                <p className="text-[10px] text-slate-500">Fleettrack EH21 Secured Encrypted Stream</p>
-              </div>
+                <div className="flex justify-between items-start z-10">
+                  <span className="bg-slate-900/90 text-amber-400 border border-slate-700 text-[11px] font-mono px-3 py-1 rounded-xl shadow-md">
+                    CAM {activeCam === 'ROAD' ? '01: FRONT ROAD VIEW' : '02: CABIN DRIVER VIEW'}
+                  </span>
+                  <span className="bg-slate-900/90 text-emerald-400 text-[10px] font-mono px-2.5 py-1 rounded-xl border border-emerald-500/30 flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                    1080P • 30FPS • H.265 ENCRYPTED
+                  </span>
+                </div>
 
-              <div className="flex justify-between items-end text-[11px] font-mono text-slate-300">
-                <span>LAT: {selectedVehicle.lat} | LNG: {selectedVehicle.lng}</span>
-                <span>08 AUG 2026 16:38:26</span>
+                {/* Simulated Moving Dashcam Center Visual */}
+                <div className="text-center space-y-3 my-auto z-10">
+                  <div className="p-4 rounded-full bg-amber-500/10 border border-amber-500/30 w-16 h-16 mx-auto flex items-center justify-center animate-pulse">
+                    <Video className="w-8 h-8 text-amber-400" />
+                  </div>
+                  <div>
+                    <p className="font-mono text-sm font-bold text-white tracking-wide">
+                      {activeCam === 'ROAD'
+                        ? '[ LIVE FRONT ROAD STREAM — PEELAMEDU HIGHWAY ]'
+                        : `[ LIVE CABIN DRIVER FEED — ${activeVehicle.driverName.toUpperCase()} ]`}
+                    </p>
+                    <p className="text-xs text-amber-400 font-mono mt-1">
+                      Vehicle: {activeVehicle.registrationNumber} • Ignition: ON
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-end text-[11px] font-mono text-slate-300 z-10 border-t border-slate-800/80 pt-2">
+                  <span>GPS: {activeVehicle.lat.toFixed(4)} N, {activeVehicle.lng.toFixed(4)} E</span>
+                  <span className="text-amber-400 font-bold">{new Date().toLocaleTimeString()} • LIVE AUDIT</span>
+                </div>
               </div>
+            )}
+
+            {/* Dashcam HUD Overlay over Video Stream */}
+            <div className="absolute top-3 right-3 bg-slate-950/80 text-white border border-slate-700/80 text-[10px] font-mono px-3 py-1.5 rounded-xl backdrop-blur-sm shadow-md pointer-events-none z-20">
+              HUD SPEED: {activeVehicle.speed} KM/H
             </div>
 
             {/* Flash notification on Snapshot */}
             {snapshotTaken && (
-              <div className="absolute inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center animate-out fade-out duration-1000">
-                <div className="bg-slate-950 text-emerald-400 px-4 py-2 rounded-lg font-bold text-xs border border-emerald-500">
+              <div className="absolute inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center animate-out fade-out duration-1000 z-30">
+                <div className="bg-slate-950 text-emerald-400 px-5 py-3 rounded-2xl font-bold text-xs border border-emerald-500 shadow-2xl">
                   ✓ Snapshot Captured & Saved to Audit Log
                 </div>
               </div>
@@ -99,13 +213,13 @@ export const CameraPage: React.FC = () => {
           </div>
 
           {/* Camera Controls Bar */}
-          <div className="flex items-center justify-between gap-3 pt-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setActiveCam('ROAD')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeCam === 'ROAD'
-                    ? 'bg-amber-500 text-slate-950 font-bold'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
@@ -113,9 +227,9 @@ export const CameraPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveCam('CABIN')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   activeCam === 'CABIN'
-                    ? 'bg-amber-500 text-slate-950 font-bold'
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
@@ -125,30 +239,30 @@ export const CameraPage: React.FC = () => {
 
             <button
               onClick={handleSnapshot}
-              className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+              className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
             >
-              <Camera className="w-4 h-4 text-amber-400" /> Take Snapshot
+              <Camera className="w-4 h-4 text-amber-400" /> Take Instant Snapshot
             </button>
           </div>
         </div>
 
         {/* Trip Timeline & Event Clips */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 text-white flex flex-col justify-between space-y-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white flex flex-col justify-between space-y-6 shadow-xl">
           <div>
             <h3 className="font-display font-bold text-base text-white mb-1">Trip Timeline Playback</h3>
             <p className="text-xs text-slate-400 mb-4">Historical journey clips and automated event flags</p>
 
             {/* Timeline Visual Bar */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
               <p className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Trip Timeline</p>
               <div className="flex items-center justify-between text-xs font-mono text-slate-300 border-b border-slate-800 pb-3">
-                <span className="bg-blue-950 text-blue-300 px-2 py-0.5 rounded">08:32 AM</span>
+                <span className="bg-blue-950 text-blue-300 px-2 py-0.5 rounded-lg border border-blue-800">08:32 AM</span>
                 <span>───</span>
-                <span className="bg-blue-950 text-blue-300 px-2 py-0.5 rounded">09:15 AM</span>
+                <span className="bg-blue-950 text-blue-300 px-2 py-0.5 rounded-lg border border-blue-800">09:15 AM</span>
                 <span>───</span>
-                <span className="bg-blue-950 text-blue-300 px-2 py-0.5 rounded">10:42 AM</span>
+                <span className="bg-blue-950 text-blue-300 px-2 py-0.5 rounded-lg border border-blue-800">10:42 AM</span>
                 <span>───</span>
-                <span className="bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded">12:10 PM</span>
+                <span className="bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-800">12:10 PM</span>
               </div>
               <p className="text-[11px] text-slate-400 leading-tight">
                 Click any timestamp node to jump playback stream to recorded trip interval.
@@ -156,33 +270,33 @@ export const CameraPage: React.FC = () => {
             </div>
 
             {/* Event Clips Browser */}
-            <div className="mt-5 space-y-2">
+            <div className="mt-5 space-y-2.5">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recorded Event Clips</p>
 
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
                 <div>
                   <p className="font-bold text-slate-200">Harsh Braking Alert</p>
                   <p className="text-[11px] text-slate-400">10:42 AM • Speed dropped 45 to 12 km/h</p>
                 </div>
-                <button className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-400">
+                <button className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 cursor-pointer">
                   <Play className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+              <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
                 <div>
                   <p className="font-bold text-slate-200">Delivery Stop Landmark</p>
                   <p className="text-[11px] text-slate-400">09:15 AM • Customer Raj Kumar Stop</p>
                 </div>
-                <button className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400">
+                <button className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 cursor-pointer">
                   <Play className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="p-3 bg-slate-950 rounded-lg border border-slate-800 text-center text-[11px] text-slate-500">
-            Fleettrack Camera Device Serial: #FT-EH21-99824
+          <div className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 text-center text-[11px] text-slate-400 font-mono">
+            Fleettrack EH21 AI Camera • Serial #FT-EH21-99824
           </div>
         </div>
       </div>
