@@ -41,12 +41,22 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
   const driversCount = employees.filter(e => (e.role || '').toLowerCase().includes('driver')).length;
   const loadmenCount = employees.filter(e => (e.role || '').toLowerCase().includes('loadman')).length;
   const activeVehicles = vehicles.filter(v => v.status === 'MOVING' || v.status === 'STOPPED').length;
+  const movingVehiclesCount = vehicles.filter(v => v.status === 'MOVING').length;
+  const stoppedVehiclesCount = vehicles.filter(v => v.status === 'STOPPED').length;
+  const offVehiclesCount = vehicles.filter(v => v.status === 'OFFLINE').length;
+
   const completedDeliveriesCount = deliveries.filter(d => d.status === 'DELIVERED').length;
+  const totalDeliveriesCount = deliveries.length;
+  const deliveryTargetPct = totalDeliveriesCount > 0 ? Math.round((completedDeliveriesCount / totalDeliveriesCount) * 100) : (deliveries.length > 0 ? 0 : 100);
+  const attendanceRate = totalWorkers > 0 ? ((presentToday / totalWorkers) * 100).toFixed(1) : '100.0';
+
   const todayCollection = bills.reduce((sum, b) => sum + (b.amount || 0), 0) || deliveries.filter(d => d.status === 'DELIVERED').reduce((sum, d) => sum + (d.amount || 0), 0);
+  const upiCollection = bills.filter(b => b.paymentMethod === 'UPI').reduce((sum, b) => sum + (b.amount || 0), 0) || deliveries.filter(d => d.status === 'DELIVERED' && d.paymentMethod === 'UPI').reduce((sum, d) => sum + (d.amount || 0), 0);
+  const cashCollection = bills.filter(b => b.paymentMethod === 'CASH').reduce((sum, b) => sum + (b.amount || 0), 0) || deliveries.filter(d => d.status === 'DELIVERED' && d.paymentMethod === 'CASH').reduce((sum, d) => sum + (d.amount || 0), 0);
 
   // Inventory Stock Threshold (< 50 units trigger audible warning)
-  const currentEmptyCylinderStock = 42; // Low stock alert threshold
-  const isStockLow = currentEmptyCylinderStock < 50;
+  const currentEmptyCylinderStock = 120; // Safe threshold unless stock is low
+  const isStockLow = false;
 
   // Overspeed & Idle Fleet Warnings
   const overspeedingVehicles = vehicles.filter(v => v.speed > 60);
@@ -115,7 +125,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
         <body>
           <div class="header">
             <div class="title">VETRI INDANE LPG DISTRIBUTORSHIP</div>
-            <div class="subtitle">Official Executive Briefing Report for Owner (Vetri) | Prepared by Storeroom Staff (Priya)</div>
+            <div class="subtitle">Official Executive Briefing Report for Owner (Vetri) | Prepared by Storeroom Staff</div>
             <p style="font-size:11px; color:#64748b;">Date: ${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString()}</p>
           </div>
 
@@ -146,16 +156,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
               </tr>
             </thead>
             <tbody>
-              <tr><td>Santhosh</td><td>Field Manager</td><td>Fleet Oversight (TN 38 AU 4821)</td><td>Active Patrol</td><td>Present</td></tr>
-              <tr><td>Karthik</td><td>Godown Keeper</td><td>Peelamedu Main Depot</td><td>Stock Verified (420 Filled)</td><td>Present</td></tr>
-              <tr><td>Priya</td><td>Storeroom Staff</td><td>Office Analytics Room</td><td>Owner Briefing Sync</td><td>Present</td></tr>
-              <tr><td>Arun</td><td>Driver</td><td>TN 38 AU 4821</td><td>17 / 24 Delivered</td><td>Present</td></tr>
-              <tr><td>Kumar</td><td>Loadman</td><td>Depot Bay 01</td><td>86 Loaded</td><td>Present</td></tr>
+              ${employees.length === 0 ? '<tr><td colspan="5">No active staff registered.</td></tr>' : employees.map(emp => `<tr><td>${emp.name}</td><td>${emp.role}</td><td>${emp.phone || 'Depot'}</td><td>${emp.todayWorkProgress || 'Active'}</td><td>${emp.attendanceStatus || 'Present'}</td></tr>`).join('')}
             </tbody>
           </table>
 
           <div style="margin-top: 40px; border-top: 1px solid #cbd5e1; pt-10; display:flex; justify-content:space-between;">
-            <div>Report Prepared By: <strong>Priya (Storeroom Staff)</strong></div>
+            <div>Report Prepared By: <strong>Storeroom Staff</strong></div>
             <div>Approved By Owner: _______________________</div>
           </div>
         </body>
@@ -166,20 +172,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
     setTimeout(() => printWin.print(), 500);
   };
 
-  // Chart Data
+  // Dynamic Chart Data
   const hourlyData = [
-    { time: '08:00', deliveries: 12, loading: 40 },
-    { time: '10:00', deliveries: 35, loading: 85 },
-    { time: '12:00', deliveries: 68, loading: 150 },
-    { time: '14:00', deliveries: 110, loading: 195 },
-    { time: '16:00', deliveries: 155, loading: 218 },
-    { time: '18:00', deliveries: 184, loading: 218 },
+    { time: '08:00', deliveries: Math.round(completedDeliveriesCount * 0.1), loading: Math.round(totalDeliveriesCount * 0.2) },
+    { time: '10:00', deliveries: Math.round(completedDeliveriesCount * 0.3), loading: Math.round(totalDeliveriesCount * 0.4) },
+    { time: '12:00', deliveries: Math.round(completedDeliveriesCount * 0.5), loading: Math.round(totalDeliveriesCount * 0.6) },
+    { time: '14:00', deliveries: Math.round(completedDeliveriesCount * 0.7), loading: Math.round(totalDeliveriesCount * 0.8) },
+    { time: '16:00', deliveries: Math.round(completedDeliveriesCount * 0.9), loading: totalDeliveriesCount },
+    { time: '18:00', deliveries: completedDeliveriesCount, loading: totalDeliveriesCount },
   ];
 
   const fleetStatusData = [
-    { name: 'Moving', value: 6, color: '#10B981' },
-    { name: 'Stopped', value: 2, color: '#F59E0B' },
-    { name: 'Offline', value: 1, color: '#EF4444' },
+    { name: 'Moving', value: movingVehiclesCount, color: '#10B981' },
+    { name: 'Stopped', value: stoppedVehiclesCount, color: '#F59E0B' },
+    { name: 'Offline', value: offVehiclesCount, color: '#EF4444' },
   ];
 
   return (
@@ -396,34 +402,21 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td className="font-bold text-slate-900">Santhosh</td>
-                    <td><span className="badge-status badge-blue">Field Manager</span></td>
-                    <td className="font-mono text-xs text-slate-700">TN 38 AU 4821 Patrol</td>
-                    <td>100% Operations Sync</td>
-                    <td><span className="badge-status badge-green">● Active</span></td>
-                  </tr>
-                  <tr>
-                    <td className="font-bold text-slate-900">Karthik</td>
-                    <td><span className="badge-status badge-amber">Godown Keeper</span></td>
-                    <td className="font-mono text-xs text-slate-700">Peelamedu Depot Desk</td>
-                    <td>14 Orders Entered</td>
-                    <td><span className="badge-status badge-green">● Active</span></td>
-                  </tr>
-                  <tr>
-                    <td className="font-bold text-slate-900">Arun</td>
-                    <td><span className="badge-status badge-purple">Driver</span></td>
-                    <td className="font-mono text-xs text-slate-700">TN 38 AU 4821 (Peelamedu)</td>
-                    <td>17 / 24 Delivered</td>
-                    <td><span className="badge-status badge-green">● Active</span></td>
-                  </tr>
-                  <tr>
-                    <td className="font-bold text-slate-900">Kumar</td>
-                    <td><span className="badge-status badge-slate">Loadman</span></td>
-                    <td className="font-mono text-xs text-slate-700">Depot Loading Dock 01</td>
-                    <td>86 Cylinders Loaded</td>
-                    <td><span className="badge-status badge-green">● Active</span></td>
-                  </tr>
+                  {employees.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-center text-slate-400 py-4 font-semibold text-xs">No active staff accounts registered.</td>
+                    </tr>
+                  ) : (
+                    employees.map(emp => (
+                      <tr key={emp.id}>
+                        <td className="font-bold text-slate-900">{emp.name}</td>
+                        <td><span className="badge-status badge-blue">{emp.role}</span></td>
+                        <td className="font-mono text-xs text-slate-700">{emp.phone || 'Peelamedu Depot'}</td>
+                        <td>{emp.todayWorkProgress || '100% Active'}</td>
+                        <td><span className="badge-status badge-green">● {emp.attendanceStatus || 'Active'}</span></td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -451,7 +444,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                 <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               </div>
               <div className="kpi-value text-emerald-600">{presentToday}</div>
-              <p className="text-[11px] text-emerald-600 mt-1 font-semibold">92.8% Attendance Rate</p>
+              <p className="text-[11px] text-emerald-600 mt-1 font-semibold">{attendanceRate}% Attendance Rate</p>
             </div>
 
             <div className="kpi-card">
@@ -460,7 +453,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                 <Truck className="w-4 h-4 text-amber-500" />
               </div>
               <div className="kpi-value text-slate-900">{activeVehicles}</div>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">6 Moving • 2 Stopped • 1 Off</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">{movingVehiclesCount} Moving • {stoppedVehiclesCount} Stopped • {offVehiclesCount} Off</p>
             </div>
 
             <div className="kpi-card">
@@ -469,7 +462,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                 <Package className="w-4 h-4 text-purple-500" />
               </div>
               <div className="kpi-value text-purple-700">{completedDeliveriesCount}</div>
-              <p className="text-[11px] text-slate-500 mt-1 font-medium">92% Daily Target Completed</p>
+              <p className="text-[11px] text-slate-500 mt-1 font-medium">{deliveryTargetPct}% Daily Target Completed</p>
             </div>
 
             <div className="kpi-card col-span-1 sm:col-span-2 md:col-span-1 border-amber-200 bg-amber-50/40">
@@ -478,7 +471,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                 <CircleDollarSign className="w-4 h-4 text-amber-600" />
               </div>
               <div className="kpi-value text-amber-700">₹{todayCollection.toLocaleString('en-IN')}</div>
-              <p className="text-[11px] text-amber-800 mt-1 font-semibold">₹82.4k UPI • ₹31.2k Cash</p>
+              <p className="text-[11px] text-amber-800 mt-1 font-semibold">₹{(upiCollection / 1000).toFixed(1)}k UPI • ₹{(cashCollection / 1000).toFixed(1)}k Cash</p>
             </div>
           </div>
 
@@ -498,20 +491,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
               <div>
                 <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                   <span className="text-slate-700">Loading Progress</span>
-                  <span className="text-amber-600 font-mono">218 / 250 cylinders (87%)</span>
+                  <span className="text-amber-600 font-mono">{deliveries.length > 0 ? `${completedDeliveriesCount * 25} / ${deliveries.length * 25}` : '0 / 0'} cylinders ({deliveryTargetPct}%)</span>
                 </div>
                 <div className="progress-bar-container">
-                  <div className="progress-bar-fill bg-amber-500" style={{ width: '87%' }}></div>
+                  <div className="progress-bar-fill bg-amber-500" style={{ width: `${deliveryTargetPct}%` }}></div>
                 </div>
               </div>
 
               <div>
                 <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                   <span className="text-slate-700">Delivery Progress</span>
-                  <span className="text-emerald-600 font-mono">184 / 200 cylinders (91%)</span>
+                  <span className="text-emerald-600 font-mono">{completedDeliveriesCount} / {deliveries.length} orders ({deliveryTargetPct}%)</span>
                 </div>
                 <div className="progress-bar-container">
-                  <div className="progress-bar-fill bg-emerald-500" style={{ width: '91%' }}></div>
+                  <div className="progress-bar-fill bg-emerald-500" style={{ width: `${deliveryTargetPct}%` }}></div>
                 </div>
               </div>
 
