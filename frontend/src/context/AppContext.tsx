@@ -63,6 +63,7 @@ interface AppContextType {
   rejectExpense: (expenseId: string) => void;
   addOrder: (orderData: { customerName: string; address: string; phone: string; category?: string; amount: number; assignedDriverName: string; cylinderCount?: number }) => Promise<void>;
   addStockIntake: (stockData: { category: string; quantity: number; monthYear?: string; intakeDate?: string; challanNumber?: string; supplier?: string }) => Promise<void>;
+  addVehicle: (vehicleData: { registrationNumber: string; driverName: string; gpsDeviceId?: string; simCardNumber?: string; hasCamera?: boolean }) => Promise<void>;
 
   // Owner-Only Worker Actions
   addEmployee: (emp: Partial<Employee>) => void;
@@ -745,6 +746,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addVehicle = async (vehicleData: { registrationNumber: string; driverName: string; gpsDeviceId?: string; simCardNumber?: string; hasCamera?: boolean }) => {
+    const newVehicle: Vehicle = {
+      id: `v-${Date.now()}`,
+      registrationNumber: vehicleData.registrationNumber.toUpperCase(),
+      driverName: vehicleData.driverName,
+      driverId: `emp-${Math.floor(10 + Math.random() * 90)}`,
+      gpsDeviceId: vehicleData.gpsDeviceId || `GPS-${Math.floor(100000 + Math.random() * 900000)}`,
+      simCardNumber: vehicleData.simCardNumber || '+91 96008 70814',
+      status: 'STOPPED',
+      speed: 0,
+      ignition: false,
+      todayDistanceKm: 0,
+      completedDeliveries: 0,
+      totalDeliveries: 0,
+      lat: 11.0168 + (Math.random() - 0.5) * 0.05,
+      lng: 76.9558 + (Math.random() - 0.5) * 0.05,
+      lastUpdatedSecondsAgo: 2,
+      hasCamera: Boolean(vehicleData.hasCamera),
+      cameraStatus: vehicleData.hasCamera ? 'LIVE' : 'OFFLINE',
+    };
+
+    setVehicles(prev => [newVehicle, ...prev]);
+
+    try {
+      await fetch(`${API_BASE}/api/vehicles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVehicle),
+      });
+    } catch (err) {
+      console.warn('Vehicle saved locally.');
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -783,6 +818,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         rejectExpense,
         addOrder,
         addStockIntake,
+        addVehicle,
         addEmployee,
         removeEmployee,
       }}

@@ -12,7 +12,9 @@ import {
   AlertCircle,
   Package,
   RefreshCw,
+  PlusCircle,
 } from 'lucide-react';
+import { soundAlerts } from '../utils/audioAlerts';
 
 const createCustomIcon = (status: string) => {
   const isMoving = status === 'MOVING';
@@ -45,9 +47,20 @@ interface FleetPageProps {
 }
 
 export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
-  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations } = useApp();
+  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations, role, employees, addVehicle } = useApp();
   const [liveVehicles, setLiveVehicles] = useState(vehicles);
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Modal State for Adding Vehicle & GPS Hardware Tracker
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [regNo, setRegNo] = useState('');
+  const [driverName, setDriverName] = useState('');
+  const [gpsImei, setGpsImei] = useState('');
+  const [simNo, setSimNo] = useState('+91 96008 70814');
+  const [hasCam, setHasCam] = useState(true);
+
+  const canAddVehicle = role === 'OWNER' || role === 'STOREROOM_STAFF' || role === 'MANAGER';
+  const driverEmployees = employees.filter(e => e.role === 'Driver');
 
   // Poll Express Backend GPS Telemetry API every 4 seconds
   useEffect(() => {
@@ -76,6 +89,31 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
 
   const selectedVehicle = liveVehicles.find(v => v.id === selectedVehicleId) || liveVehicles[0];
 
+  const handleAddVehicleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regNo.trim()) {
+      alert('Please enter a vehicle registration number (e.g. TN 38 BZ 9102)');
+      return;
+    }
+
+    const assignedDriver = driverName || (driverEmployees[0]?.name || 'Field Driver');
+
+    await addVehicle({
+      registrationNumber: regNo.trim().toUpperCase(),
+      driverName: assignedDriver,
+      gpsDeviceId: gpsImei.trim() || `GPS-EH21-${Math.floor(100000 + Math.random() * 900000)}`,
+      simCardNumber: simNo.trim() || '+91 96008 70814',
+      hasCamera: hasCam,
+    });
+
+    soundAlerts.playSuccessSyncChime();
+    alert(`✓ Vehicle ${regNo.toUpperCase()} & GPS Tracker Hardware registered successfully!`);
+
+    setRegNo('');
+    setGpsImei('');
+    setShowAddModal(false);
+  };
+
   return (
     <div className="space-y-4 h-[calc(100vh-6rem)] flex flex-col">
       {/* Header */}
@@ -92,18 +130,30 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Integration Status Badge */}
-        <div className="flex items-center gap-2">
-          {isSyncing && <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />}
-          {integrations.fleettrackConnected ? (
-            <span className="badge-status badge-green flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" /> Live GPS Stream
-            </span>
-          ) : (
-            <span className="badge-status badge-amber flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4 text-amber-600" /> GPS Standalone Telemetry
-            </span>
+        <div className="flex items-center gap-3">
+          {/* Add Vehicle Button for Owner & Store Staff */}
+          {canAddVehicle && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20 transition-all cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" /> + Register Vehicle & GPS Tracker
+            </button>
           )}
+
+          {/* Integration Status Badge */}
+          <div className="flex items-center gap-2">
+            {isSyncing && <RefreshCw className="w-3.5 h-3.5 text-amber-400 animate-spin" />}
+            {integrations.fleettrackConnected ? (
+              <span className="badge-status badge-green flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Live GPS Stream
+              </span>
+            ) : (
+              <span className="badge-status badge-amber flex items-center gap-1.5">
+                <AlertCircle className="w-4 h-4 text-amber-600" /> GPS Standalone Telemetry
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -229,6 +279,24 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
+              {/* GPS Hardware Telemetry Metadata */}
+              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] space-y-1.5 font-mono">
+                <div className="flex justify-between text-slate-400">
+                  <span>IoT GPS Tracker IMEI:</span>
+                  <span className="text-amber-400 font-bold">{selectedVehicle.gpsDeviceId || `GPS-EH21-${selectedVehicle.id.slice(-4)}`}</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>M2M SIM Card:</span>
+                  <span className="text-slate-200">{selectedVehicle.simCardNumber || '+91 96008 70814'}</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Dashcam Stream:</span>
+                  <span className={selectedVehicle.hasCamera ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
+                    {selectedVehicle.hasCamera ? 'ENABLED ●' : 'NOT FITTED'}
+                  </span>
+                </div>
+              </div>
+
               {/* Sync Metadata */}
               <div className="bg-slate-950/60 p-3 rounded-lg border border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
                 <span className="flex items-center gap-1">
@@ -262,6 +330,104 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
           )}
         </div>
       </div>
+
+      {/* REGISTER VEHICLE & GPS HARDWARE TRACKER MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg text-white shadow-2xl overflow-hidden animate-in zoom-in-95">
+            <div className="bg-slate-950 p-5 border-b border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-base text-amber-400">Register Vehicle & GPS Tracker</h3>
+                  <p className="text-xs text-slate-400">Add fleet truck and pair Fleettrack / Teltonika IoT GPS Hardware</p>
+                </div>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white p-1 font-bold">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddVehicleSubmit} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Vehicle Registration Number *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. TN 38 BZ 9102"
+                  value={regNo}
+                  onChange={e => setRegNo(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-mono uppercase focus:border-amber-400 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Assign Driver *</label>
+                <select
+                  value={driverName}
+                  onChange={e => setDriverName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white focus:border-amber-400 focus:outline-none"
+                >
+                  <option value="">Select Field Driver...</option>
+                  {driverEmployees.map(emp => (
+                    <option key={emp.id} value={emp.name}>
+                      {emp.name} ({emp.phone})
+                    </option>
+                  ))}
+                  <option value="Senthil Kumar">Senthil Kumar (+91 98421 88310)</option>
+                  <option value="Mani Kandan">Mani Kandan (+91 97860 11245)</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">GPS Tracker Device IMEI / ID</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 864920194820124"
+                    value={gpsImei}
+                    onChange={e => setGpsImei(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">IoT M2M SIM Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 96008 70814"
+                    value={simNo}
+                    onChange={e => setSimNo(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-white font-mono focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-white">Live Vehicle Dashcam Fitted</p>
+                  <p className="text-[11px] text-slate-400">Enables live video stream on Camera tab</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={hasCam}
+                  onChange={e => setHasCam(e.target.checked)}
+                  className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 rounded-2xl text-xs shadow-lg shadow-amber-500/20 transition-all cursor-pointer mt-2"
+              >
+                ✓ Save Vehicle & Pair GPS Hardware
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

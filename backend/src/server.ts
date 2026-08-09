@@ -270,6 +270,29 @@ app.get('/api/gps/vehicles/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Register New Vehicle and Hardware GPS Tracker IMEI
+app.post('/api/vehicles', async (req: Request, res: Response) => {
+  const { id, registrationNumber, driverName, driverId, gpsDeviceId, simCardNumber, hasCamera, cameraStatus } = req.body;
+  const vehicleId = id || `v-${Date.now()}`;
+  const regNo = (registrationNumber || 'TN 38 NEW 0001').toUpperCase();
+  const dName = driverName || 'Unassigned Driver';
+
+  try {
+    await runQuery(
+      `INSERT INTO vehicles (id, registrationNumber, driverName, driverId, status, speed, ignition, todayDistanceKm, completedDeliveries, totalDeliveries, lat, lng, hasCamera, cameraStatus)
+       VALUES (?, ?, ?, ?, 'STOPPED', 0, 0, 0, 0, 0, 11.0168, 76.9558, ?, ?)
+       ON CONFLICT(registrationNumber) DO UPDATE SET driverName = excluded.driverName, hasCamera = excluded.hasCamera`,
+      [vehicleId, regNo, dName, driverId || 'emp-01', hasCamera ? 1 : 0, cameraStatus || 'OFFLINE']
+    );
+
+    console.log(`[SQL DATABASE VEHICLE ADDED] ${regNo} (GPS IMEI: ${gpsDeviceId || 'N/A'}, Driver: ${dName})`);
+    res.json({ success: true, vehicle: { id: vehicleId, registrationNumber: regNo, driverName: dName, gpsDeviceId, simCardNumber } });
+  } catch (err) {
+    console.error('[ERROR] Vehicle creation failed:', err);
+    res.status(500).json({ success: false, error: 'Failed to create vehicle record' });
+  }
+});
+
 // Update GPS coordinates from IoT Tracker / Fleettrack SIM IMEI in SQLite
 app.post('/api/gps/update', async (req: Request, res: Response) => {
   const { vehicleId, lat, lng, speed, ignition, status } = req.body;

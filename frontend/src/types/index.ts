@@ -5,6 +5,8 @@ export interface Vehicle {
   registrationNumber: string;
   driverName: string;
   driverId: string;
+  gpsDeviceId?: string;
+  simCardNumber?: string;
   status: 'MOVING' | 'STOPPED' | 'OFFLINE';
   speed: number; // km/h
   ignition: boolean;
