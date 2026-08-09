@@ -407,6 +407,38 @@ app.post('/integrations/biometrics/clock-in', async (req: Request, res: Response
   }
 });
 
+// ZKTECO EASYTIMEPRO MOBILE & HARDWARE ADMS PUSH INTEGRATION WEBHOOK
+app.post(['/integrations/easytimepro', '/iclock/cdata', '/api/easytimepro/punch'], async (req: Request, res: Response) => {
+  const { userId, employeeId, email, deviceSn, pin, punchTime, status, attendanceType } = req.body;
+  const targetWorker = employeeId || userId || pin || 'emp-01';
+
+  lastBiometricPunchTimestamp = Date.now();
+
+  console.log(`[INFO] [easyTimePro ZKTeco] Attendance Punch Received | Device SN: ${deviceSn || 'ZKT-EASYTIME-PRO'} | Worker: ${targetWorker} | Time: ${punchTime || new Date().toISOString()}`);
+
+  try {
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    await runQuery(
+      `UPDATE employees SET attendanceStatus = 'Present', workingHours = '8h 00m' WHERE id = ? OR email = ? OR name LIKE ?`,
+      [targetWorker, email || '', `%${targetWorker}%`]
+    );
+
+    const emp = await fetchOne('SELECT * FROM employees WHERE id = ? OR email = ? OR name LIKE ?', [targetWorker, email || '', `%${targetWorker}%`]);
+
+    res.json({
+      success: true,
+      product: 'ZKTeco easyTimePro',
+      hardwareStatus: 'ONLINE',
+      biometricPunchRecorded: true,
+      clockInTime: timeString,
+      worker: emp ? emp.name : targetWorker,
+    });
+  } catch (err) {
+    console.error('[ERROR] [easyTimePro ZKTeco] Punch processing error:', err);
+    res.status(500).json({ success: false, error: 'easyTimePro processing failed' });
+  }
+});
+
 
 // WHATSAPP INSTANT DIGITAL RECEIPT ENDPOINT
 app.post('/api/whatsapp/send-receipt', async (req: Request, res: Response) => {
