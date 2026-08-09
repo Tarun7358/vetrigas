@@ -465,15 +465,44 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                       <td colSpan={5} className="text-center text-slate-400 py-4 font-semibold text-xs">No active staff accounts registered.</td>
                     </tr>
                   ) : (
-                    employees.map(emp => (
-                      <tr key={emp.id}>
-                        <td className="font-bold text-slate-900">{emp.name}</td>
-                        <td><span className="badge-status badge-blue">{emp.role}</span></td>
-                        <td className="font-mono text-xs text-slate-700">{emp.phone || 'Peelamedu Depot'}</td>
-                        <td>{emp.todayWorkProgress || '100% Active'}</td>
-                        <td><span className="badge-status badge-green">● {emp.attendanceStatus || 'Active'}</span></td>
-                      </tr>
-                    ))
+                    employees.map(emp => {
+                      const roleNorm = (emp.role || '').toLowerCase();
+                      const isOwner = roleNorm.includes('owner');
+                      let shiftProgressStr = '100%';
+
+                      if (isOwner) {
+                        shiftProgressStr = '100%';
+                      } else if (roleNorm.includes('driver')) {
+                        const driverDels = deliveries.filter(d => (d.driverName || '').toLowerCase() === emp.name.toLowerCase());
+                        const assigned = driverDels.length;
+                        const completed = driverDels.filter(d => d.status === 'DELIVERED').length;
+                        if (assigned > 0) {
+                          const pct = Math.round((completed / assigned) * 100);
+                          shiftProgressStr = `${completed}/${assigned} (${pct}%)`;
+                        } else {
+                          shiftProgressStr = '0/0 (Shift Ready)';
+                        }
+                      } else {
+                        const totalDels = deliveries.length;
+                        const completedDels = deliveries.filter(d => d.status === 'DELIVERED').length;
+                        if (totalDels > 0) {
+                          const pct = Math.round((completedDels / totalDels) * 100);
+                          shiftProgressStr = `${completedDels}/${totalDels} (${pct}%)`;
+                        } else {
+                          shiftProgressStr = '0/0 (Shift Ready)';
+                        }
+                      }
+
+                      return (
+                        <tr key={emp.id}>
+                          <td className="font-bold text-slate-900">{emp.name}</td>
+                          <td><span className="badge-status badge-blue">{emp.role}</span></td>
+                          <td className="font-mono text-xs text-slate-700">{emp.phone || 'Peelamedu Depot'}</td>
+                          <td className="font-mono text-xs font-bold text-slate-800">{shiftProgressStr}</td>
+                          <td><span className="badge-status badge-green">● {emp.attendanceStatus || 'Active'}</span></td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
