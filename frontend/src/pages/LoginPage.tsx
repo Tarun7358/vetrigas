@@ -20,11 +20,11 @@ import {
 
 export const LoginPage: React.FC = () => {
   const { login } = useApp();
-  const [selectedRole, setSelectedRole] = useState<UserRole>('OWNER');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('STOREROOM_STAFF');
   
   // Login Form State
-  const [email, setEmail] = useState('owner@vetriindane.com');
-  const [password, setPassword] = useState('Vetri@2026');
+  const [email, setEmail] = useState('priya.office@vetriindane.com');
+  const [password, setPassword] = useState('Priya@2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -204,8 +204,8 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Quick Role Preset Bar */}
-        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px] font-bold">
-          {(['OWNER', 'STOREROOM_STAFF', 'MANAGER', 'GODOWN_KEEPER', 'DRIVER', 'LOADMAN'] as UserRole[]).map(r => {
+        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-3 gap-1.5 text-[10px] font-bold">
+          {(['STOREROOM_STAFF', 'GODOWN_KEEPER', 'LOADMAN'] as UserRole[]).map(r => {
             const isSelected = selectedRole === r;
             const labels: Record<UserRole, string> = {
               OWNER: '👑 OWNER',

@@ -1,17 +1,20 @@
 {
-  "short_name": "Vetri Indane",
-  "name": "Vetri Indane LPG Distribution Platform",
+  "name": "Vetri Indane",
+  "short_name": "VetriIndane",
+  "description": "Vetri Indane LPG Distribution Management Platform — Fleet, Deliveries & Billing",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070D19",
+  "theme_color": "#0A192F",
+  "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23F59E0B'><path d='M13.5 0.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z'/></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ],
-  "start_url": "/",
-  "background_color": "#0A192F",
-  "theme_color": "#0A192F",
-  "display": "standalone",
-  "orientation": "portrait",
-  "description": "Enterprise LPG Workforce, Fleet, Delivery, Billing & Payroll Management Platform developed by RDK Technologies."
+  "categories": ["business", "productivity"],
+  "lang": "en-IN"
 }

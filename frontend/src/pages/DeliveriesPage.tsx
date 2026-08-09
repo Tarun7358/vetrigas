@@ -8,7 +8,7 @@ import { soundAlerts } from '../utils/audioAlerts';
 import { offlineSync } from '../utils/offlineSync';
 
 export const DeliveriesPage: React.FC = () => {
-  const { deliveries, bills, completeDelivery } = useApp();
+  const { deliveries, bills, completeDelivery, addOrder } = useApp();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBill, setSelectedBill] = useState<BillRecord | null>(null);
 
@@ -23,28 +23,19 @@ export const DeliveriesPage: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
 
-  const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5000'
-    : '';
-
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCustName || !newCustAddress) return;
 
     try {
-      await fetch(`${API_BASE}/api/deliveries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: newCustName,
-          address: newCustAddress,
-          phone: newCustPhone || '+91 96008 70814',
-          category: 'COMMERCIAL',
-          paymentType: 'UPI',
-          amount: newAmount,
-          assignedDriverName: newDriver,
-          scheduledTime: '02:30 PM',
-        }),
+      await addOrder({
+        customerName: newCustName,
+        address: newCustAddress,
+        phone: newCustPhone || '+91 96008 70814',
+        category: 'COMMERCIAL',
+        amount: newAmount,
+        assignedDriverName: newDriver,
+        cylinderCount: newQty,
       });
 
       setShowOrderModal(false);
@@ -52,7 +43,6 @@ export const DeliveriesPage: React.FC = () => {
       setNewCustAddress('');
       setNewCustPhone('');
       soundAlerts.playSuccessSyncChime();
-      window.location.reload();
     } catch (err) {
       console.error('Order creation error:', err);
     }

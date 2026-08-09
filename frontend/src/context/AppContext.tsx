@@ -15,6 +15,7 @@ import type {
   IntegrationState,
   VehicleExpense,
 } from '../types';
+import { API_BASE } from '../utils/api';
 
 interface UserSession {
   name: string;
@@ -56,6 +57,7 @@ interface AppContextType {
   addExpense: (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => void;
   approveExpense: (expenseId: string) => void;
   rejectExpense: (expenseId: string) => void;
+  addOrder: (orderData: { customerName: string; address: string; phone: string; category?: string; amount: number; assignedDriverName: string; cylinderCount?: number }) => Promise<void>;
 
   // Owner-Only Worker Actions
   addEmployee: (emp: Partial<Employee>) => void;
@@ -123,72 +125,98 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>('v1');
 
-const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:5000'
-  : '';
-
   // Real-Time Sync & Background Polling Loop with Express/SQLite Backend
-  useEffect(() => {
-    const fetchBackendData = async () => {
-      try {
-        const empRes = await fetch(`${API_BASE}/api/employees`);
-        if (empRes.ok) {
-          const data = await empRes.json();
-          if (data.employees && data.employees.length > 0) {
-            setEmployees(data.employees);
-          }
+  const fetchBackendData = async () => {
+    try {
+      const empRes = await fetch(`${API_BASE}/api/employees`);
+      if (empRes.ok) {
+        const data = await empRes.json();
+        if (data.employees && data.employees.length > 0) {
+          setEmployees(data.employees);
         }
-
-        const expRes = await fetch(`${API_BASE}/api/expenses`);
-        if (expRes.ok) {
-          const data = await expRes.json();
-          if (data.expenses && data.expenses.length > 0) {
-            setExpenses(data.expenses);
-          }
-        }
-
-        const vehRes = await fetch(`${API_BASE}/api/gps/vehicles`);
-        if (vehRes.ok) {
-          const data = await vehRes.json();
-          if (data.vehicles && data.vehicles.length > 0) {
-            setVehicles(data.vehicles);
-          }
-        }
-
-        const delRes = await fetch(`${API_BASE}/api/deliveries`);
-        if (delRes.ok) {
-          const data = await delRes.json();
-          if (data.deliveries && data.deliveries.length > 0) {
-            setDeliveries(data.deliveries);
-          }
-        }
-
-        const batRes = await fetch(`${API_BASE}/api/batches`);
-        if (batRes.ok) {
-          const data = await batRes.json();
-          if (data.batches && data.batches.length > 0) {
-            setBatches(data.batches);
-          }
-        }
-
-        const bilRes = await fetch(`${API_BASE}/api/bills`);
-        if (bilRes.ok) {
-          const data = await bilRes.json();
-          if (data.bills && data.bills.length > 0) {
-            setBills(data.bills);
-          }
-        }
-      } catch (err) {
-        console.warn('Backend SQLite sync note: System synchronized with Express API');
       }
-    };
 
+      const expRes = await fetch(`${API_BASE}/api/expenses`);
+      if (expRes.ok) {
+        const data = await expRes.json();
+        if (data.expenses && data.expenses.length > 0) {
+          setExpenses(data.expenses);
+        }
+      }
+
+      const vehRes = await fetch(`${API_BASE}/api/gps/vehicles`);
+      if (vehRes.ok) {
+        const data = await vehRes.json();
+        if (data.vehicles && data.vehicles.length > 0) {
+          setVehicles(data.vehicles);
+        }
+      }
+
+      const delRes = await fetch(`${API_BASE}/api/deliveries`);
+      if (delRes.ok) {
+        const data = await delRes.json();
+        if (data.deliveries) {
+          const mappedDeliveries: DeliveryItem[] = data.deliveries.map((d: any) => ({
+            id: d.id,
+            deliveryNumber: d.deliveryNumber || d.id.replace('del-', 'VI'),
+            customerName: d.customerName || 'Customer',
+            customerPhone: d.customerPhone || d.phone || '+91 96008 70814',
+            customerAddress: d.customerAddress || d.address || 'Peelamedu, Coimbatore',
+            cylinderCount: Number(d.cylinderCount) || Math.max(1, Math.round(Number(d.amount || 940) / 940)) || 1,
+            amount: Number(d.amount) || 940,
+            driverName: d.driverName || d.assignedDriverName || 'Arun',
+            vehicleNumber: d.vehicleNumber || (d.assignedDriverName === 'Suresh' ? 'TN 38 BQ 1092' : d.assignedDriverName === 'Ramesh' ? 'TN 38 CF 9901' : d.assignedDriverName === 'Vijay' ? 'TN 38 DK 3341' : 'TN 38 AU 4821'),
+            status: d.status || 'ASSIGNED',
+            distanceKm: d.distanceKm || 3.5,
+            paymentMethod: d.paymentType || d.paymentMethod || 'UPI',
+            paymentStatus: d.paymentStatus || (d.status === 'DELIVERED' ? 'PAID' : 'PENDING'),
+            billNumber: d.billNumber,
+            deliveryTime: d.deliveredTime || d.deliveryTime,
+          }));
+          setDeliveries(mappedDeliveries);
+        }
+      }
+
+      const batRes = await fetch(`${API_BASE}/api/batches`);
+      if (batRes.ok) {
+        const data = await batRes.json();
+        if (data.batches) {
+          const mappedBatches: LoadingBatch[] = data.batches.map((b: any) => ({
+            id: b.id,
+            batchNumber: b.batchNumber || `LB-${b.id.slice(-4)}`,
+            driverName: b.driverName || 'Arun',
+            vehicleNumber: b.vehicleNumber || b.vehicleRegistration || 'TN 38 AU 4821',
+            loadmanName: b.loadmanName || 'Kumar',
+            requiredCount: Number(b.requiredCount) || Number(b.filledCylinders) || 25,
+            loadedCount: Number(b.loadedCount) !== undefined && !isNaN(Number(b.loadedCount)) ? Number(b.loadedCount) : (b.status === 'COMPLETED' || b.status === 'ACCEPTED' ? Number(b.filledCylinders || 25) : 0),
+            status: b.status || 'IN_PROGRESS',
+            timestamp: b.timestamp || 'Just now',
+            discrepancyReason: b.discrepancyReason,
+            discrepancyDiff: b.discrepancyDiff,
+          }));
+          setBatches(mappedBatches);
+        }
+      }
+
+      const bilRes = await fetch(`${API_BASE}/api/bills`);
+      if (bilRes.ok) {
+        const data = await bilRes.json();
+        if (data.bills && data.bills.length > 0) {
+          setBills(data.bills);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend SQLite sync note: System synchronized with Express API');
+    }
+  };
+
+  useEffect(() => {
     fetchBackendData();
 
-    // 5-Second Automated Background Polling Loop for Live GPS & Batch updates
+    // 2-Second Automated Background Polling Loop for Live GPS, Deliveries & Batch updates
     const interval = setInterval(() => {
       fetchBackendData();
-    }, 5000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
@@ -506,6 +534,74 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
     ]);
   };
 
+  const addOrder = async (orderData: {
+    customerName: string;
+    address: string;
+    phone: string;
+    category?: string;
+    amount: number;
+    assignedDriverName: string;
+    cylinderCount?: number;
+  }) => {
+    const id = `del-${Date.now()}`;
+    const delNum = `VI${Math.floor(10000 + Math.random() * 90000)}`;
+    const driver = orderData.assignedDriverName || 'Arun';
+    const vehicle = driver === 'Suresh' ? 'TN 38 BQ 1092' : driver === 'Ramesh' ? 'TN 38 CF 9901' : driver === 'Vijay' ? 'TN 38 DK 3341' : 'TN 38 AU 4821';
+    const qty = orderData.cylinderCount || Math.max(1, Math.round(orderData.amount / 940)) || 1;
+
+    const newDelivery: DeliveryItem = {
+      id,
+      deliveryNumber: delNum,
+      customerName: orderData.customerName,
+      customerPhone: orderData.phone,
+      customerAddress: orderData.address,
+      cylinderCount: qty,
+      amount: orderData.amount,
+      driverName: driver,
+      vehicleNumber: vehicle,
+      status: 'ASSIGNED',
+      distanceKm: 3.2,
+      paymentMethod: 'UPI',
+      paymentStatus: 'PENDING',
+    };
+
+    const newBatch: LoadingBatch = {
+      id: `batch-${Date.now()}`,
+      batchNumber: `LB-${Math.floor(1000 + Math.random() * 9000)}`,
+      driverName: driver,
+      vehicleNumber: vehicle,
+      loadmanName: 'Kumar',
+      requiredCount: qty,
+      loadedCount: 0,
+      status: 'IN_PROGRESS',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    // Optimistic state updates for instant real-time reflection
+    setDeliveries(prev => [newDelivery, ...prev]);
+    setBatches(prev => [newBatch, ...prev]);
+
+    try {
+      await fetch(`${API_BASE}/api/deliveries`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: orderData.customerName,
+          address: orderData.address,
+          phone: orderData.phone,
+          category: orderData.category || 'COMMERCIAL',
+          paymentType: 'UPI',
+          amount: orderData.amount,
+          assignedDriverName: driver,
+          cylinderCount: qty,
+        }),
+      });
+      fetchBackendData();
+    } catch (err) {
+      console.warn('Backend sync warning on order creation');
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -539,6 +635,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
         addExpense,
         approveExpense,
         rejectExpense,
+        addOrder,
         addEmployee,
         removeEmployee,
       }}

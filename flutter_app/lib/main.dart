@@ -74,11 +74,11 @@ class RoleSelectScreen extends StatefulWidget {
 }
 
 class _RoleSelectScreenState extends State<RoleSelectScreen> {
-  String selectedRole = 'OWNER';
+  String selectedRole = 'STOREROOM';
   final TextEditingController _emailController =
-      TextEditingController(text: 'owner@vetriindane.com');
+      TextEditingController(text: 'priya.office@vetriindane.com');
   final TextEditingController _passwordController =
-      TextEditingController(text: 'Vetri@2026');
+      TextEditingController(text: 'Priya@2026');
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -279,7 +279,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: rolePresets.keys.map((role) {
+                      children: rolePresets.keys.where((role) => role != 'OWNER' && role != 'MANAGER' && role != 'DRIVER').map((role) {
                         final isSelected = selectedRole == role;
                         return Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -1388,6 +1388,9 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
 // ============================================================================
 // 3. LOADMAN HOME SCREEN
 // ============================================================================
+// ============================================================================
+// 3. LOADMAN HOME SCREEN
+// ============================================================================
 class LoadmanHomeScreen extends StatefulWidget {
   const LoadmanHomeScreen({super.key});
 
@@ -1400,46 +1403,216 @@ class _LoadmanHomeScreenState extends State<LoadmanHomeScreen> {
   final TextEditingController _defectNotesController = TextEditingController();
   String _defectType = 'Leaky Valve';
 
+  List<dynamic> _batches = [];
+  List<dynamic> _deliveries = [];
+  bool _isLoading = true;
+  Timer? _pollingTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLiveLoadmanData();
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) => _fetchLiveLoadmanData(silent: true));
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    _defectNotesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetchLiveLoadmanData({bool silent = false}) async {
+    if (!silent) setState(() => _isLoading = true);
+    try {
+      final batRes = await http.get(Uri.parse('$kApiBase/api/batches')).timeout(const Duration(seconds: 4));
+      if (batRes.statusCode == 200) {
+        final data = jsonDecode(batRes.body);
+        if (data['batches'] != null) {
+          _batches = data['batches'];
+        }
+      }
+
+      final delRes = await http.get(Uri.parse('$kApiBase/api/deliveries')).timeout(const Duration(seconds: 4));
+      if (delRes.statusCode == 200) {
+        final data = jsonDecode(delRes.body);
+        if (data['deliveries'] != null) {
+          _deliveries = data['deliveries'];
+        }
+      }
+    } catch (e) {
+      debugPrint('Loadman real-time fetch error: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _acceptBatch(String batchId) async {
+    try {
+      final res = await http.put(
+        Uri.parse('$kApiBase/api/batches/$batchId/accept'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'loadmanName': 'Kumar', 'status': 'ACCEPTED'}),
+      );
+      if (res.statusCode == 200) {
+        _fetchLiveLoadmanData(silent: true);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            content: Text('✓ Batch accepted & confirmed! Synced live to cloud.'),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Accept batch error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Loadman Operations Desk (Kumar)'),
+        title: Row(
+          children: [
+            const Text('Loadman Desk (Kumar)'),
+            const Spacer(),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, py: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF10B981)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.circle, color: Color(0xFF10B981), size: 8),
+                  SizedBox(width: 4),
+                  Text('LIVE SYNC', style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ],
+        ),
         backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          _isLoading && _batches.isEmpty
+              ? const Center(child: CircularProgressIndicator(color: Color(0xFFF59E0B)))
+              : RefreshIndicator(
+                  onRefresh: () => _fetchLiveLoadmanData(),
+                  child: ListView(
+                    padding: const EdgeInsets.all(16),
                     children: [
-                      const Text('BATCH LB-1021', style: TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 4),
-                      const Text('Vehicle: TN 38 AU 4821  •  Driver: Arun', style: TextStyle(color: Colors.white)),
-                      const Text('Required: 25 Cylinders  •  Loaded: 25 Cylinders', style: TextStyle(color: Color(0xFF94A3B8))),
-                      const SizedBox(height: 14),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.black),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Batch LB-1021 Confirmed! Synced to Render Cloud.')),
-                          );
-                        },
-                        child: const Text('CONFIRM TRUCK LOAD', style: TextStyle(fontWeight: FontWeight.w900)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'ASSIGNED LOADING BATCHES',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            '${_batches.length} Active',
+                            style: const TextStyle(color: Color(0xFFF59E0B), fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 12),
+                      if (_batches.isEmpty)
+                        const Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              'No loading batches currently queued. New orders will appear here automatically in real time.',
+                              style: TextStyle(color: Colors.grey, fontSize: 13),
+                            ),
+                          ),
+                        )
+                      else
+                        ..._batches.map((batch) {
+                          final batchNo = batch['batchNumber'] ?? 'LB-${batch['id']}';
+                          final driver = batch['driverName'] ?? 'Arun';
+                          final reg = batch['vehicleRegistration'] ?? batch['vehicleNumber'] ?? 'TN 38 AU 4821';
+                          final reqQty = batch['filledCylinders'] ?? batch['requiredCount'] ?? 25;
+                          final status = batch['status'] ?? 'IN_PROGRESS';
+                          final isDone = status == 'ACCEPTED' || status == 'COMPLETED';
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(batchNo.toString(), style: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold, fontSize: 16)),
+                                      Chip(
+                                        label: Text(status.toString(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                                        backgroundColor: isDone ? const Color(0xFF10B981) : const Color(0xFF38BDF8),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text('Vehicle: $reg  •  Driver: $driver', style: const TextStyle(color: Colors.white, fontSize: 13)),
+                                  Text('Required Cylinders: $reqQty Units  •  Loadman: ${batch['loadmanName'] ?? "Kumar"}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12)),
+                                  const SizedBox(height: 12),
+                                  if (!isDone)
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF10B981),
+                                        foregroundColor: Colors.black,
+                                        minimumSize: const Size(double.infinity, 42),
+                                      ),
+                                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                                      onPressed: () => _acceptBatch(batch['id'].toString()),
+                                      label: const Text('CONFIRM & ACCEPT BATCH LOAD', style: TextStyle(fontWeight: FontWeight.w900)),
+                                    )
+                                  else
+                                    Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF10B981).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+                                      ),
+                                      child: const Text('✓ Batch Verified & Loaded onto Truck', textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'RECENT CLIENT ORDERS',
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ..._deliveries.take(5).map((del) {
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          color: const Color(0xFF1E293B),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundColor: Color(0xFFF59E0B),
+                              child: Icon(Icons.local_gas_station, color: Colors.black, size: 18),
+                            ),
+                            title: Text(del['customerName'] ?? 'Customer Order', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                            subtitle: Text('Driver: ${del['assignedDriverName'] ?? del['driverName'] ?? "Arun"}  •  ${del['address'] ?? del['customerAddress'] ?? ""}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                            trailing: Text('₹${del['amount'] ?? 940}', style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 14)),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
-              ),
-            ],
-          ),
           ListView(
             padding: const EdgeInsets.all(16),
             children: [

@@ -1,17 +1,91 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import { seedDatabase } from './seed';
 import { runQuery, fetchAll, fetchOne } from './db';
 import { hashPassword, verifyPassword } from './crypto';
 import { sendWhatsAppReceipt } from './whatsapp';
-
+import { getSupabase, isSupabaseConfigured } from './supabase';
 import path from 'path';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'vetri-indane-default-secret-change-in-production-2026';
 
-app.use(cors());
-app.use(express.json());
+// ── Security Middleware ───────────────────────────────────────────────────────
+// Helmet: Sets secure HTTP headers (XSS, clickjacking, MIME sniffing)
+app.use(helmet({
+  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: false, // Managed by Vite/CDN in production
+}));
+
+// CORS: Lock to production domain + localhost for dev
+const ALLOWED_ORIGINS = [
+  process.env.ALLOWED_ORIGINS || '',
+  'https://vetriindane.com',
+  'https://www.vetriindane.com',
+  // Netlify deployment URLs
+  'https://vetriindane.netlify.app',
+  'https://vetri-indane.netlify.app',
+  // Render backend (internal)
+  'https://vetrigas.onrender.com',
+  // Dev
+  'http://localhost:5173',
+  'http://localhost:5000',
+  'http://127.0.0.1:5173',
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, Render internal)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS BLOCKED] Origin rejected: ${origin}`);
+      callback(new Error('CORS: Origin not allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+app.use(express.json({ limit: '1mb' }));
+
+// Rate Limiting: Global — 100 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many requests. Please try again in 15 minutes.' },
+});
+app.use('/api/', globalLimiter);
+
+// Rate Limiting: Login — Strict 10 attempts per 15 minutes per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { success: false, message: 'Too many login attempts. Account locked for 15 minutes.' },
+});
+
+// JWT Auth Middleware
+export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  if (!token) return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    (req as any).user = decoded;
+    next();
+  } catch {
+    return res.status(403).json({ success: false, message: 'Session expired or invalid token. Please log in again.' });
+  }
+};
 
 // Serve static frontend assets for single-port Render deployment
 const frontendPath = path.join(__dirname, '../../frontend/dist');
@@ -20,52 +94,69 @@ app.use(express.static(frontendPath));
 // Seed Database Schema on server start
 seedDatabase();
 
-// Base Health Check
+// ── Health Check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ONLINE',
-    database: 'SQLite (database/vetri_indane.db)',
-    system: 'Vetri Indane LPG Control Platform',
+    database: isSupabaseConfigured() ? 'Supabase PostgreSQL Cloud DB' : 'SQLite (database/vetri_indane.db)',
+    supabaseActive: isSupabaseConfigured(),
+    system: 'Vetri Indane LPG Distribution Platform',
+    company: 'Vetri Indane LPG Distributors, Peelamedu, Coimbatore',
     developer: 'RDK Technologies',
     timestamp: new Date().toISOString(),
   });
 });
 
-// Real-Time Role-Based Auth Endpoint querying SQLite
-app.post('/api/auth/login', async (req: Request, res: Response) => {
+// ── Authentication ───────────────────────────────────────────────────────────
+app.post('/api/auth/login', loginLimiter, async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Corporate Email and password are required.' });
+    return res.status(400).json({ success: false, message: 'Email and password are required.' });
   }
 
   try {
     const cleanEmail = email.trim().toLowerCase();
     const user = await fetchOne('SELECT * FROM employees WHERE LOWER(email) = ?', [cleanEmail]);
-    
+
     if (!user) {
-      console.warn(`[REAL-TIME AUTH REJECTED] Account not found or deleted by Owner: ${cleanEmail}`);
-      return res.status(404).json({ success: false, message: 'Account not found or access revoked by System Owner.' });
+      console.warn(`[AUTH] Rejected — account not found: ${cleanEmail}`);
+      return res.status(404).json({ success: false, message: 'Account not found or access revoked.' });
     }
 
     if (user.status === 'Terminated' || user.status === 'Inactive') {
-      console.warn(`[REAL-TIME AUTH REJECTED] Account status is ${user.status}: ${cleanEmail}`);
+      console.warn(`[AUTH] Rejected — account ${user.status}: ${cleanEmail}`);
       return res.status(403).json({ success: false, message: 'Access Denied: Account terminated by System Owner.' });
     }
 
     const isPasswordValid = verifyPassword(password, user.password);
-    if (isPasswordValid) {
-      const { password: _, ...safeUser } = user;
-      console.log(`[REAL-TIME AUTH SUCCESS] Logged in: ${user.name} (${user.email}) - ${user.role}`);
-      return res.json({ success: true, user: safeUser, token: `token-vetri-${Date.now()}` });
-    } else {
-      console.warn(`[REAL-TIME AUTH FAILED] Incorrect password for: ${cleanEmail}`);
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Password verification failed.' });
+    if (!isPasswordValid) {
+      console.warn(`[AUTH] Failed — incorrect password: ${cleanEmail}`);
+      return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
+
+    // Issue signed JWT token (8h for employees, 24h for Owner)
+    const expiresIn = user.role === 'OWNER' ? '24h' : '8h';
+    const { password: _, ...safeUser } = user;
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, name: user.name },
+      JWT_SECRET,
+      { expiresIn }
+    );
+
+    console.log(`[AUTH] ✓ Login: ${user.name} (${user.role}) — token issued (${expiresIn})`);
+    return res.json({ success: true, user: safeUser, token });
+
   } catch (err) {
-    console.error('[REAL-TIME AUTH ERROR] Login query error:', err);
-    return res.status(500).json({ success: false, message: 'Database authentication error occurred.' });
+    console.error('[AUTH] Login error:', err);
+    return res.status(500).json({ success: false, message: 'Authentication system error.' });
   }
+});
+
+// Token verification endpoint (used by frontend on app load)
+app.get('/api/auth/verify', requireAuth, (req: Request, res: Response) => {
+  const user = (req as any).user;
+  res.json({ success: true, valid: true, user });
 });
 
 // GET Employees from SQLite
@@ -347,7 +438,7 @@ app.post('/api/bills', async (req: Request, res: Response) => {
 // DELIVERIES ENDPOINTS
 app.get('/api/deliveries', async (req: Request, res: Response) => {
   try {
-    const deliveries = await fetchAll('SELECT * FROM deliveries');
+    const deliveries = await fetchAll('SELECT * FROM deliveries ORDER BY id DESC');
     res.json({ success: true, deliveries });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch deliveries' });
@@ -355,19 +446,38 @@ app.get('/api/deliveries', async (req: Request, res: Response) => {
 });
 
 app.post('/api/deliveries', async (req: Request, res: Response) => {
-  const { customerName, address, phone, category, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime } = req.body;
+  const { customerName, address, phone, category, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, cylinderCount } = req.body;
   const id = `del-${Date.now()}`;
   const status = 'PENDING';
+  const driverName = assignedDriverName || 'Arun';
+  const driverId = assignedDriverId || 'emp-01';
 
   try {
     await runQuery(
       `INSERT INTO deliveries (id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, deliveredTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, customerName, address, phone, category, status, paymentType, Number(amount), assignedDriverId || '', assignedDriverName || '', scheduledTime || '12:00 PM', '']
+      [id, customerName, address, phone, category || 'COMMERCIAL', status, paymentType || 'UPI', Number(amount) || 940, driverId, driverName, scheduledTime || '12:00 PM', '']
     );
 
-    console.log(`[SQL DATABASE INSERT] Delivery registered in SQLite for ${customerName}`);
-    res.json({ success: true, delivery: { id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, deliveredTime: '' } });
+    // Automatically create corresponding Loading Batch for Loadman view & depot tracking
+    const batchId = `batch-${Date.now()}`;
+    const batchNo = `LB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const reg = driverName === 'Suresh' ? 'TN 38 BQ 1092' : driverName === 'Ramesh' ? 'TN 38 CF 9901' : driverName === 'Vijay' ? 'TN 38 DK 3341' : 'TN 38 AU 4821';
+    const qty = Number(cylinderCount) || Math.max(1, Math.round(Number(amount || 940) / 940)) || 1;
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    await runQuery(
+      `INSERT INTO loading_batches (id, vehicleRegistration, driverName, filledCylinders, emptyReturned, loadmanName, timestamp, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [batchId, reg, driverName, qty, 0, 'Kumar', timestamp, 'IN_PROGRESS']
+    );
+
+    console.log(`[SQL DATABASE INSERT] Delivery & Loading Batch registered in SQLite for ${customerName} (Batch: ${batchNo})`);
+    res.json({
+      success: true,
+      delivery: { id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId: driverId, assignedDriverName: driverName, scheduledTime },
+      batch: { id: batchId, batchNumber: batchNo, vehicleRegistration: reg, driverName, filledCylinders: qty, loadmanName: 'Kumar', timestamp, status: 'IN_PROGRESS' }
+    });
   } catch (err) {
+    console.error('Insert delivery error:', err);
     res.status(500).json({ success: false, error: 'Failed to insert delivery into SQLite' });
   }
 });
@@ -375,7 +485,7 @@ app.post('/api/deliveries', async (req: Request, res: Response) => {
 // LOADING BATCHES ENDPOINTS
 app.get('/api/batches', async (req: Request, res: Response) => {
   try {
-    const batches = await fetchAll('SELECT * FROM loading_batches ORDER BY timestamp DESC');
+    const batches = await fetchAll('SELECT * FROM loading_batches ORDER BY id DESC');
     res.json({ success: true, batches });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch loading batches' });
@@ -443,7 +553,18 @@ app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
+// Global error handler
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(`[ERROR] Unhandled: ${err.message || err}`);
+  if (err.message === 'CORS: Origin not allowed') {
+    return res.status(403).json({ success: false, message: 'Origin not permitted.' });
+  }
+  res.status(500).json({ success: false, message: 'Internal server error.' });
+});
+
 app.listen(PORT, () => {
-  console.log(`[INFO] Vetri Indane Express API Server active on port ${PORT}`);
-  console.log(`[INFO] Architecture: Node.js / Express / SQLite Database`);
+  console.log(`[INFO] ✓ Vetri Indane LPG Platform — Production Server on port ${PORT}`);
+  console.log(`[INFO] ✓ Database: ${isSupabaseConfigured() ? 'Supabase PostgreSQL Cloud' : 'SQLite Local'}`);
+  console.log(`[INFO] ✓ Security: JWT + Helmet + Rate Limiting ACTIVE`);
+  console.log(`[INFO] ✓ CORS: Locked to ${ALLOWED_ORIGINS.filter(o => !o.includes('localhost')).join(', ')}`);
 });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PackageCheck, AlertTriangle, X } from 'lucide-react';
+import { API_BASE } from '../utils/api';
 
 export const LoadingPage: React.FC = () => {
   const { batches, reportBatchIssue } = useApp();
@@ -120,9 +121,6 @@ export const LoadingPage: React.FC = () => {
               {batch.status !== 'COMPLETED' && batch.status !== 'ACCEPTED' ? (
                 <button
                   onClick={async () => {
-                    const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                      ? 'http://localhost:5000'
-                      : '';
                     try {
                       await fetch(`${API_BASE}/api/batches/${batch.id}/accept`, {
                         method: 'PUT',
