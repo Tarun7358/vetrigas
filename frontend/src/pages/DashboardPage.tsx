@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { soundAlerts } from '../utils/audioAlerts';
+import { LiveDriverQRMonitor } from '../components/LiveDriverQRMonitor';
 import {
   Users,
   CheckCircle2,
@@ -476,6 +477,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
           </div>
 
           {/* Operational Progress & Velocity */}
+          {/* LIVE DRIVER UPI QR & CASH COLLECTION MONITOR */}
+          <LiveDriverQRMonitor />
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-6">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">

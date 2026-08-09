@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X, Navigation, QrCode, DollarSign, ShieldCheck, Camera, Compass } from 'lucide-react';
 import { EBillModal } from '../components/EBillModal';
+import { LiveDriverQRMonitor } from '../components/LiveDriverQRMonitor';
 import type { BillRecord, DeliveryItem } from '../types';
 import { sendWhatsAppReceipt } from '../utils/whatsappReceipt';
 import { soundAlerts } from '../utils/audioAlerts';
@@ -218,6 +219,9 @@ export const DeliveriesPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* LIVE DRIVER UPI QR & CASH COLLECTION MONITOR */}
+      <LiveDriverQRMonitor />
 
       {/* LIVE DRIVER GPS ROUTE NAVIGATION HUD BANNER */}
       {activeNavDelivery && (
