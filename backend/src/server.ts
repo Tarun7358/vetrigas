@@ -13,6 +13,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'vetri-indane-default-secret-change-in-production-2026';
 
@@ -25,11 +26,11 @@ app.use(helmet({
 
 // CORS: Lock to production domain + localhost for dev
 const ALLOWED_ORIGINS = [
-  process.env.ALLOWED_ORIGINS || '',
+  process.env.FRONTEND_URL,
+  // Netlify frontend
+  'https://lovely-sunburst-74bfc0.netlify.app',
   'https://vetriindane.com',
   'https://www.vetriindane.com',
-  // Netlify deployment URLs
-  'https://lovely-sunburst-74bfc0.netlify.app',
   'https://vetriindane.netlify.app',
   'https://vetri-indane.netlify.app',
   // Render backend (internal)
@@ -57,20 +58,20 @@ app.use(cors({
 
 app.use(express.json({ limit: '1mb' }));
 
-// Rate Limiting: Global — 100 requests per 15 minutes per IP
+// Rate Limiting: High-capacity limit to support dashboard live sync & reverse proxies
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 5000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Please try again in 15 minutes.' },
 });
 app.use('/api/', globalLimiter);
 
-// Rate Limiting: Login — Strict 10 attempts per 15 minutes per IP
+// Rate Limiting: Login attempts limit
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 500,
   message: { success: false, message: 'Too many login attempts. Account locked for 15 minutes.' },
 });
 
@@ -635,5 +636,5 @@ app.listen(PORT, () => {
   console.log(`[INFO] ✓ Vetri Indane LPG Platform — Production Server on port ${PORT}`);
   console.log(`[INFO] ✓ Database: ${isSupabaseConfigured() ? 'Supabase PostgreSQL Cloud' : 'SQLite Local'}`);
   console.log(`[INFO] ✓ Security: JWT + Helmet + Rate Limiting ACTIVE`);
-  console.log(`[INFO] ✓ CORS: Locked to ${ALLOWED_ORIGINS.filter(o => !o.includes('localhost')).join(', ')}`);
+  console.log(`[INFO] ✓ CORS: Locked to ${ALLOWED_ORIGINS.filter(o => o && !o.includes('localhost')).join(', ')}`);
 });
