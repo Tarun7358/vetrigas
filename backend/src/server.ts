@@ -58,6 +58,17 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '1mb' }));
+app.use('/downloads', express.static(path.join(__dirname, '../public/downloads')));
+
+// APK Direct Download Endpoint
+app.get('/api/download/apk', (req: Request, res: Response) => {
+  const apkPath = path.join(__dirname, '../public/downloads/vetri-indane-worker.apk');
+  res.download(apkPath, 'Vetri_Indane_Worker_v2.5.apk', (err) => {
+    if (err && !res.headersSent) {
+      res.status(404).json({ success: false, message: 'APK download file not found on server.' });
+    }
+  });
+});
 
 // Rate Limiting: High-capacity limit to support dashboard live sync & reverse proxies
 const globalLimiter = rateLimit({

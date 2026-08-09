@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Flame, ShieldCheck, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, LockKeyhole, KeyRound, ArrowLeft } from 'lucide-react';
+import { Flame, ShieldCheck, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, LockKeyhole, KeyRound, ArrowLeft, Smartphone, Download } from 'lucide-react';
 import { API_BASE } from '../utils/api';
 
 export const LoginPage: React.FC = () => {
@@ -390,8 +390,18 @@ export const LoginPage: React.FC = () => {
             </form>
           )}
 
-          {/* Footer note */}
-          <div className="pt-3 border-t border-slate-800 space-y-2">
+          {/* Footer note & APK Download Button */}
+          <div className="pt-3 border-t border-slate-800 space-y-3">
+            <a
+              href={`${API_BASE}/api/download/apk`}
+              download="Vetri_Indane_Worker_v2.5.apk"
+              className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/30 hover:border-amber-400 font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2.5 transition-all shadow-md cursor-pointer group"
+            >
+              <Smartphone className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span>DOWNLOAD ANDROID APP (APK)</span>
+              <Download className="w-4 h-4 text-amber-400 shrink-0 ml-auto" />
+            </a>
+
             <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
               <span>Account access is managed by the system <strong>Owner</strong>. Contact your admin if you cannot log in.</span>
