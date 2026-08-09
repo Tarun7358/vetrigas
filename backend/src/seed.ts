@@ -22,6 +22,17 @@ export async function seedDatabase() {
       )
     `);
 
+    // Ensure columns exist for existing SQLite databases
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN hourlyRate REAL`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN phone TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN password TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN joiningDate TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN attendanceStatus TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN workingHours TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN todayWorkProgress TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN performanceScore INTEGER`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE employees ADD COLUMN status TEXT`); } catch (e) {}
+
     // 2. Vehicles / GPS Telemetry Table Schema
     await runQuery(`
       CREATE TABLE IF NOT EXISTS vehicles (

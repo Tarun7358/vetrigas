@@ -274,62 +274,68 @@ app.get('/api/employees', async (req: Request, res: Response) => {
 });
 
 // Owner-Only Add New Employee
+// Owner & Staff Add/Update New Employee
 app.post('/api/employees', async (req: Request, res: Response) => {
-  const { name, role, email, password, phone, hourlyRate, userRole } = req.body;
-  const callerRole = ((userRole || '') as string).toUpperCase();
-  
-  if (callerRole !== 'OWNER') {
-    return res.status(403).json({ success: false, message: 'Access Denied: Only OWNER can add new workers.' });
-  }
+  const { id: reqId, name, role, email, password, phone, hourlyRate } = req.body;
 
   if (!email || !name) {
     return res.status(400).json({ success: false, message: 'Name and email are required.' });
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  const id = `emp-${Date.now()}`;
+  const id = reqId || `emp-${Date.now()}`;
   const joiningDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const rate = Number(hourlyRate) || 75;
   const hashedPassword = hashPassword(password || 'Vetri@2026');
+  const workerRole = role || 'Driver';
+  const workerPhone = phone || '+91 96008 70814';
 
   try {
-    // Check if worker already exists
-    const existing = await fetchOne('SELECT id FROM employees WHERE LOWER(email) = ?', [cleanEmail]);
+    // Check if worker already exists by email or id
+    const existing = await fetchOne('SELECT id FROM employees WHERE LOWER(email) = ? OR id = ?', [cleanEmail, id]);
     if (existing) {
       // Update existing record
-      await runQuery(
-        `UPDATE employees SET name = ?, role = ?, password = ?, phone = ?, hourlyRate = ?, status = 'Active' WHERE LOWER(email) = ?`,
-        [name, role || 'Driver', hashedPassword, phone || '+91 96008 70814', rate, cleanEmail]
-      );
-      console.log(`[SQL DATABASE UPDATE] Existing worker updated: ${name} (${cleanEmail})`);
-      return res.json({ success: true, message: 'Worker account updated successfully.', employee: { id: existing.id, name, role, email: cleanEmail, phone, joiningDate, status: 'Active', hourlyRate: rate } });
+      try {
+        await runQuery(
+          `UPDATE employees SET name = ?, role = ?, password = ?, phone = ?, hourlyRate = ?, status = 'Active' WHERE id = ? OR LOWER(email) = ?`,
+          [name, workerRole, hashedPassword, workerPhone, rate, existing.id, cleanEmail]
+        );
+      } catch (colErr) {
+        await runQuery(
+          `UPDATE employees SET name = ?, role = ?, password = ?, phone = ?, status = 'Active' WHERE id = ? OR LOWER(email) = ?`,
+          [name, workerRole, hashedPassword, workerPhone, existing.id, cleanEmail]
+        );
+      }
+      console.log(`[SQL DATABASE UPDATE] Worker updated: ${name} (${cleanEmail})`);
+      return res.json({ success: true, message: 'Worker account updated successfully.', employee: { id: existing.id, name, role: workerRole, email: cleanEmail, phone: workerPhone, joiningDate, status: 'Active', hourlyRate: rate } });
     }
 
-    await runQuery(
-      `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, name, role || 'Driver', cleanEmail, hashedPassword, phone || '+91 96008 70814', joiningDate, 'Present', '0h 0m', '0/20', 90, 'Active', rate]
-    );
+    try {
+      await runQuery(
+        `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [id, name, workerRole, cleanEmail, hashedPassword, workerPhone, joiningDate, 'Present', '0h 0m', '0/20', 90, 'Active', rate]
+      );
+    } catch (colErr) {
+      await runQuery(
+        `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')`,
+        [id, name, workerRole, cleanEmail, hashedPassword, workerPhone, joiningDate]
+      );
+    }
 
     console.log(`[SQL DATABASE INSERT] New worker added: ${name} (${cleanEmail})`);
-    res.json({ success: true, employee: { id, name, role, email: cleanEmail, phone, joiningDate, status: 'Active', hourlyRate: rate } });
+    res.json({ success: true, employee: { id, name, role: workerRole, email: cleanEmail, phone: workerPhone, joiningDate, status: 'Active', hourlyRate: rate } });
   } catch (err) {
     console.error('Failed to insert/update employee:', err);
     res.status(500).json({ success: false, error: 'Failed to save employee to database' });
   }
 });
 
-// Owner-Only Delete Employee
+// Delete Employee Endpoint
 app.delete('/api/employees/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { userRole } = req.query;
-  const callerRole = ((userRole || '') as string).toUpperCase();
-
-  if (callerRole !== 'OWNER') {
-    return res.status(403).json({ success: false, message: 'Access Denied: Only OWNER can remove workers.' });
-  }
 
   try {
-    await runQuery('DELETE FROM employees WHERE id = ?', [id]);
+    await runQuery('DELETE FROM employees WHERE id = ? OR LOWER(email) = ?', [id, id.toLowerCase()]);
     console.log(`[SQL DATABASE DELETE] Employee ${id} removed.`);
     res.json({ success: true, message: `Employee ${id} removed.` });
   } catch (err) {

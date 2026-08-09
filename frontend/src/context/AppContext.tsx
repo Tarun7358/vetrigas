@@ -150,7 +150,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (empRes.ok) {
         const data = await empRes.json();
         if (Array.isArray(data.employees)) {
-          setEmployees(data.employees);
+          let customEmps: Employee[] = [];
+          try {
+            const stored = localStorage.getItem('vetri_custom_employees');
+            if (stored) customEmps = JSON.parse(stored);
+          } catch (e) {}
+
+          const backendEmails = new Set(data.employees.map((e: Employee) => e.email.toLowerCase()));
+          const localOnly = customEmps.filter(e => !backendEmails.has(e.email.toLowerCase()));
+          const merged = [...data.employees, ...localOnly];
+          setEmployees(merged);
         }
       }
 
@@ -553,16 +562,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  // Owner-Only Actions
+  // Workforce Employee Management
   const addEmployee = async (empData: Partial<Employee>) => {
-    const roleUpper = (role || '').toUpperCase();
-    if (roleUpper !== 'OWNER') {
-      alert('Access Denied: Only OWNER can add new workers to the platform.');
-      return;
-    }
     const cleanEmail = (empData.email || '').trim().toLowerCase();
     const newEmp: Employee = {
-      id: `emp-${Date.now()}`,
+      id: empData.id || `emp-${Date.now()}`,
       name: empData.name || 'New Worker',
       email: cleanEmail || `${(empData.name || 'worker').toLowerCase().replace(/\s+/g, '')}@vetriindane.com`,
       password: empData.password || 'Vetri@2026',
@@ -577,9 +581,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hourlyRate: Number(empData.hourlyRate) || 75,
     };
 
-    setEmployees(prev => [newEmp, ...prev.filter(e => e.email.toLowerCase() !== newEmp.email.toLowerCase())]);
+    setEmployees(prev => {
+      const updated = [newEmp, ...prev.filter(e => e.email.toLowerCase() !== newEmp.email.toLowerCase() && e.id !== newEmp.id)];
+      try { localStorage.setItem('vetri_custom_employees', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
 
     try {
+      const roleUpper = (role || 'OWNER').toUpperCase();
       const res = await fetch(`${API_BASE}/api/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -596,7 +605,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {
         id: `audit-${Date.now()}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        user: 'Owner Privilege',
+        user: `${role} Access`,
         action: `Added New Worker ${newEmp.name} (${newEmp.role})`,
         module: 'Workforce',
         record: newEmp.id,
@@ -607,16 +616,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeEmployee = async (empId: string) => {
-    const roleUpper = (role || '').toUpperCase();
-    if (roleUpper !== 'OWNER') {
-      alert('Access Denied: Only OWNER can remove workers from the platform.');
-      return;
-    }
     const target = employees.find(e => e.id === empId);
 
-    setEmployees(prev => prev.filter(e => e.id !== empId));
+    setEmployees(prev => {
+      const updated = prev.filter(e => e.id !== empId);
+      try { localStorage.setItem('vetri_custom_employees', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
 
     try {
+      const roleUpper = (role || 'OWNER').toUpperCase();
       const res = await fetch(`${API_BASE}/api/employees/${empId}?userRole=${roleUpper}`, {
         method: 'DELETE',
       });
@@ -631,7 +640,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       {
         id: `audit-${Date.now()}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        user: 'Owner Privilege',
+        user: `${role} Access`,
         action: `Removed Worker ${target?.name || empId}`,
         module: 'Workforce',
         record: empId,
