@@ -6,7 +6,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export const PayrollPage: React.FC = () => {
-  const { payroll, updatePayrollStatus, role, currentUser } = useApp();
+  const { payroll, employees, updatePayrollStatus, role, currentUser } = useApp();
   const [selectedPay, setSelectedPay] = useState<PayrollRecord | null>(null);
 
   // Owner Edit & Adjust Salary Modal State
@@ -36,8 +36,8 @@ export const PayrollPage: React.FC = () => {
       })
     : payroll;
 
-  const estimatedTotal = displayPayroll.reduce((sum, p) => sum + (p.netSalary || 0), 0) || 482450;
-  const approvedTotal = displayPayroll.filter(p => p.status === 'Approved' || p.approvedByOwner).reduce((sum, p) => sum + (p.ownerAdjustedSalary || p.netSalary || 0), 0) || 465200;
+  const estimatedTotal = displayPayroll.reduce((sum, p) => sum + (p.netSalary || 0), 0);
+  const approvedTotal = displayPayroll.filter(p => p.status === 'Approved' || p.approvedByOwner).reduce((sum, p) => sum + (p.ownerAdjustedSalary || p.netSalary || 0), 0);
 
   const handleOpenEdit = (pay: PayrollRecord) => {
     setEditingPay(pay);
@@ -123,7 +123,7 @@ export const PayrollPage: React.FC = () => {
         </div>
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ACTIVE WORKFORCE</p>
-          <p className="font-display font-extrabold text-xl text-blue-600">28 Staff</p>
+          <p className="font-display font-extrabold text-xl text-blue-600">{employees.length} Staff</p>
         </div>
         <div className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-sm space-y-1">
           <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">ESTIMATED PAYROLL</p>
