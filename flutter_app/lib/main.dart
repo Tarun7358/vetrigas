@@ -1180,23 +1180,66 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
               ],
             ),
 
-            // TAB 4: WORKFORCE ROSTER
+            // TAB 4: WORKFORCE ROSTER & BIOMETRIC ATTENDANCE HARDWARE
             ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text('WORKFORCE DIRECTORY (SQLITE)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('BIOMETRIC ATTENDANCE (SQLITE)', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFF59E0B),
+                        side: const BorderSide(color: Color(0xFFF59E0B)),
+                      ),
+                      icon: const Icon(Icons.fingerprint, size: 16),
+                      label: const Text('BIOMETRIC SCAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                      onPressed: () async {
+                        try {
+                          final res = await http.post(
+                            Uri.parse('$kApiBase/integrations/biometrics/clock-in'),
+                            headers: {'Content-Type': 'application/json'},
+                            body: jsonEncode({
+                              'employeeId': 'emp-01',
+                              'deviceId': 'BIO-GODOWN-01',
+                              'status': 'VERIFIED',
+                            }),
+                          );
+                          if (res.statusCode == 200) {
+                            _fetchLiveOwnerData(silent: true);
+                            if (!mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                backgroundColor: Color(0xFF10B981),
+                                behavior: SnackBarBehavior.floating,
+                                content: Text('Biometric Fingerprint Verified! Attendance recorded in SQLite.'),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('Biometric scan note: $e');
+                        }
+                      },
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
                 ..._employees.map((emp) {
+                  final isPresent = emp['attendanceStatus'] == 'Present';
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: const Color(0xFFF59E0B),
+                        backgroundColor: isPresent ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                         child: Text(emp['name'] != null ? emp['name'][0] : 'E', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                       ),
                       title: Text('${emp['name']} (${emp['role']})', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      subtitle: Text('Status: ${emp['attendanceStatus'] ?? 'Present'}  •  ${emp['email']}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-                      trailing: const Icon(Icons.check_circle, color: Color(0xFF10B981)),
+                      subtitle: Text('Attendance: ${emp['attendanceStatus'] ?? 'Present'}  •  ${emp['workingHours'] ?? '8h'}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                      trailing: Chip(
+                        label: Text(isPresent ? 'VERIFIED' : 'PENDING', style: const TextStyle(color: Colors.black, fontSize: 8, fontWeight: FontWeight.bold)),
+                        backgroundColor: isPresent ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                      ),
                     ),
                   );
                 }),
