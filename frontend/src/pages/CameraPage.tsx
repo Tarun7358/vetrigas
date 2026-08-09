@@ -3,12 +3,22 @@ import { useApp } from '../context/AppContext';
 import { Video, Camera, Play, CheckCircle2, AlertTriangle, RefreshCw, Smartphone } from 'lucide-react';
 
 export const CameraPage: React.FC = () => {
-  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations, currentUser } = useApp();
+  const { vehicles, selectedVehicleId, setSelectedVehicleId, integrations, currentUser, role, deliveries } = useApp();
+
+  const isDriver = role === 'DRIVER';
+  const driverName = currentUser?.name || 'Arun';
+
+  // Find active or recent delivery for driver
+  const myActiveDelivery = deliveries.find(
+    d => (d.driverName || '').toLowerCase() === driverName.toLowerCase() && d.status !== 'DELIVERED'
+  ) || deliveries.find(
+    d => (d.driverName || '').toLowerCase() === driverName.toLowerCase()
+  );
 
   const fallbackVehicle = {
     id: 'veh-01',
     registrationNumber: 'TN 38 AU 4821',
-    driverName: currentUser?.name || 'Arun',
+    driverName: driverName,
     driverId: 'emp-01',
     status: 'MOVING' as const,
     speed: 42,
@@ -23,7 +33,16 @@ export const CameraPage: React.FC = () => {
     cameraStatus: 'LIVE' as const,
   };
 
-  const activeVehicle = vehicles.find(v => v.id === selectedVehicleId) || vehicles[0] || fallbackVehicle;
+  // Match vehicle by active delivery's vehicleNumber or by driver name
+  const myAssignedVehicle = vehicles.find(v => v.registrationNumber === myActiveDelivery?.vehicleNumber)
+    || vehicles.find(v => (v.driverName || '').toLowerCase() === driverName.toLowerCase())
+    || vehicles[0]
+    || fallbackVehicle;
+
+  // Active vehicle: locked for DRIVER, selectable for Management
+  const activeVehicle = isDriver
+    ? myAssignedVehicle
+    : (vehicles.find(v => v.id === selectedVehicleId) || vehicles[0] || fallbackVehicle);
 
   const [activeCam, setActiveCam] = useState<'ROAD' | 'CABIN'>('ROAD');
   const [snapshotTaken, setSnapshotTaken] = useState(false);
@@ -78,27 +97,33 @@ export const CameraPage: React.FC = () => {
               VEHICLE DASHCAM & LIVE CAMERA CONTROL
             </h1>
             <p className="text-xs text-slate-400">
-              Fleettrack EH21 AI Dashcam Stream & Driver Safety Timeline
+              {isDriver ? `Driver Camera Monitor • Assigned Truck: ${activeVehicle.registrationNumber}` : 'Fleettrack EH21 AI Dashcam Stream & Driver Safety Timeline'}
             </p>
           </div>
         </div>
 
         {/* Vehicle Switcher Dropdown & Camera Source Selector */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5">
-            <span className="text-xs font-bold text-amber-400">Truck:</span>
-            <select
-              value={activeVehicle.id}
-              onChange={e => setSelectedVehicleId(e.target.value)}
-              className="bg-transparent text-white font-mono font-bold text-xs outline-none cursor-pointer"
-            >
-              {vehicles.map(v => (
-                <option key={v.id} value={v.id} className="bg-slate-900 text-white">
-                  🚚 {v.registrationNumber} ({v.driverName})
-                </option>
-              ))}
-            </select>
-          </div>
+          {isDriver ? (
+            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-1.5 text-xs text-amber-300 font-mono font-bold">
+              <span>🔒 Assigned Truck: 🚚 {activeVehicle.registrationNumber}</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5">
+              <span className="text-xs font-bold text-amber-400">Truck:</span>
+              <select
+                value={activeVehicle.id}
+                onChange={e => setSelectedVehicleId(e.target.value)}
+                className="bg-transparent text-white font-mono font-bold text-xs outline-none cursor-pointer"
+              >
+                {vehicles.map(v => (
+                  <option key={v.id} value={v.id} className="bg-slate-900 text-white">
+                    🚚 {v.registrationNumber} ({v.driverName})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button
             onClick={() => setUseDeviceCam(!useDeviceCam)}
@@ -136,24 +161,37 @@ export const CameraPage: React.FC = () => {
         {/* Video Canvas Container */}
         <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col justify-between space-y-4">
           
-          {/* Quick Fleet Truck Selector Tabs */}
-          <div className="flex flex-wrap items-center gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-            <span className="text-[11px] font-extrabold text-slate-400 font-mono shrink-0 mr-1 uppercase">SELECT TRUCK:</span>
-            {vehicles.map(v => (
-              <button
-                key={v.id}
-                onClick={() => setSelectedVehicleId(v.id)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                  activeVehicle.id === v.id
-                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-400'
-                    : 'bg-slate-950 text-slate-300 border border-slate-800 hover:border-slate-700'
-                }`}
-              >
-                <span>🚚 {v.registrationNumber}</span>
-                <span className="opacity-80 text-[10px]">({v.driverName})</span>
-              </button>
-            ))}
-          </div>
+          {/* Quick Fleet Truck Selector Tabs (Management) vs Driver Lock Badge */}
+          {isDriver ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 font-bold">🔒 Driver Vehicle Lock:</span>
+                <span className="text-white font-mono font-bold">🚚 {activeVehicle.registrationNumber}</span>
+                <span className="text-slate-400 text-xs">({activeVehicle.driverName})</span>
+              </div>
+              <span className="text-emerald-400 font-mono text-[11px] bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg">
+                ● Active Order Stream Mode
+              </span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+              <span className="text-[11px] font-extrabold text-slate-400 font-mono shrink-0 mr-1 uppercase">SELECT TRUCK:</span>
+              {vehicles.map(v => (
+                <button
+                  key={v.id}
+                  onClick={() => setSelectedVehicleId(v.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    activeVehicle.id === v.id
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-400'
+                      : 'bg-slate-950 text-slate-300 border border-slate-800 hover:border-slate-700'
+                  }`}
+                >
+                  <span>🚚 {v.registrationNumber}</span>
+                  <span className="opacity-80 text-[10px]">({v.driverName})</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Stream Overlay Controls */}
           <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 gap-2">
