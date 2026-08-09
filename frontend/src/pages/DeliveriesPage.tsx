@@ -464,15 +464,37 @@ export const DeliveriesPage: React.FC = () => {
             {/* Action Buttons */}
             <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
               {del.status === 'OUT FOR DELIVERY' || del.status === 'ASSIGNED' || del.status === 'READY' ? (
-                <button
-                  onClick={() => {
-                    setFulfillItem(del);
-                    setPaymentMode('UPI');
-                  }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Collect Money & Complete Delivery
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setFulfillItem(del);
+                      setPaymentMode('UPI');
+                    }}
+                    className="flex-1 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Collect Money & Complete Delivery
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const rawPhone = del.customerPhone.replace(/[^0-9]/g, '') || '9600870814';
+                      const text = encodeURIComponent(
+                        `Hello ${del.customerName},\n\n` +
+                        `🔥 Your Vetri Indane LPG Cylinder Refill (${del.deliveryNumber}) is OUT FOR DELIVERY!\n\n` +
+                        `📦 Quantity: ${del.cylinderCount} Cylinder(s)\n` +
+                        `💰 Amount: ₹${del.amount}\n` +
+                        `🚚 Driver: ${del.driverName} (${del.vehicleNumber})\n` +
+                        `📞 Contact: +91 96008 70814\n\n` +
+                        `Please have Cash or UPI QR ready. Thank you for choosing Vetri Indane!`
+                      );
+                      window.open(`https://wa.me/91${rawPhone}?text=${text}`, '_blank');
+                    }}
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
+                    title="Send WhatsApp SMS Alert to Customer with Driver Phone & ETA"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> WhatsApp Alert
+                  </button>
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   <button
@@ -495,7 +517,7 @@ export const DeliveriesPage: React.FC = () => {
                     })}
                     className="flex-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> WhatsApp
+                    <MessageSquare className="w-3.5 h-3.5 text-emerald-600" /> Share E-Bill
                   </button>
                 </div>
               )}

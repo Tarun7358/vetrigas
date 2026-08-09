@@ -58,9 +58,13 @@ export interface PayrollRecord {
   hourlyRate: number;
   otHours: number;
   otRate: number;
+  cylinderIncentive?: number;
   bonus: number;
   deduction: number;
   netSalary: number;
+  ownerAdjustedSalary?: number;
+  ownerNotes?: string;
+  approvedByOwner?: boolean;
   status: 'Draft' | 'Review' | 'Approved' | 'Locked' | 'Paid';
   month: string; // "August 2026"
 }
