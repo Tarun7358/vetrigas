@@ -157,7 +157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const expRes = await fetch(`${API_BASE}/api/expenses`);
       if (expRes.ok) {
         const data = await expRes.json();
-        if (data.expenses && data.expenses.length > 0) {
+        if (Array.isArray(data.expenses)) {
           setExpenses(data.expenses);
         }
       }
@@ -173,7 +173,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const vehRes = await fetch(`${API_BASE}/api/gps/vehicles`);
       if (vehRes.ok) {
         const data = await vehRes.json();
-        if (data.vehicles && data.vehicles.length > 0) {
+        if (Array.isArray(data.vehicles)) {
           setVehicles(data.vehicles);
         }
       }
@@ -181,7 +181,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const delRes = await fetch(`${API_BASE}/api/deliveries`);
       if (delRes.ok) {
         const data = await delRes.json();
-        if (data.deliveries) {
+        if (Array.isArray(data.deliveries)) {
           const mappedDeliveries: DeliveryItem[] = data.deliveries.map((d: any) => ({
             id: d.id,
             deliveryNumber: d.deliveryNumber || d.id.replace('del-', 'VI'),
@@ -190,10 +190,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             customerAddress: d.customerAddress || d.address || 'Peelamedu, Coimbatore',
             cylinderCount: Number(d.cylinderCount) || Math.max(1, Math.round(Number(d.amount || 940) / 940)) || 1,
             amount: Number(d.amount) || 940,
-            driverName: d.driverName || d.assignedDriverName || 'Arun',
-            vehicleNumber: d.vehicleNumber || (d.assignedDriverName === 'Suresh' ? 'TN 38 BQ 1092' : d.assignedDriverName === 'Ramesh' ? 'TN 38 CF 9901' : d.assignedDriverName === 'Vijay' ? 'TN 38 DK 3341' : 'TN 38 AU 4821'),
+            driverName: d.driverName || d.assignedDriverName || 'Unassigned',
+            vehicleNumber: d.vehicleNumber || 'Unassigned',
             status: d.status || 'ASSIGNED',
-            distanceKm: d.distanceKm || 3.5,
+            distanceKm: d.distanceKm || 0,
             paymentMethod: d.paymentType || d.paymentMethod || 'UPI',
             paymentStatus: d.paymentStatus || (d.status === 'DELIVERED' ? 'PAID' : 'PENDING'),
             billNumber: d.billNumber,
@@ -206,15 +206,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const batRes = await fetch(`${API_BASE}/api/batches`);
       if (batRes.ok) {
         const data = await batRes.json();
-        if (data.batches) {
+        if (Array.isArray(data.batches)) {
           const mappedBatches: LoadingBatch[] = data.batches.map((b: any) => ({
             id: b.id,
             batchNumber: b.batchNumber || `LB-${b.id.slice(-4)}`,
-            driverName: b.driverName || 'Arun',
-            vehicleNumber: b.vehicleNumber || b.vehicleRegistration || 'TN 38 AU 4821',
-            loadmanName: b.loadmanName || 'Kumar',
-            requiredCount: Number(b.requiredCount) || Number(b.filledCylinders) || 25,
-            loadedCount: Number(b.loadedCount) !== undefined && !isNaN(Number(b.loadedCount)) ? Number(b.loadedCount) : (b.status === 'COMPLETED' || b.status === 'ACCEPTED' ? Number(b.filledCylinders || 25) : 0),
+            driverName: b.driverName || 'Unassigned',
+            vehicleNumber: b.vehicleNumber || b.vehicleRegistration || 'Unassigned',
+            loadmanName: b.loadmanName || 'Unassigned',
+            requiredCount: Number(b.requiredCount) || Number(b.filledCylinders) || 0,
+            loadedCount: Number(b.loadedCount) !== undefined && !isNaN(Number(b.loadedCount)) ? Number(b.loadedCount) : (b.status === 'COMPLETED' || b.status === 'ACCEPTED' ? Number(b.filledCylinders || 0) : 0),
             status: b.status || 'IN_PROGRESS',
             timestamp: b.timestamp || 'Just now',
             discrepancyReason: b.discrepancyReason,
@@ -227,7 +227,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const bilRes = await fetch(`${API_BASE}/api/bills`);
       if (bilRes.ok) {
         const data = await bilRes.json();
-        if (data.bills && data.bills.length > 0) {
+        if (Array.isArray(data.bills)) {
           setBills(data.bills);
         }
       }
