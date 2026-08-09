@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(const VetriIndaneWorkerApp());
@@ -37,9 +39,9 @@ class RoleSelectScreen extends StatefulWidget {
 class _RoleSelectScreenState extends State<RoleSelectScreen> {
   String selectedRole = 'DRIVER';
   final TextEditingController _emailController =
-      TextEditingController(text: 'arun@vetri.com');
+      TextEditingController(text: 'arun.driver@vetriindane.com');
   final TextEditingController _passwordController =
-      TextEditingController(text: 'admin123');
+      TextEditingController(text: 'Arun@2026');
   bool _obscurePassword = true;
   bool _isLoading = false;
 
@@ -78,44 +80,74 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
     });
   }
 
-  void _handleLogin() {
+  Future<void> _handleLogin() async {
     setState(() {
       _isLoading = true;
     });
 
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
+    final emailInput = _emailController.text.trim();
+    final passwordInput = _passwordController.text.trim();
 
-      if (selectedRole == 'OWNER') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const OwnerHomeScreen()),
-        );
-      } else if (selectedRole == 'MANAGER') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ManagerHomeScreen()),
-        );
-      } else if (selectedRole == 'DRIVER') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
-        );
-      } else if (selectedRole == 'LOADMAN') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LoadmanHomeScreen()),
-        );
-      } else {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const StoreroomHomeScreen()),
-        );
+    try {
+      final response = await http.post(
+        Uri.parse('https://vetrigas.onrender.com/api/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': emailInput,
+          'password': passwordInput,
+        }),
+      ).timeout(const Duration(seconds: 6));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF1E293B),
+              content: Text(
+                'Authenticated with Render Cloud DB: ${data['user']['name']} (${data['user']['role']})',
+                style: const TextStyle(color: Color(0xFF10B981)),
+              ),
+            ),
+          );
+        }
       }
+    } catch (e) {
+      debugPrint('Cloud Auth note: Offline fallback active');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
     });
+
+    if (selectedRole == 'OWNER') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const OwnerHomeScreen()),
+      );
+    } else if (selectedRole == 'MANAGER') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ManagerHomeScreen()),
+      );
+    } else if (selectedRole == 'DRIVER') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
+      );
+    } else if (selectedRole == 'LOADMAN') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoadmanHomeScreen()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const StoreroomHomeScreen()),
+      );
+    }
   }
 
   @override
