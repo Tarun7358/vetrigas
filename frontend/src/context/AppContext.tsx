@@ -499,17 +499,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Owner-Only Actions
   const addEmployee = async (empData: Partial<Employee>) => {
-    if (role !== 'OWNER') {
+    const roleUpper = (role || '').toUpperCase();
+    if (roleUpper !== 'OWNER') {
       alert('Access Denied: Only OWNER can add new workers to the platform.');
       return;
     }
+    const cleanEmail = (empData.email || '').trim().toLowerCase();
     const newEmp: Employee = {
       id: `emp-${Date.now()}`,
       name: empData.name || 'New Worker',
-      email: empData.email || `${(empData.name || 'worker').toLowerCase().replace(/\s+/g, '')}@vetriindane.com`,
+      email: cleanEmail || `${(empData.name || 'worker').toLowerCase().replace(/\s+/g, '')}@vetriindane.com`,
       password: empData.password || 'Vetri@2026',
       role: empData.role || 'Driver',
-      phone: empData.phone || '+91 98765 00000',
+      phone: empData.phone || '+91 96008 70814',
       joiningDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       attendanceStatus: 'Present',
       workingHours: '0h 0m',
@@ -519,17 +521,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hourlyRate: Number(empData.hourlyRate) || 75,
     };
 
+    setEmployees(prev => [newEmp, ...prev.filter(e => e.email.toLowerCase() !== newEmp.email.toLowerCase())]);
+
     try {
-      await fetch(`${API_BASE}/api/employees`, {
+      const res = await fetch(`${API_BASE}/api/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...newEmp, userRole: role }),
+        body: JSON.stringify({ ...newEmp, userRole: roleUpper }),
       });
+      if (res.ok) {
+        await fetchBackendData();
+      }
     } catch (err) {
-      console.warn('SQLite employee insert sync note: Saved locally');
+      console.warn('Worker saved locally');
     }
 
-    setEmployees(prev => [newEmp, ...prev]);
     setAuditLogs(prev => [
       {
         id: `audit-${Date.now()}`,
@@ -545,21 +551,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeEmployee = async (empId: string) => {
-    if (role !== 'OWNER') {
+    const roleUpper = (role || '').toUpperCase();
+    if (roleUpper !== 'OWNER') {
       alert('Access Denied: Only OWNER can remove workers from the platform.');
       return;
     }
     const target = employees.find(e => e.id === empId);
 
+    setEmployees(prev => prev.filter(e => e.id !== empId));
+
     try {
-      await fetch(`${API_BASE}/api/employees/${empId}?userRole=${role}`, {
+      const res = await fetch(`${API_BASE}/api/employees/${empId}?userRole=${roleUpper}`, {
         method: 'DELETE',
       });
+      if (res.ok) {
+        await fetchBackendData();
+      }
     } catch (err) {
-      console.warn('SQLite employee delete sync note');
+      console.warn('Worker deletion sync note');
     }
 
-    setEmployees(prev => prev.filter(e => e.id !== empId));
     setAuditLogs(prev => [
       {
         id: `audit-${Date.now()}`,

@@ -219,6 +219,18 @@ async function syncSqlToSupabase(sql: string, params: any[], supabase: any) {
     }], { onConflict: 'id' });
   }
 
+  else if (lowerSql.includes('insert into employees')) {
+    const [id, name, role, email, password, phone, joining_date, attendance_status, working_hours, today_work_progress, performance_score, status, hourly_rate] = params;
+    await supabase.from('employees').upsert([{
+      id, name, role, email, password, phone, joining_date, attendance_status, working_hours, today_work_progress, performance_score, status, hourly_rate
+    }], { onConflict: 'id' });
+  }
+
+  else if (lowerSql.includes('delete from employees')) {
+    const [id] = params;
+    await supabase.from('employees').delete().eq('id', id);
+  }
+
   else if (lowerSql.includes('insert into bills')) {
     const [id, bill_number, customer_name, amount, payment_method, transaction_id, driver_name, date, status, cylinder_count] = params;
     await supabase.from('bills').upsert([{
