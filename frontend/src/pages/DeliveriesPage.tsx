@@ -172,9 +172,7 @@ export const DeliveriesPage: React.FC = () => {
         return (
           dName === driverNameClean ||
           (driverNameClean.length > 2 && dName.includes(driverNameClean)) ||
-          (dName.length > 2 && driverNameClean.includes(dName)) ||
-          dName === 'arun' ||
-          dName === 'ramesh'
+          (dName.length > 2 && driverNameClean.includes(dName))
         );
       })
     : deliveries;

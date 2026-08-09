@@ -15,34 +15,15 @@ export const CameraPage: React.FC = () => {
     d => (d.driverName || '').toLowerCase() === driverName.toLowerCase()
   );
 
-  const fallbackVehicle = {
-    id: 'veh-01',
-    registrationNumber: 'TN 38 AU 4821',
-    driverName: driverName,
-    driverId: 'emp-01',
-    status: 'MOVING' as const,
-    speed: 42,
-    ignition: true,
-    todayDistanceKm: 86.4,
-    completedDeliveries: 14,
-    totalDeliveries: 20,
-    lat: 11.0168,
-    lng: 76.9558,
-    lastUpdatedSecondsAgo: 2,
-    hasCamera: true,
-    cameraStatus: 'LIVE' as const,
-  };
-
   // Match vehicle by active delivery's vehicleNumber or by driver name
   const myAssignedVehicle = vehicles.find(v => v.registrationNumber === myActiveDelivery?.vehicleNumber)
     || vehicles.find(v => (v.driverName || '').toLowerCase() === driverName.toLowerCase())
-    || vehicles[0]
-    || fallbackVehicle;
+    || null;
 
   // Active vehicle: locked for DRIVER, selectable for Management
   const activeVehicle = isDriver
     ? myAssignedVehicle
-    : (vehicles.find(v => v.id === selectedVehicleId) || vehicles[0] || fallbackVehicle);
+    : (vehicles.find(v => v.id === selectedVehicleId) || (vehicles.length > 0 ? vehicles[0] : null));
 
   const [activeCam, setActiveCam] = useState<'ROAD' | 'CABIN'>('ROAD');
   const [snapshotTaken, setSnapshotTaken] = useState(false);
@@ -83,6 +64,44 @@ export const CameraPage: React.FC = () => {
     setSnapshotTaken(true);
     setTimeout(() => setSnapshotTaken(false), 3000);
   };
+
+  if (!activeVehicle) {
+    return (
+      <div className="space-y-6 max-w-7xl mx-auto pb-10">
+        {/* Page Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-6 text-white shadow-xl gap-4">
+          <div className="flex items-center gap-4">
+            <div className="p-3.5 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              <Video className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="font-display font-bold text-xl text-white flex items-center gap-2">
+                VEHICLE DASHCAM & LIVE CAMERA CONTROL
+              </h1>
+              <p className="text-xs text-slate-400">
+                {isDriver ? `Driver Camera Monitor • Driver: ${driverName}` : 'Fleettrack EH21 AI Dashcam Stream & Driver Safety Timeline'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Empty State Banner */}
+        <div className="bg-slate-950 border border-slate-800 rounded-3xl p-12 text-center text-white shadow-2xl space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 mx-auto flex items-center justify-center">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h2 className="text-lg font-display font-extrabold text-amber-400">
+            NO FLEET TRUCK REGISTERED OR ASSIGNED
+          </h2>
+          <p className="text-xs text-slate-300 max-w-md mx-auto leading-relaxed">
+            {isDriver
+              ? `No active fleet truck has been assigned to driver "${driverName}" yet. Select an assigned delivery order with a registered truck to view camera feeds.`
+              : 'No vehicles are registered in the fleet database. Create a new vehicle using the "+ Add New Fleet Vehicle" panel in the Owner Dashboard.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
