@@ -45,6 +45,8 @@ export const Header: React.FC<HeaderProps> = ({
     logout();
   };
 
+  const isOwner = (role || '').toUpperCase() === 'OWNER';
+
   return (
     <header className="h-16 bg-slate-900 border-b border-slate-800 px-4 md:px-6 flex items-center justify-between z-30 sticky top-0 shadow-md text-white">
       {/* Left Branding + Sidebar Toggle */}
@@ -76,56 +78,58 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Middle Integration Toggles (Real-Time Live Hardware Status) */}
-      <div className="hidden lg:flex items-center gap-3 bg-slate-950/90 px-3.5 py-1.5 rounded-xl border border-slate-800 font-mono">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">IoT Hardware:</span>
+      {/* Middle Integration Toggles (Real-Time Live Hardware Status) — OWNER ONLY */}
+      {isOwner && (
+        <div className="hidden lg:flex items-center gap-3 bg-slate-950/90 px-3.5 py-1.5 rounded-xl border border-slate-800 font-mono">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">IoT Hardware:</span>
 
-        {/* Fleettrack Live GPS */}
-        <button
-          onClick={() => toggleIntegration('fleettrackConnected')}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-            integrations.fleettrackConnected
-              ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 shadow-sm'
-              : 'bg-rose-950/90 text-rose-400 border border-rose-800'
-          }`}
-          title="Live Fleettrack GPS Telemetry Socket Server Status"
-        >
-          {integrations.fleettrackConnected ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              <span>Fleettrack GPS: LIVE (12ms • packet {gpsSec}s ago)</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span>Fleettrack DISCONNECTED</span>
-            </>
-          )}
-        </button>
+          {/* Fleettrack Live GPS */}
+          <button
+            onClick={() => toggleIntegration('fleettrackConnected')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              integrations.fleettrackConnected
+                ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                : 'bg-rose-950/90 text-rose-400 border border-rose-800'
+            }`}
+            title="Live Fleettrack GPS Telemetry Socket Server Status (Owner Only)"
+          >
+            {integrations.fleettrackConnected ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>Fleettrack GPS: LIVE (12ms • packet {gpsSec}s ago)</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Fleettrack DISCONNECTED</span>
+              </>
+            )}
+          </button>
 
-        {/* Easy Time Pro Live Biometrics */}
-        <button
-          onClick={() => toggleIntegration('easyTimeProConnected')}
-          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-            integrations.easyTimeProConnected
-              ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 shadow-sm'
-              : 'bg-rose-950/90 text-rose-400 border border-rose-800'
-          }`}
-          title="Live Easy Time Pro Biometric Scanner Socket Connection"
-        >
-          {integrations.easyTimeProConnected ? (
-            <>
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              <span>Easy Time Pro Bio: LIVE (18ms • punch {bioSec}s ago)</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="w-3.5 h-3.5" />
-              <span>Easy Time Pro DISCONNECTED</span>
-            </>
-          )}
-        </button>
-      </div>
+          {/* Easy Time Pro Live Biometrics */}
+          <button
+            onClick={() => toggleIntegration('easyTimeProConnected')}
+            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              integrations.easyTimeProConnected
+                ? 'bg-emerald-950/90 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                : 'bg-rose-950/90 text-rose-400 border border-rose-800'
+            }`}
+            title="Live Easy Time Pro Biometric Scanner Socket Connection (Owner Only)"
+          >
+            {integrations.easyTimeProConnected ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span>Easy Time Pro Bio: LIVE (18ms • punch {bioSec}s ago)</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Easy Time Pro DISCONNECTED</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Right Controls: Search, Alerts, Account Profile, Direct Logout */}
       <div className="flex items-center gap-1.5 sm:gap-3">
