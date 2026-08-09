@@ -1180,69 +1180,58 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
               ],
             ),
 
-            // TAB 4: WORKFORCE ROSTER & BIOMETRIC ATTENDANCE HARDWARE
+            // TAB 4: WORKFORCE ROSTER & CREW ACCOUNT CREATION (OWNER ONLY)
             ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('BIOMETRIC ATTENDANCE (SQLITE)', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFF59E0B),
-                        side: const BorderSide(color: Color(0xFFF59E0B)),
+                    const Text('WORKFORCE DIRECTORY', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF59E0B),
+                        foregroundColor: Colors.black,
                       ),
-                      icon: const Icon(Icons.fingerprint, size: 16),
-                      label: const Text('BIOMETRIC SCAN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                      onPressed: () async {
-                        try {
-                          final res = await http.post(
-                            Uri.parse('$kApiBase/integrations/biometrics/clock-in'),
-                            headers: {'Content-Type': 'application/json'},
-                            body: jsonEncode({
-                              'employeeId': 'emp-01',
-                              'deviceId': 'BIO-GODOWN-01',
-                              'status': 'VERIFIED',
-                            }),
-                          );
-                          if (res.statusCode == 200) {
-                            _fetchLiveOwnerData(silent: true);
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                backgroundColor: Color(0xFF10B981),
-                                behavior: SnackBarBehavior.floating,
-                                content: Text('Biometric Fingerprint Verified! Attendance recorded in SQLite.'),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          debugPrint('Biometric scan note: $e');
-                        }
-                      },
+                      icon: const Icon(Icons.person_add_alt_1, size: 16),
+                      label: const Text('ADD WORKER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
+                      onPressed: () => _showAddWorkerDialog(context),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                ..._employees.map((emp) {
-                  final isPresent = emp['attendanceStatus'] == 'Present';
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isPresent ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                        child: Text(emp['name'] != null ? emp['name'][0] : 'E', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-                      ),
-                      title: Text('${emp['name']} (${emp['role']})', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      subtitle: Text('Attendance: ${emp['attendanceStatus'] ?? 'Present'}  •  ${emp['workingHours'] ?? '8h'}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
-                      trailing: Chip(
-                        label: Text(isPresent ? 'VERIFIED' : 'PENDING', style: const TextStyle(color: Colors.black, fontSize: 8, fontWeight: FontWeight.bold)),
-                        backgroundColor: isPresent ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                      ),
+                if (_employees.isEmpty)
+                  const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Only Owner account active. Click + ADD WORKER to register crew.', style: TextStyle(color: Colors.grey)),
                     ),
-                  );
-                }),
+                  )
+                else
+                  ..._employees.map((emp) {
+                    final isOwner = emp['role'] == 'Owner' || emp['id'] == 'emp-00';
+                    final isPresent = emp['attendanceStatus'] == 'Present';
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: isOwner ? const Color(0xFFF59E0B) : (isPresent ? const Color(0xFF10B981) : const Color(0xFF334155)),
+                          child: Text(emp['name'] != null ? emp['name'][0] : 'E', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                        ),
+                        title: Text('${emp['name']} (${emp['role']})', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        subtitle: Text('Email: ${emp['email'] ?? "No email"}  •  Phone: ${emp['phone'] ?? "No phone"}', style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11)),
+                        trailing: isOwner
+                            ? const Chip(
+                                label: Text('SYSTEM OWNER', style: TextStyle(color: Colors.black, fontSize: 8, fontWeight: FontWeight.bold)),
+                                backgroundColor: Color(0xFFF59E0B),
+                              )
+                            : IconButton(
+                                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                onPressed: () => _deleteWorker(emp['id'], emp['name']),
+                              ),
+                      ),
+                    );
+                  }),
               ],
             ),
           ],
@@ -1261,6 +1250,137 @@ class _OwnerHomeScreenState extends State<OwnerHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.people_alt_outlined), label: 'Workforce'),
         ],
       ),
+    );
+  }
+
+  Future<void> _deleteWorker(String empId, String empName) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$kApiBase/api/employees/$empId?userRole=OWNER'),
+      );
+      if (response.statusCode == 200) {
+        _fetchLiveOwnerData(silent: true);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            content: Text('Employee $empName ($empId) deleted from SQLite.'),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Delete worker error: $e');
+    }
+  }
+
+  void _showAddWorkerDialog(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final passCtrl = TextEditingController(text: 'Worker@2026');
+    final phoneCtrl = TextEditingController();
+    final rateCtrl = TextEditingController(text: '85');
+    String roleVal = 'Driver';
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0F172A),
+          title: const Text('CREATE NEW WORKER ACCOUNT', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Full Name'),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  value: roleVal,
+                  dropdownColor: const Color(0xFF1E293B),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Workforce Role'),
+                  items: ['Driver', 'Loadman', 'Manager', 'Storeroom Staff']
+                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                      .toList(),
+                  onChanged: (v) => roleVal = v ?? 'Driver',
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: emailCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Corporate Email / Username'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: passCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Login Password'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: phoneCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Phone (+91)'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: rateCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: 'Hourly Rate (₹/hr)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('CANCEL', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF59E0B), foregroundColor: Colors.black),
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty) return;
+                try {
+                  final res = await http.post(
+                    Uri.parse('$kApiBase/api/employees'),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode({
+                      'name': nameCtrl.text.trim(),
+                      'role': roleVal,
+                      'email': emailCtrl.text.trim(),
+                      'password': passCtrl.text.trim(),
+                      'phone': phoneCtrl.text.trim(),
+                      'hourlyRate': double.tryParse(rateCtrl.text) ?? 85,
+                      'userRole': 'OWNER',
+                    }),
+                  );
+
+                  if (res.statusCode == 200) {
+                    _fetchLiveOwnerData(silent: true);
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: const Color(0xFF10B981),
+                        behavior: SnackBarBehavior.floating,
+                        content: Text('Worker ${nameCtrl.text} created! Credentials active on Render Cloud.'),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('Create worker error: $e');
+                }
+              },
+              child: const Text('CREATE WORKER', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
     );
   }
 }
