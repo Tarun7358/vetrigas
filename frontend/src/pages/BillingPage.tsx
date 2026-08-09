@@ -10,10 +10,12 @@ export const BillingPage: React.FC = () => {
   const [resolveNote, setResolveNote] = useState('');
   const [showResolveModal, setShowResolveModal] = useState(false);
 
-  const totalBills = 184;
-  const paidBills = 181;
-  const pendingBills = 3;
-  const totalCollection = 113650;
+  const totalBills = bills.length;
+  const paidBills = bills.filter(b => b.status === 'PAID').length;
+  const pendingBills = bills.filter(b => b.status === 'PENDING').length;
+  const totalCollection = bills
+    .filter(b => b.status === 'PAID')
+    .reduce((sum, b) => sum + (b.amount || 0), 0);
 
   const handleResolve = () => {
     resolveReconciliation(reconciliation.difference, resolveNote || 'Verified driver cash submission');

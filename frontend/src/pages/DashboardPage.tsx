@@ -357,25 +357,25 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Filled Domestic (14.2kg)</span>
-              <p className="font-display font-bold text-2xl text-emerald-600 mt-1">420 Cylinders</p>
+              <p className="font-display font-bold text-2xl text-emerald-600 mt-1">0 Cylinders</p>
               <p className="text-[11px] text-slate-500 mt-1">Ready for Vehicle Loading</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Filled Commercial (19kg)</span>
-              <p className="font-display font-bold text-2xl text-blue-600 mt-1">85 Cylinders</p>
+              <p className="font-display font-bold text-2xl text-blue-600 mt-1">0 Cylinders</p>
               <p className="text-[11px] text-slate-500 mt-1">For Hotels & Commercial</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Empty Cylinders (In Godown)</span>
-              <p className="font-display font-bold text-2xl text-amber-600 mt-1">42 Cylinders</p>
-              <p className="text-[11px] text-rose-500 font-bold mt-1">⚠️ Low Stock Warning</p>
+              <p className="font-display font-bold text-2xl text-amber-600 mt-1">0 Cylinders</p>
+              <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ Stock Verified</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Orders Entry Today</span>
-              <p className="font-display font-bold text-2xl text-purple-700 mt-1">14 Bookings</p>
+              <p className="font-display font-bold text-2xl text-purple-700 mt-1">{deliveries.length} Bookings</p>
               <p className="text-[11px] text-slate-500 mt-1">Entered by Godown Keeper</p>
             </div>
           </div>
@@ -408,24 +408,24 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Today's Office Collections</span>
               <p className="font-display font-bold text-2xl text-amber-600 mt-1">₹{todayCollection.toLocaleString('en-IN')}</p>
-              <p className="text-[11px] text-slate-500 mt-1">₹82.4k UPI • ₹31.2k Cash</p>
+              <p className="text-[11px] text-slate-500 mt-1">₹{(upiCollection / 1000).toFixed(1)}k UPI • ₹{(cashCollection / 1000).toFixed(1)}k Cash</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
-              <span className="text-xs font-bold text-slate-500 uppercase">Field Agents & Managers</span>
-              <p className="font-display font-bold text-2xl text-blue-600 mt-1">25 / 28 Active</p>
-              <p className="text-[11px] text-emerald-600 font-semibold mt-1">✓ Live Tracking Active</p>
+              <span className="text-xs font-bold text-slate-500 uppercase">Field Agents & Staff</span>
+              <p className="font-display font-bold text-2xl text-blue-600 mt-1">{presentToday} / {totalWorkers} Active</p>
+              <p className="text-[11px] text-emerald-600 font-semibold mt-1">✓ Live Operations Active</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Out For Delivery Orders</span>
-              <p className="font-display font-bold text-2xl text-purple-700 mt-1">68 Orders</p>
-              <p className="text-[11px] text-slate-500 mt-1">184 Already Delivered</p>
+              <p className="font-display font-bold text-2xl text-purple-700 mt-1">{deliveries.filter(d => d.status === 'ASSIGNED' || d.status === 'OUT FOR DELIVERY' || d.status === 'READY').length} Orders</p>
+              <p className="text-[11px] text-slate-500 mt-1">{completedDeliveriesCount} Already Delivered</p>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
               <span className="text-xs font-bold text-slate-500 uppercase">Pending Fuel Claim Bills</span>
-              <p className="font-display font-bold text-2xl text-rose-600 mt-1">2 Bills</p>
+              <p className="font-display font-bold text-2xl text-rose-600 mt-1">0 Bills</p>
               <p className="text-[11px] text-slate-500 mt-1">Needs Owner Approval</p>
             </div>
           </div>
@@ -505,11 +505,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
             <div className="flex items-center gap-3 shrink-0">
               <div className="bg-slate-950/80 px-4 py-2 rounded-2xl border border-slate-800 text-center">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">On-Time Rating</span>
-                <span className="font-display font-extrabold text-base text-emerald-400">98.6% ★★★★★</span>
+                <span className="font-display font-extrabold text-base text-emerald-400">100% ★★★★★</span>
               </div>
               <div className="bg-slate-950/80 px-4 py-2 rounded-2xl border border-slate-800 text-center">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Monthly Bonus</span>
-                <span className="font-display font-extrabold text-base text-amber-400">₹3,400</span>
+                <span className="font-display font-extrabold text-base text-amber-400">₹0</span>
               </div>
             </div>
           </div>
@@ -521,8 +521,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <span className="text-xs font-bold uppercase tracking-wider">MONTHLY SHIFT HOURS</span>
                 <Clock className="w-5 h-5 text-amber-400" />
               </div>
-              <div className="font-display font-extrabold text-2xl text-amber-400">176h 45m</div>
-              <p className="text-xs text-slate-400 font-mono">August 2026 (22 Days Shift Active)</p>
+              <div className="font-display font-extrabold text-2xl text-amber-400">
+                {employees.find(e => e.name === currentUser?.name)?.workingHours || '0h 0m'}
+              </div>
+              <p className="text-xs text-slate-400 font-mono">Shift Active</p>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
@@ -530,8 +532,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <span className="text-xs font-bold uppercase tracking-wider">DELIVERIES COMPLETED</span>
                 <Package className="w-5 h-5 text-emerald-400" />
               </div>
-              <div className="font-display font-extrabold text-2xl text-emerald-400">184 Orders</div>
-              <p className="text-xs text-slate-400 font-mono">368 LPG Cylinders Handled</p>
+              <div className="font-display font-extrabold text-2xl text-emerald-400">
+                {deliveries.filter(d => (d.driverName === currentUser?.name || d.driverName === role) && d.status === 'DELIVERED').length} Orders
+              </div>
+              <p className="text-xs text-slate-400 font-mono">
+                {deliveries.filter(d => (d.driverName === currentUser?.name || d.driverName === role) && d.status === 'DELIVERED').reduce((sum, d) => sum + (d.cylinderCount || 1), 0)} LPG Cylinders Handled
+              </p>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
@@ -539,8 +545,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <span className="text-xs font-bold uppercase tracking-wider">COLLECTIONS HANDLED</span>
                 <CircleDollarSign className="w-5 h-5 text-blue-400" />
               </div>
-              <div className="font-display font-extrabold text-2xl text-blue-400">₹1,74,840</div>
-              <p className="text-xs text-slate-400 font-mono">₹1.2L UPI QR • ₹54k Cash Proofs</p>
+              <div className="font-display font-extrabold text-2xl text-blue-400">
+                ₹{deliveries.filter(d => (d.driverName === currentUser?.name || d.driverName === role) && d.status === 'DELIVERED').reduce((sum, d) => sum + (d.amount || 0), 0).toLocaleString('en-IN')}
+              </div>
+              <p className="text-xs text-slate-400 font-mono">Real-time Collections</p>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
@@ -548,8 +556,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 <span className="text-xs font-bold uppercase tracking-wider">SAFETY & FUEL SCORE</span>
                 <TrendingUp className="w-5 h-5 text-purple-400" />
               </div>
-              <div className="font-display font-extrabold text-2xl text-purple-400">96 / 100</div>
-              <p className="text-xs text-slate-400 font-mono">Zero Overspeed • Fuel Saved</p>
+              <div className="font-display font-extrabold text-2xl text-purple-400">100 / 100</div>
+              <p className="text-xs text-slate-400 font-mono">Zero Overspeed • Safety OK</p>
             </div>
           </div>
 
@@ -557,27 +565,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <h3 className="font-display font-bold text-base text-white">August 2026 Weekly Deliveries Breakdown</h3>
+                <h3 className="font-display font-bold text-base text-white">Weekly Deliveries Breakdown</h3>
                 <p className="text-xs text-slate-400">Track your week-by-week delivery volume & earnings</p>
               </div>
-              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1 rounded-xl font-mono">
-                Current Month: August 2026
-              </span>
             </div>
 
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={[
-                  { week: 'Week 1 (Aug 1-7)', deliveries: 42, earnings: 39480 },
-                  { week: 'Week 2 (Aug 8-14)', deliveries: 48, earnings: 45120 },
-                  { week: 'Week 3 (Aug 15-21)', deliveries: 45, earnings: 42300 },
-                  { week: 'Week 4 (Aug 22-31)', deliveries: 49, earnings: 47940 },
+                  { week: 'Week 1', deliveries: deliveries.filter(d => (d.driverName === currentUser?.name || d.driverName === role) && d.status === 'DELIVERED').length, earnings: deliveries.filter(d => (d.driverName === currentUser?.name || d.driverName === role) && d.status === 'DELIVERED').reduce((s, d) => s + (d.amount || 0), 0) },
                 ]}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} />
                   <YAxis stroke="#94a3b8" fontSize={11} />
                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
-                  <Bar dataKey="deliveries" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Orders Delivered" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
