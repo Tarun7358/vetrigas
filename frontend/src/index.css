@@ -257,6 +257,20 @@ h1, h2, h3, h4, h5, h6, .font-display {
     line-height: 1.75rem;
   }
   button, input, select {
-    min-height: 38px;
+    min-height: 40px;
   }
 }
+
+/* Touch & Mobile Webview Optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

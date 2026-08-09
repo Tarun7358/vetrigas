@@ -62,12 +62,15 @@ class _MainAppScreenState extends State<MainAppScreen> {
             }
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('WebView Load Error: ${error.description}');
-            if (mounted) {
-              setState(() {
-                _isLoading = false;
-                _hasError = true;
-              });
+            debugPrint('WebView Load Error: ${error.description} (isForMainFrame: ${error.isForMainFrame})');
+            // Only show offline screen if the primary frame/page failed to load (ignore subresource/favicon errors)
+            if (error.isForMainFrame ?? true) {
+              if (mounted) {
+                setState(() {
+                  _isLoading = false;
+                  _hasError = true;
+                });
+              }
             }
           },
         ),

@@ -528,8 +528,8 @@ export const DeliveriesPage: React.FC = () => {
 
       {/* DRIVER COMPLETE DELIVERY & PAYMENT COLLECTION MODAL */}
       {fulfillItem && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-6 text-white space-y-5 shadow-2xl animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-lg p-5 sm:p-6 text-white space-y-4 sm:space-y-5 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h2 className="font-display font-bold text-lg text-white flex items-center gap-2">
@@ -737,8 +737,8 @@ export const DeliveriesPage: React.FC = () => {
 
       {/* New Client Order Entry Modal (Storeroom Staff & Godown Keeper) */}
       {showOrderModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-white animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden text-white max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
               <span className="font-bold text-sm text-amber-400">Book New Client LPG Order (Office Entry)</span>
               <button onClick={() => setShowOrderModal(false)} className="p-1 text-slate-400 hover:text-white rounded-lg">

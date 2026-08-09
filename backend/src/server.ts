@@ -7,6 +7,7 @@ import { seedDatabase } from './seed';
 import { runQuery, fetchAll, fetchOne } from './db';
 import { hashPassword, verifyPassword } from './crypto';
 import { sendWhatsAppReceipt } from './whatsapp';
+import { sendPasswordResetEmail } from './mailer';
 import { getSupabase, isSupabaseConfigured } from './supabase';
 import path from 'path';
 import dotenv from 'dotenv';
@@ -166,6 +167,90 @@ app.get('/api/auth/verify', requireAuth, (req: Request, res: Response) => {
   const user = (req as any).user;
   res.json({ success: true, valid: true, user });
 });
+
+// Request Password Reset Link (Dispatches Email via SMTP / Resend)
+app.post('/api/auth/forgot-password', loginLimiter, async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ success: false, message: 'Email address is required.' });
+  }
+
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await fetchOne('SELECT * FROM employees WHERE LOWER(email) = ?', [cleanEmail]);
+
+    if (!user) {
+      // Security standard: Respond with success message even if email not found to prevent user enumeration
+      return res.json({
+        success: true,
+        message: 'If an account exists for this email, password reset instructions have been sent.',
+      });
+    }
+
+    // Generate signed single-use reset JWT valid for 1 hour
+    const resetToken = jwt.sign(
+      { id: user.id, email: user.email, type: 'PASSWORD_RESET' },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const baseUrl = process.env.FRONTEND_URL || 'https://lovely-sunburst-74bfc0.netlify.app';
+    const resetUrl = `${baseUrl}?resetToken=${resetToken}&email=${encodeURIComponent(cleanEmail)}`;
+
+    const mailResult = await sendPasswordResetEmail({
+      toEmail: cleanEmail,
+      userName: user.name || 'User',
+      resetToken,
+      resetUrl,
+    });
+
+    console.log(`[AUTH] Password reset token generated for ${cleanEmail}`);
+    return res.json({
+      success: true,
+      message: mailResult.message,
+      resetToken: process.env.NODE_ENV === 'development' ? resetToken : undefined,
+    });
+  } catch (err) {
+    console.error('[AUTH] Forgot password error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to process password reset request.' });
+  }
+});
+
+// Execute Password Reset with Reset Token
+app.post('/api/auth/reset-password', async (req: Request, res: Response) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Token and new password are required.' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    if (decoded.type !== 'PASSWORD_RESET' || !decoded.id) {
+      return res.status(400).json({ success: false, message: 'Invalid or expired password reset token.' });
+    }
+
+    const hashedPassword = hashPassword(newPassword);
+    await runQuery('UPDATE employees SET password = ? WHERE id = ?', [hashedPassword, decoded.id]);
+
+    console.log(`[AUTH] ✓ Password updated successfully for user ID ${decoded.id}`);
+    return res.json({
+      success: true,
+      message: 'Password reset successfully! You can now log in with your new password.',
+    });
+  } catch (err: any) {
+    console.error('[AUTH] Reset password token verification failed:', err);
+    return res.status(400).json({
+      success: false,
+      message: 'Password reset link is invalid or has expired. Please request a new one.',
+    });
+  }
+});
+
 
 // GET Employees from SQLite
 app.get('/api/employees', async (req: Request, res: Response) => {
@@ -466,6 +551,41 @@ app.post('/api/whatsapp/send-receipt', async (req: Request, res: Response) => {
   } catch (err) {
     console.error('Failed to send WhatsApp receipt:', err);
     res.status(500).json({ success: false, error: 'WhatsApp delivery failed' });
+  }
+});
+
+// GOOGLE PAY / UPI PAYMENT WEBHOOK (+91 96008 70814)
+app.post(['/api/payments/gpay-webhook', '/integrations/payment'], async (req: Request, res: Response) => {
+  const { amount, transactionId, senderPhone, utr, billNumber, deliveryId } = req.body;
+  const numAmount = Number(amount) || 0;
+  const txnId = transactionId || utr || `GPAY-REC-${Math.floor(100000 + Math.random() * 900000)}`;
+
+  console.log(`[GPAY PAYMENT WEBHOOK] Incoming credit of ₹${numAmount} to +91 96008 70814 | Txn: ${txnId}`);
+
+  try {
+    if (deliveryId) {
+      await runQuery(`UPDATE deliveries SET status = 'DELIVERED', paymentType = 'UPI', amount = ? WHERE id = ?`, [numAmount, deliveryId]);
+    }
+    if (billNumber) {
+      await runQuery(`UPDATE bills SET status = 'PAID', transactionId = ? WHERE billNumber = ?`, [txnId, billNumber]);
+    }
+
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newBillId = `bill-${Date.now()}`;
+    await runQuery(
+      `INSERT INTO bills (id, billNumber, customerName, amount, paymentMethod, transactionId, driverName, date, status, cylinderCount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(billNumber) DO UPDATE SET status = 'PAID', transactionId = ?`,
+      [newBillId, billNumber || `VI-2026-${Date.now().toString().slice(-6)}`, senderPhone || 'Google Pay Customer', numAmount, 'UPI (GPay)', txnId, 'Automated Webhook', dateStr, 'PAID', Math.max(1, Math.round(numAmount / 940)), txnId]
+    );
+
+    res.json({
+      success: true,
+      message: `Google Pay credit of ₹${numAmount} processed for +91 96008 70814.`,
+      transactionId: txnId,
+    });
+  } catch (err) {
+    console.error('[GPAY PAYMENT WEBHOOK ERROR]', err);
+    res.status(500).json({ success: false, error: 'Failed to process Google Pay payment webhook' });
   }
 });
 

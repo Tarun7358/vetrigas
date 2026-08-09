@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
+import { BottomNav } from './components/BottomNav';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
 import { CriticalAlertDrawer } from './components/CriticalAlertDrawer';
 import { LoginPage } from './pages/LoginPage';
@@ -84,7 +85,7 @@ const AppContent: React.FC = () => {
         />
 
         {/* Content Viewport */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50 text-slate-800">
+        <main className="flex-1 overflow-y-auto p-3.5 sm:p-4 md:p-6 pb-24 md:pb-6 bg-slate-50 text-slate-800">
           <div className="max-w-7xl mx-auto">
             {activeTab === 'dashboard' && <DashboardPage onNavigate={handleNavigate} />}
             {activeTab === 'workforce' && <WorkforcePage />}
@@ -105,6 +106,13 @@ const AppContent: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenMobileMenu={() => setMobileOpen(true)}
+      />
 
       {/* Global Modals & Drawers */}
       <GlobalSearchModal

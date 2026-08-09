@@ -219,15 +219,16 @@ export const LiveDriverQRMonitor: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3 bg-white p-4 rounded-2xl border border-slate-200 inline-block shadow-inner">
-                  <p className="text-xs font-extrabold text-slate-900 uppercase">Live Dynamic UPI QR Code</p>
+                  <p className="text-xs font-extrabold text-slate-900 uppercase">Live Dynamic Google Pay / UPI QR Code</p>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
-                      `upi://pay?pa=vetrigas@okaxis&pn=Vetri%20Indane%20LPG&am=${selectedQRItem.amount}&cu=INR&tn=Order%20${selectedQRItem.deliveryNumber}`
+                      `upi://pay?pa=9600870814@upi&pn=VETRI%20INDANE%20LPG&am=${selectedQRItem.amount}&cu=INR&tn=Order%20${selectedQRItem.deliveryNumber}`
                     )}`}
-                    alt="UPI QR Code"
+                    alt="Google Pay UPI QR Code"
                     className="w-48 h-48 mx-auto"
                   />
-                  <p className="font-mono text-xs font-bold text-slate-800">UPI ID: vetrigas@okaxis</p>
+                  <p className="font-mono text-xs font-bold text-slate-800">GPay UPI ID: 9600870814@upi</p>
+                  <p className="font-mono text-[11px] font-semibold text-slate-600">Primary Phone: +91 96008 70814</p>
                 </div>
               )}
 

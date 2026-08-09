@@ -71,25 +71,8 @@ interface AppContextType {
   removeEmployee: (empId: string) => void;
 }
 
-import vetriDataset from '../data/vetriDataset.json';
-
 const initialVehicles: Vehicle[] = [];
-const initialEmployees: Employee[] = [
-  {
-    id: 'emp-00',
-    name: 'Vetri',
-    role: 'Owner',
-    email: 'owner@vetriindane.com',
-    phone: '+91 96008 70814',
-    joiningDate: '01 Jan 2023',
-    attendanceStatus: 'Present',
-    workingHours: '9h 00m',
-    todayWorkProgress: '100%',
-    performanceScore: 100,
-    status: 'Active',
-    hourlyRate: 150,
-  },
-];
+const initialEmployees: Employee[] = [];
 const initialAttendance: AttendanceRecord[] = [];
 const initialPayroll: PayrollRecord[] = [];
 const initialBatches: LoadingBatch[] = [];
@@ -339,8 +322,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
   
-  const [reconciliation, setReconciliation] = useState<CashReconciliation>(vetriDataset.reconciliation as CashReconciliation);
-  const [inventory] = useState<InventoryMetrics>(vetriDataset.inventory as InventoryMetrics);
+  const [reconciliation, setReconciliation] = useState<CashReconciliation>({
+    expectedTotal: 0,
+    upiReceived: 0,
+    cashExpected: 0,
+    cashSubmitted: 0,
+    difference: 0,
+    status: 'BALANCED',
+  });
+  const [inventory] = useState<InventoryMetrics>({
+    available: 0,
+    loaded: 0,
+    withDrivers: 0,
+    delivered: 0,
+    returned: 0,
+    damaged: 0,
+    total: 0,
+  });
 
   const login = (selectedRole: UserRole, email: string, name?: string, token?: string) => {
     const normRole = normalizeRole(selectedRole);

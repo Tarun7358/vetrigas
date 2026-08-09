@@ -127,13 +127,27 @@ export const EBillModal: React.FC<EBillModalProps> = ({ bill, onClose }) => {
               </div>
             </div>
 
-            {/* Status Footer */}
-            <div className="flex items-center justify-between pt-2 text-[11px] text-slate-400 border-t border-slate-800">
-              <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                <CheckCircle2 className="w-4 h-4" /> PAYMENT CONFIRMED
+            {/* Status Footer + Live Google Pay UPI QR */}
+            <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                  <CheckCircle2 className="w-4 h-4" /> PAYMENT CONFIRMED
+                </div>
+                <div className="flex items-center gap-1 font-mono text-[11px] text-slate-400">
+                  <QrCode className="w-3.5 h-3.5 text-slate-400" /> {bill.transactionId}
+                </div>
+                <p className="text-[10px] text-slate-500 font-mono">GPay / UPI: 9600870814@upi (+91 96008 70814)</p>
               </div>
-              <div className="flex items-center gap-1 font-mono">
-                <QrCode className="w-3.5 h-3.5 text-slate-400" /> {bill.transactionId}
+
+              <div className="bg-white p-2 rounded-xl border border-slate-200 text-center shrink-0">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(
+                    `upi://pay?pa=9600870814@upi&pn=VETRI%20INDANE%20LPG&am=${bill.amount}&cu=INR&tn=Bill-${bill.billNumber}`
+                  )}`}
+                  alt="Google Pay UPI QR Code"
+                  className="w-20 h-20 mx-auto"
+                />
+                <span className="text-[9px] font-mono font-extrabold text-slate-800 block mt-0.5">SCAN TO PAY (GPAY)</span>
               </div>
             </div>
           </div>
