@@ -9,7 +9,7 @@ import { soundAlerts } from '../utils/audioAlerts';
 import { offlineSync } from '../utils/offlineSync';
 
 export const DeliveriesPage: React.FC = () => {
-  const { deliveries, bills, completeDelivery, verifyCashProof, addOrder, role, currentUser, attendance } = useApp();
+  const { deliveries, bills, completeDelivery, verifyCashProof, addOrder, role, currentUser, attendance, vehicles } = useApp();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBill, setSelectedBill] = useState<BillRecord | null>(null);
 
@@ -34,6 +34,7 @@ export const DeliveriesPage: React.FC = () => {
   const [newQty, setNewQty] = useState<number>(1);
   const [newAmount, setNewAmount] = useState<number>(940);
   const [newDriver, setNewDriver] = useState<string>('Arun');
+  const [newVehicle, setNewVehicle] = useState<string>('TN 38 AU 4821');
 
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [offlineQueueCount, setOfflineQueueCount] = useState<number>(0);
@@ -85,6 +86,7 @@ export const DeliveriesPage: React.FC = () => {
         category: 'COMMERCIAL',
         amount: newAmount,
         assignedDriverName: newDriver,
+        vehicleNumber: newVehicle,
         cylinderCount: newQty,
       });
 
@@ -818,12 +820,27 @@ export const DeliveriesPage: React.FC = () => {
                     onChange={e => setNewDriver(e.target.value)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white focus:outline-none focus:border-amber-500"
                   >
-                    <option value="Arun">Arun (TN 38 AU 4821)</option>
-                    <option value="Suresh">Suresh (TN 38 BQ 1092)</option>
-                    <option value="Ramesh">Ramesh (TN 38 CF 9901)</option>
-                    <option value="Vijay">Vijay (TN 38 DK 3341)</option>
+                    <option value="Arun">Arun (Driver)</option>
+                    <option value="Suresh">Suresh (Driver)</option>
+                    <option value="Ramesh">Ramesh (Driver)</option>
+                    <option value="Vijay">Vijay (Driver)</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Select Available Truck / Vehicle *</label>
+                <select
+                  value={newVehicle}
+                  onChange={e => setNewVehicle(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-500"
+                >
+                  {vehicles.map(v => (
+                    <option key={v.id} value={v.registrationNumber}>
+                      🚚 {v.registrationNumber} (Current: {v.driverName})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <button

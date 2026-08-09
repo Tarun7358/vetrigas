@@ -61,7 +61,7 @@ interface AppContextType {
   addExpense: (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => void;
   approveExpense: (expenseId: string) => void;
   rejectExpense: (expenseId: string) => void;
-  addOrder: (orderData: { customerName: string; address: string; phone: string; category?: string; amount: number; assignedDriverName: string; cylinderCount?: number }) => Promise<void>;
+  addOrder: (orderData: { customerName: string; address: string; phone: string; category?: string; amount: number; assignedDriverName: string; cylinderCount?: number; vehicleNumber?: string }) => Promise<void>;
   addStockIntake: (stockData: { category: string; quantity: number; monthYear?: string; intakeDate?: string; challanNumber?: string; supplier?: string }) => Promise<void>;
   addVehicle: (vehicleData: { registrationNumber: string; driverName: string; gpsDeviceId?: string; simCardNumber?: string; hasCamera?: boolean }) => Promise<void>;
 
@@ -72,7 +72,7 @@ interface AppContextType {
 
 import vetriDataset from '../data/vetriDataset.json';
 
-const initialVehicles: Vehicle[] = [];
+const initialVehicles: Vehicle[] = (vetriDataset.vehicles as Vehicle[]) || [];
 const initialEmployees: Employee[] = [
   {
     id: 'emp-00',
@@ -640,11 +640,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     amount: number;
     assignedDriverName: string;
     cylinderCount?: number;
+    vehicleNumber?: string;
   }) => {
     const id = `del-${Date.now()}`;
     const delNum = `VI${Math.floor(10000 + Math.random() * 90000)}`;
     const driver = orderData.assignedDriverName || 'Arun';
-    const vehicle = driver === 'Suresh' ? 'TN 38 BQ 1092' : driver === 'Ramesh' ? 'TN 38 CF 9901' : driver === 'Vijay' ? 'TN 38 DK 3341' : 'TN 38 AU 4821';
+    const vehicle = orderData.vehicleNumber || 'TN 38 AU 4821';
     const qty = orderData.cylinderCount || Math.max(1, Math.round(orderData.amount / 940)) || 1;
 
     const newDelivery: DeliveryItem = {

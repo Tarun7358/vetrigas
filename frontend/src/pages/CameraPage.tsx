@@ -85,19 +85,20 @@ export const CameraPage: React.FC = () => {
 
         {/* Vehicle Switcher Dropdown & Camera Source Selector */}
         <div className="flex flex-wrap items-center gap-3">
-          {vehicles.length > 0 && (
+          <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5">
+            <span className="text-xs font-bold text-amber-400">Truck:</span>
             <select
               value={activeVehicle.id}
               onChange={e => setSelectedVehicleId(e.target.value)}
-              className="bg-slate-950 border border-slate-700 text-amber-400 font-mono font-bold text-xs rounded-xl px-3 py-2 outline-none focus:border-amber-500"
+              className="bg-transparent text-white font-mono font-bold text-xs outline-none cursor-pointer"
             >
               {vehicles.map(v => (
-                <option key={v.id} value={v.id}>
+                <option key={v.id} value={v.id} className="bg-slate-900 text-white">
                   🚚 {v.registrationNumber} ({v.driverName})
                 </option>
               ))}
             </select>
-          )}
+          </div>
 
           <button
             onClick={() => setUseDeviceCam(!useDeviceCam)}
@@ -134,6 +135,26 @@ export const CameraPage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Video Canvas Container */}
         <div className="lg:col-span-2 bg-slate-950 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col justify-between space-y-4">
+          
+          {/* Quick Fleet Truck Selector Tabs */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+            <span className="text-[11px] font-extrabold text-slate-400 font-mono shrink-0 mr-1 uppercase">SELECT TRUCK:</span>
+            {vehicles.map(v => (
+              <button
+                key={v.id}
+                onClick={() => setSelectedVehicleId(v.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                  activeVehicle.id === v.id
+                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 border border-amber-400'
+                    : 'bg-slate-950 text-slate-300 border border-slate-800 hover:border-slate-700'
+                }`}
+              >
+                <span>🚚 {v.registrationNumber}</span>
+                <span className="opacity-80 text-[10px]">({v.driverName})</span>
+              </button>
+            ))}
+          </div>
+
           {/* Stream Overlay Controls */}
           <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 gap-2">
             <div className="flex items-center gap-3">

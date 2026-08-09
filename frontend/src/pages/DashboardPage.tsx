@@ -42,7 +42,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { employees, vehicles, deliveries, bills, currentUser, role } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder } = useApp();
 
   const totalWorkers = employees.length;
   const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
@@ -77,6 +77,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
   const [clientAddress, setClientAddress] = useState('');
   const [orderQty, setOrderQty] = useState('1');
   const [cylinderCategory, setCylinderCategory] = useState<'14.2kg Domestic' | '19kg Commercial' | '5kg Mini'>('14.2kg Domestic');
+  const [assignedDriver, setAssignedDriver] = useState('Arun');
+  const [assignedVehicle, setAssignedVehicle] = useState('TN 38 AU 4821');
   const [orderSuccessMsg, setOrderSuccessMsg] = useState('');
 
   // Hardware Telemetry Real-time Tickers
@@ -108,7 +110,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
       return;
     }
 
-    setOrderSuccessMsg(`✅ New LPG Order (#ORD-${Math.floor(100000 + Math.random() * 900000)}) registered for ${clientName}!`);
+    const rate = cylinderCategory === '19kg Commercial' ? 1850 : cylinderCategory === '5kg Mini' ? 380 : 940;
+    const qty = parseInt(orderQty) || 1;
+    addOrder({
+      customerName: clientName,
+      address: clientAddress,
+      phone: clientPhone,
+      category: cylinderCategory,
+      amount: rate * qty,
+      assignedDriverName: assignedDriver,
+      vehicleNumber: assignedVehicle,
+      cylinderCount: qty,
+    });
+
+    setOrderSuccessMsg(`✅ New LPG Order (#ORD-${Math.floor(100000 + Math.random() * 900000)}) registered for ${clientName}! Assigned to ${assignedDriver} (${assignedVehicle}).`);
     setTimeout(() => {
       setShowOrderModal(false);
       setOrderSuccessMsg('');
@@ -854,16 +869,47 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Category</label>
+                    <select
+                      value={cylinderCategory}
+                      onChange={e => setCylinderCategory(e.target.value as any)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold focus:border-amber-500 outline-none"
+                    >
+                      <option value="14.2kg Domestic">14.2kg Domestic Refill (₹940)</option>
+                      <option value="19kg Commercial">19kg Commercial LPG (₹1,850)</option>
+                      <option value="5kg Mini">5kg Chhotu Mini Cylinder (₹380)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-400 font-semibold mb-1">Assign Driver</label>
+                    <select
+                      value={assignedDriver}
+                      onChange={e => setAssignedDriver(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold focus:border-amber-500 outline-none"
+                    >
+                      <option value="Arun">Arun (Driver)</option>
+                      <option value="Suresh">Suresh (Driver)</option>
+                      <option value="Ramesh">Ramesh (Driver)</option>
+                      <option value="Vijay">Vijay (Driver)</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-slate-400 font-semibold mb-1">Category</label>
+                  <label className="block text-slate-400 font-semibold mb-1">Select Available Truck / Vehicle *</label>
                   <select
-                    value={cylinderCategory}
-                    onChange={e => setCylinderCategory(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-bold focus:border-amber-500 outline-none"
+                    value={assignedVehicle}
+                    onChange={e => setAssignedVehicle(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-amber-400 font-mono font-bold focus:border-amber-500 outline-none"
                   >
-                    <option value="14.2kg Domestic">14.2kg Domestic Refill (₹940)</option>
-                    <option value="19kg Commercial">19kg Commercial LPG (₹1,850)</option>
-                    <option value="5kg Mini">5kg Chhotu Mini Cylinder (₹380)</option>
+                    {vehicles.map(v => (
+                      <option key={v.id} value={v.registrationNumber}>
+                        🚚 {v.registrationNumber} (Current: {v.driverName})
+                      </option>
+                    ))}
                   </select>
                 </div>
 
