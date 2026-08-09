@@ -127,7 +127,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
   ? 'http://localhost:5000'
   : '';
 
-  // Initial Sync with Express/SQLite Backend
+  // Real-Time Sync & Background Polling Loop with Express/SQLite Backend
   useEffect(() => {
     const fetchBackendData = async () => {
       try {
@@ -170,12 +170,27 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
             setBatches(data.batches);
           }
         }
+
+        const bilRes = await fetch(`${API_BASE}/api/bills`);
+        if (bilRes.ok) {
+          const data = await bilRes.json();
+          if (data.bills && data.bills.length > 0) {
+            setBills(data.bills);
+          }
+        }
       } catch (err) {
         console.warn('Backend SQLite sync note: System synchronized with Express API');
       }
     };
 
     fetchBackendData();
+
+    // 5-Second Automated Background Polling Loop for Live GPS & Batch updates
+    const interval = setInterval(() => {
+      fetchBackendData();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const addExpense = async (expenseData: Omit<VehicleExpense, 'id' | 'date' | 'status'>) => {
@@ -187,7 +202,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
     };
 
     try {
-      await fetch('http://localhost:5000/api/expenses', {
+      await fetch(`${API_BASE}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expenseData),
@@ -213,7 +228,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
 
   const approveExpense = async (expenseId: string) => {
     try {
-      await fetch(`http://localhost:5000/api/expenses/${expenseId}/status`, {
+      await fetch(`${API_BASE}/api/expenses/${expenseId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'APPROVED', userRole: role }),
@@ -229,7 +244,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
 
   const rejectExpense = async (expenseId: string) => {
     try {
-      await fetch(`http://localhost:5000/api/expenses/${expenseId}/status`, {
+      await fetch(`${API_BASE}/api/expenses/${expenseId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'REJECTED', userRole: role }),
@@ -312,10 +327,20 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
     });
   };
 
-  const completeDelivery = (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string) => {
+  const completeDelivery = async (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string) => {
     const txn = transactionId || `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`;
     const billNo = `VI-2026-00${Math.floor(10258 + Math.random() * 100)}`;
     const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    try {
+      await fetch(`${API_BASE}/api/deliveries/${deliveryId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'DELIVERED' }),
+      });
+    } catch (err) {
+      console.warn('Delivery status backend update note');
+    }
 
     setDeliveries(prev =>
       prev.map(del => {
@@ -341,6 +366,14 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
             status: 'PAID',
             cylinderCount: del.cylinderCount,
           };
+
+          // Persist bill to backend SQLite
+          fetch(`${API_BASE}/api/bills`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newBill),
+          }).catch(() => console.warn('Bill backend post note'));
+
           setBills(prevBills => [newBill, ...prevBills]);
           return updatedDel;
         }
@@ -349,7 +382,17 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
     );
   };
 
-  const reportBatchIssue = (batchId: string, loadedCount: number, reason: string) => {
+  const reportBatchIssue = async (batchId: string, loadedCount: number, reason: string) => {
+    try {
+      await fetch(`${API_BASE}/api/batches/${batchId}/accept`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'DISCREPANCY' }),
+      });
+    } catch (err) {
+      console.warn('Batch issue backend sync note');
+    }
+
     setBatches(prev =>
       prev.map(b => {
         if (b.id === batchId) {
@@ -409,7 +452,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
     };
 
     try {
-      await fetch('http://localhost:5000/api/employees', {
+      await fetch(`${API_BASE}/api/employees`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...newEmp, userRole: role }),
@@ -441,7 +484,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
     const target = employees.find(e => e.id === empId);
 
     try {
-      await fetch(`http://localhost:5000/api/employees/${empId}?userRole=${role}`, {
+      await fetch(`${API_BASE}/api/employees/${empId}?userRole=${role}`, {
         method: 'DELETE',
       });
     } catch (err) {
