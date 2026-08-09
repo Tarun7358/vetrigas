@@ -1,150 +1,22 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import type { UserRole } from '../types';
-import {
-  Flame,
-  ShieldCheck,
-  Lock,
-  Mail,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Briefcase,
-  Truck,
-  PackageCheck,
-  Crown,
-  AlertCircle,
-  CheckCircle2,
-  LockKeyhole,
-} from 'lucide-react';
+import { Flame, ShieldCheck, Lock, Mail, ArrowRight, Eye, EyeOff, AlertCircle, CheckCircle2, LockKeyhole } from 'lucide-react';
+import { API_BASE } from '../utils/api';
 
 export const LoginPage: React.FC = () => {
   const { login } = useApp();
-  const [selectedRole, setSelectedRole] = useState<UserRole>('STOREROOM_STAFF');
-  
-  // Login Form State
-  const [email, setEmail] = useState('priya.office@vetriindane.com');
-  const [password, setPassword] = useState('Priya@2026');
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const rolePresets: Record<
-    UserRole,
-    { email: string; pass: string; title: string; subtitle: string; icon: React.ElementType; badgeColor: string }
-  > = {
-    OWNER: {
-      email: 'owner@vetriindane.com',
-      pass: 'Vetri@2026',
-      title: 'Owner Control Room (Vetri)',
-      subtitle: 'Full System Control, Worker Onboarding & Financial Approvals',
-      icon: Crown,
-      badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-    },
-    MANAGER: {
-      email: 'santhosh.manager@vetriindane.com',
-      pass: 'Santhosh@2026',
-      title: 'Operations Manager (Santhosh)',
-      subtitle: 'Fleet Live Tracking, Batch Dispatch & Delivery Control',
-      icon: Briefcase,
-      badgeColor: 'bg-blue-500/20 text-blue-400 border-blue-500/40',
-    },
-    DRIVER: {
-      email: 'arun.driver@vetriindane.com',
-      pass: 'Arun@2026',
-      title: 'Driver Portal (Arun)',
-      subtitle: 'Assigned Routes, Customer Payments & E-Bill Receipting',
-      icon: Truck,
-      badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
-    },
-    LOADMAN: {
-      email: 'kumar.loadman@vetriindane.com',
-      pass: 'Kumar@2026',
-      title: 'Loadman Portal (Kumar)',
-      subtitle: 'Cylinder Depot Loading & Discrepancy Audits',
-      icon: PackageCheck,
-      badgeColor: 'bg-purple-500/20 text-purple-400 border-purple-500/40',
-    },
-    GODOWN_KEEPER: {
-      email: 'karthik.godown@vetriindane.com',
-      pass: 'Karthik@2026',
-      title: 'Godown Keeper (Karthik)',
-      subtitle: 'Client Order Entry, Cylinder Stock Audits & Inventory Checking',
-      icon: Flame,
-      badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-    },
-    STOREROOM_STAFF: {
-      email: 'priya.office@vetriindane.com',
-      pass: 'Priya@2026',
-      title: 'Storeroom Staff / Office Analytics (Priya)',
-      subtitle: 'Office Analytics Command Center, Live Tracking & Owner Updates',
-      icon: ShieldCheck,
-      badgeColor: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
-    },
-  };
-
-  // Forgot Password Modal State
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [userEnteredOtp, setUserEnteredOtp] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [forgotStatusMsg, setForgotStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
-
-  const handleRoleSelect = (r: UserRole) => {
-    setSelectedRole(r);
-    setEmail(rolePresets[r].email);
-    setPassword(rolePresets[r].pass);
-    setErrorMsg('');
-    setSuccessMsg('');
-  };
-
-  const handleSendOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!forgotEmail) {
-      setForgotStatusMsg({ text: 'Please enter a valid corporate email address.', isError: true });
-      return;
-    }
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedOtp(code);
-    setForgotStep(2);
-    setForgotStatusMsg({
-      text: `✅ Security verification code (${code}) sent to ${forgotEmail}`,
-      isError: false,
-    });
-  };
-
-  const handleResetPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (userEnteredOtp !== generatedOtp) {
-      setForgotStatusMsg({ text: '❌ Invalid OTP code entered. Please check your email.', isError: true });
-      return;
-    }
-    if (!newPass || newPass.length < 4) {
-      setForgotStatusMsg({ text: 'Password must be at least 4 characters long.', isError: true });
-      return;
-    }
-    setForgotStatusMsg({
-      text: `✅ Password updated successfully! Log in with your new password.`,
-      isError: false,
-    });
-    setPassword(newPass);
-
-    setTimeout(() => {
-      setShowForgotModal(false);
-      setForgotStep(1);
-      setUserEnteredOtp('');
-      setNewPass('');
-    }, 2000);
-  };
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMsg('Please enter corporate email and password.');
+      setErrorMsg('Please enter your email and password.');
       return;
     }
 
@@ -153,332 +25,159 @@ export const LoginPage: React.FC = () => {
     setSuccessMsg('');
 
     try {
-      const apiBase = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'http://localhost:5000'
-        : '';
-      const res = await fetch(`${apiBase}/api/auth/login`, {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setSuccessMsg(`Welcome back, ${data.user.name || 'User'}! Redirecting...`);
+        setSuccessMsg(`Welcome back, ${data.user.name || 'User'}!`);
         setTimeout(() => {
           login(data.user.role, data.user.email, data.user.name, data.token);
         }, 400);
       } else {
-        setErrorMsg(data.message || 'Authentication failed. Please check credentials.');
+        setErrorMsg(data.message || 'Invalid credentials. Please try again.');
       }
-    } catch (err) {
-      console.error('[REAL-TIME AUTH ERROR]', err);
-      setErrorMsg('Unable to connect to authentication server. Please ensure backend service is running.');
+    } catch {
+      setErrorMsg('Unable to connect to server. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const ActiveIcon = rolePresets[selectedRole].icon;
-
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden text-white font-sans">
       {/* Background Ambient Glows */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="absolute -top-40 -left-40 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md space-y-5 z-10">
+      <div className="w-full max-w-sm space-y-6 z-10">
+
         {/* Branding Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
           <div className="w-16 h-16 bg-amber-500 text-slate-950 rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/30">
-            <Flame className="w-10 h-10 fill-slate-950 stroke-none" />
+            <Flame className="w-9 h-9 fill-slate-950 stroke-none" />
           </div>
-          <h1 className="font-display font-black text-2xl sm:text-3xl tracking-tight text-white">
-            VETRI INDANE
-          </h1>
-          <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">
-            ENTERPRISE LPG OPERATIONS SUITE
-          </p>
-          <p className="text-[11px] text-slate-400 font-medium">Engineered by RDK Technologies</p>
-        </div>
-
-        {/* Quick Role Preset Bar */}
-        <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-3 gap-1.5 text-[10px] font-bold">
-          {(['STOREROOM_STAFF', 'GODOWN_KEEPER', 'LOADMAN'] as UserRole[]).map(r => {
-            const isSelected = selectedRole === r;
-            const labels: Record<UserRole, string> = {
-              OWNER: '👑 OWNER',
-              STOREROOM_STAFF: '🛡️ OFFICE',
-              MANAGER: '💼 FIELD MGR',
-              GODOWN_KEEPER: '🔥 GODOWN',
-              DRIVER: '🚛 DRIVER',
-              LOADMAN: '📦 LOADMAN',
-            };
-            return (
-              <button
-                key={r}
-                type="button"
-                onClick={() => handleRoleSelect(r)}
-                className={`py-2 px-1 rounded-lg transition-all flex items-center justify-center text-center cursor-pointer ${
-                  isSelected
-                    ? 'bg-amber-500/20 border border-amber-500 text-amber-400 font-black shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <span>{labels[r]}</span>
-              </button>
-            );
-          })}
+          <div>
+            <h1 className="font-black text-2xl tracking-tight text-white">VETRI INDANE</h1>
+            <p className="text-[11px] font-bold text-amber-400 uppercase tracking-widest mt-1">Enterprise LPG Operations Suite</p>
+            <p className="text-[11px] text-slate-500 mt-1">Peelamedu, Coimbatore</p>
+          </div>
         </div>
 
         {/* Login Card */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-5">
-          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+
+          {/* Card Header */}
+          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
             <div>
-              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                <ActiveIcon className="w-4 h-4" />
-                <span>{rolePresets[selectedRole].title}</span>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                {rolePresets[selectedRole].subtitle}
-              </p>
+              <p className="text-sm font-bold text-white">Staff Portal Login</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Use your company credentials to sign in</p>
             </div>
             <LockKeyhole className="w-5 h-5 text-amber-400/80 shrink-0" />
           </div>
 
+          {/* Error / Success Messages */}
           {errorMsg && (
-            <div className="bg-rose-950/90 border border-rose-800 text-rose-300 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+            <div className="bg-rose-950/90 border border-rose-800 text-rose-300 p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
               <span>{errorMsg}</span>
             </div>
           )}
-
           {successMsg && (
-            <div className="bg-emerald-950/90 border border-emerald-800 text-emerald-300 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+            <div className="bg-emerald-950/90 border border-emerald-800 text-emerald-300 p-3 rounded-xl text-xs font-semibold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
               <span>{successMsg}</span>
             </div>
           )}
 
+          {/* Form */}
           <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
+
+            {/* Email */}
             <div>
-              <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
-                Corporate Email / Identifier
+              <label className="block text-slate-400 font-bold mb-1.5 uppercase tracking-wider">
+                Email Address
               </label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
                   onChange={e => setEmail(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-white font-mono focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-white focus:outline-none focus:border-amber-500 transition-colors"
                   placeholder="name@vetriindane.com"
+                  autoComplete="email"
                   required
                 />
               </div>
             </div>
 
+            {/* Password */}
             <div>
-              <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
+              <label className="block text-slate-400 font-bold mb-1.5 uppercase tracking-wider">
                 Password
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 <input
+                  id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-10 py-2.5 text-white font-mono focus:outline-none focus:border-amber-500 transition-colors"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-10 py-2.5 text-white focus:outline-none focus:border-amber-500 transition-colors"
                   placeholder="••••••••"
+                  autoComplete="current-password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px]">
-              <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-200">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                  className="rounded bg-slate-950 border-slate-700 text-amber-500 focus:ring-0"
-                />
-                <span>Remember session</span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setForgotEmail(email);
-                  setForgotStatusMsg(null);
-                  setForgotStep(1);
-                  setShowForgotModal(true);
-                }}
-                className="text-amber-400 hover:underline font-semibold cursor-pointer"
-              >
-                Forgot password?
-              </button>
-            </div>
-
+            {/* Submit */}
             <button
               type="submit"
+              id="login-submit"
               disabled={loading}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50"
+              className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20 cursor-pointer disabled:opacity-50 mt-2"
             >
               {loading ? (
-                <span>AUTHENTICATING...</span>
+                <span>SIGNING IN...</span>
               ) : (
                 <>
-                  <span>SIGN IN TO DASHBOARD</span>
+                  <span>SIGN IN</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Account creation & deletion are strictly managed by system <strong>OWNER</strong>.</span>
-          </div>
-
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" /> PBKDF2 Salt Verification
-            </span>
-            <span className="font-mono text-slate-400">v2.5.0 • RDK</span>
+          {/* Footer note */}
+          <div className="pt-3 border-t border-slate-800 space-y-2">
+            <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Account access is managed by the system <strong>Owner</strong>. Contact your admin if you cannot log in.</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 px-1">
+              <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                <ShieldCheck className="w-3 h-3" /> Encrypted Auth
+              </span>
+              <span className="font-mono">v2.5.0 • RDK Technologies</span>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Forgot Password OTP Modal */}
-      {showForgotModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-white space-y-5 shadow-2xl animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5 text-amber-400" />
-                <h2 className="font-display font-bold text-lg text-white">Gmail Password Reset</h2>
-              </div>
-              <button
-                onClick={() => setShowForgotModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            {forgotStatusMsg && (
-              <div
-                className={`p-3 rounded-xl text-xs font-semibold border ${
-                  forgotStatusMsg.isError
-                    ? 'bg-rose-950/80 border-rose-800 text-rose-300'
-                    : 'bg-emerald-950/80 border-emerald-800 text-emerald-300'
-                }`}
-              >
-                {forgotStatusMsg.text}
-              </div>
-            )}
-
-            {forgotStep === 1 ? (
-              <form onSubmit={handleSendOtp} className="space-y-4 text-xs">
-                <p className="text-slate-300 leading-relaxed">
-                  Enter your registered <strong>Gmail / Corporate Email address</strong>. We will send a 6-digit security OTP verification code directly to your inbox.
-                </p>
-
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
-                    Gmail / Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={forgotEmail}
-                    onChange={e => setForgotEmail(e.target.value)}
-                    placeholder="e.g. arun.driver@vetriindane.com"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono focus:border-amber-500 outline-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotModal(false)}
-                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
-                  >
-                    Send Code ➔
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <form onSubmit={handleResetPassword} className="space-y-4 text-xs">
-                <p className="text-slate-300 leading-relaxed">
-                  Enter the <strong>6-digit OTP code</strong> sent to <strong>{forgotEmail}</strong> and specify your new account password.
-                </p>
-
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
-                    6-Digit Verification Code (OTP)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={userEnteredOtp}
-                    onChange={e => setUserEnteredOtp(e.target.value)}
-                    placeholder="Enter 6-digit code (e.g. 849201)"
-                    className="w-full bg-slate-950 border border-amber-500/50 rounded-xl p-3 text-center text-amber-400 font-mono font-bold tracking-widest text-lg outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
-                    New Account Password
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={newPass}
-                    onChange={e => setNewPass(e.target.value)}
-                    placeholder="Enter new password"
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-white font-mono outline-none focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="pt-2 flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setForgotStep(1)}
-                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold cursor-pointer"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
-                  >
-                    Reset Password ✓
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
