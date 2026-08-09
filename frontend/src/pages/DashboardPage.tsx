@@ -16,6 +16,10 @@ import {
   Printer,
   ShieldCheck,
   Send,
+  Clock,
+  Award,
+  TrendingUp,
+  Boxes,
 } from 'lucide-react';
 import {
   BarChart,
@@ -34,8 +38,8 @@ interface DashboardPageProps {
   onNavigate?: (tab: string, targetId?: string) => void;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = () => {
-  const { employees, vehicles, deliveries, bills, currentUser, role } = useApp();
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
+  const { employees, vehicles, deliveries, bills, currentUser, role, attendance } = useApp();
 
   const totalWorkers = employees.length;
   const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
@@ -421,13 +425,135 @@ export const DashboardPage: React.FC<DashboardPageProps> = () => {
                 </tbody>
               </table>
             </div>
+         {/* ------------------- ROLE VIEW: DRIVER PERSONAL MONTHLY DASHBOARD ------------------- */}
+      {role === 'DRIVER' && (
+        <div className="space-y-6">
+          {/* Driver Monthly Header & Incentive Banner */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 border border-slate-800 rounded-3xl p-6 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3.5 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                <Award className="w-8 h-8" />
+              </div>
+              <div>
+                <span className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">DRIVER MONTHLY PERFORMANCE CONSOLE</span>
+                <h2 className="font-display font-extrabold text-xl text-white mt-0.5">
+                  August 2026 Shift Summary — {currentUser?.name || 'Ramesh'}
+                </h2>
+                <p className="text-xs text-slate-300 mt-1">
+                  Personal Monthly Deliveries Output, Shift Hours Worked & Safety Rating
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="bg-slate-950/80 px-4 py-2 rounded-2xl border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-mono block">On-Time Rating</span>
+                <span className="font-display font-extrabold text-base text-emerald-400">98.6% ★★★★★</span>
+              </div>
+              <div className="bg-slate-950/80 px-4 py-2 rounded-2xl border border-slate-800 text-center">
+                <span className="text-[10px] text-slate-400 uppercase font-mono block">Monthly Bonus</span>
+                <span className="font-display font-extrabold text-base text-amber-400">₹3,400</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Driver Monthly KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-xs font-bold uppercase tracking-wider">MONTHLY SHIFT HOURS</span>
+                <Clock className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="font-display font-extrabold text-2xl text-amber-400">176h 45m</div>
+              <p className="text-xs text-slate-400 font-mono">August 2026 (22 Days Shift Active)</p>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-xs font-bold uppercase tracking-wider">DELIVERIES COMPLETED</span>
+                <Package className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div className="font-display font-extrabold text-2xl text-emerald-400">184 Orders</div>
+              <p className="text-xs text-slate-400 font-mono">368 LPG Cylinders Handled</p>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-xs font-bold uppercase tracking-wider">COLLECTIONS HANDLED</span>
+                <CircleDollarSign className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="font-display font-extrabold text-2xl text-blue-400">₹1,74,840</div>
+              <p className="text-xs text-slate-400 font-mono">₹1.2L UPI QR • ₹54k Cash Proofs</p>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white shadow-lg space-y-2">
+              <div className="flex items-center justify-between text-slate-400">
+                <span className="text-xs font-bold uppercase tracking-wider">SAFETY & FUEL SCORE</span>
+                <TrendingUp className="w-5 h-5 text-purple-400" />
+              </div>
+              <div className="font-display font-extrabold text-2xl text-purple-400">96 / 100</div>
+              <p className="text-xs text-slate-400 font-mono">Zero Overspeed • Fuel Saved</p>
+            </div>
+          </div>
+
+          {/* Driver Monthly Velocity Chart */}
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 text-white shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="font-display font-bold text-base text-white">August 2026 Weekly Deliveries Breakdown</h3>
+                <p className="text-xs text-slate-400">Track your week-by-week delivery volume & earnings</p>
+              </div>
+              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs px-3 py-1 rounded-xl font-mono">
+                Current Month: August 2026
+              </span>
+            </div>
+
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { week: 'Week 1 (Aug 1-7)', deliveries: 42, earnings: 39480 },
+                  { week: 'Week 2 (Aug 8-14)', deliveries: 48, earnings: 45120 },
+                  { week: 'Week 3 (Aug 15-21)', deliveries: 45, earnings: 42300 },
+                  { week: 'Week 4 (Aug 22-31)', deliveries: 49, earnings: 47940 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis dataKey="week" stroke="#94a3b8" fontSize={11} />
+                  <YAxis stroke="#94a3b8" fontSize={11} />
+                  <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff' }} />
+                  <Bar dataKey="deliveries" fill="#f59e0b" radius={[6, 6, 0, 0]} name="Orders Delivered" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       )}
 
       {/* ------------------- ROLE VIEW 3: STANDARD / OWNER / MANAGER KPI GRID ------------------- */}
-      {(role === 'OWNER' || role === 'MANAGER' || role === 'DRIVER' || role === 'LOADMAN') && (
+      {(role === 'OWNER' || role === 'MANAGER' || role === 'LOADMAN') && (
         <>
+          {/* Stock Refill Banner for Owner/Manager/Godown */}
+          {(role === 'OWNER' || role === 'MANAGER') && (
+            <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-5 text-slate-950 flex items-center justify-between shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-slate-950/10 rounded-xl">
+                  <Boxes className="w-6 h-6 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="font-display font-extrabold text-base text-slate-950">Monthly Stock Intake & Refill Station</h3>
+                  <p className="text-xs font-semibold text-slate-900/80">Owner / Godown Keeper feature to record new stock arrival at start of month</p>
+                </div>
+              </div>
+              {onNavigate && (
+                <button
+                  onClick={() => onNavigate('inventory')}
+                  className="bg-slate-950 hover:bg-slate-900 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow cursor-pointer shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> + Refill Monthly Stock Now
+                </button>
+              )}
+            </div>
+          )}
+
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             <div className="kpi-card">

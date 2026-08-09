@@ -5,7 +5,7 @@ import { Boxes, Plus, Flame, Calendar, FileText, ShieldCheck, Truck, Printer, Pa
 export const InventoryPage: React.FC = () => {
   const { stockIntake, addStockIntake, role, currentUser } = useApp();
 
-  const isAuthorized = (role || '').toUpperCase() === 'OWNER' || (role || '').toUpperCase() === 'GODOWN_KEEPER' || (role || '').toUpperCase() === 'MANAGER';
+  const isAuthorized = (role || '').toUpperCase() === 'OWNER' || (role || '').toUpperCase() === 'GODOWN_KEEPER' || (role || '').toUpperCase() === 'MANAGER' || (role || '').toUpperCase() === 'STOREROOM_STAFF';
 
   // Stock Intake Modal State
   const [showModal, setShowModal] = useState(false);
