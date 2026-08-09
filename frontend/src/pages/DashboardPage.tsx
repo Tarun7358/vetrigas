@@ -22,7 +22,6 @@ import {
   Boxes,
   Activity,
   Fingerprint,
-  Wifi,
   Zap,
 } from 'lucide-react';
 import {
@@ -43,7 +42,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { employees, vehicles, deliveries, bills, currentUser, role, attendance } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role } = useApp();
 
   const totalWorkers = employees.length;
   const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
@@ -441,7 +440,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                 </tbody>
               </table>
             </div>
-         {/* ------------------- ROLE VIEW: DRIVER PERSONAL MONTHLY DASHBOARD ------------------- */}
+          </div>
+        </div>
+      )}
+
+      {/* ------------------- ROLE VIEW: DRIVER PERSONAL MONTHLY DASHBOARD ------------------- */}
       {role === 'DRIVER' && (
         <div className="space-y-6">
           {/* Driver Monthly Header & Incentive Banner */}

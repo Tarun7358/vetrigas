@@ -4,7 +4,6 @@ import {
   Flame,
   Search,
   Bell,
-  CheckCircle2,
   AlertCircle,
   Menu,
   ChevronDown,
