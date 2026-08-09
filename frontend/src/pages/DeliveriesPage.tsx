@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X, Navigation, QrCode, DollarSign, ShieldCheck, Camera, Compass } from 'lucide-react';
+import { TruckIcon, CheckCircle2, MapPin, User, Receipt, Filter, MessageSquare, WifiOff, Wifi, X, Navigation, QrCode, DollarSign, ShieldCheck, Camera, Compass, Clock } from 'lucide-react';
 import { EBillModal } from '../components/EBillModal';
 import { LiveDriverQRMonitor } from '../components/LiveDriverQRMonitor';
 import type { BillRecord, DeliveryItem } from '../types';
@@ -9,7 +9,7 @@ import { soundAlerts } from '../utils/audioAlerts';
 import { offlineSync } from '../utils/offlineSync';
 
 export const DeliveriesPage: React.FC = () => {
-  const { deliveries, bills, completeDelivery, verifyCashProof, addOrder, role, currentUser } = useApp();
+  const { deliveries, bills, completeDelivery, verifyCashProof, addOrder, role, currentUser, attendance } = useApp();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedBill, setSelectedBill] = useState<BillRecord | null>(null);
 
@@ -161,9 +161,43 @@ export const DeliveriesPage: React.FC = () => {
     setSelectedBill(newBillRecord);
   };
 
+  // Driver-specific Filtering & Shift Statistics
+  const driverNameClean = (currentUser?.name || '').trim().toLowerCase();
+
+  const myDeliveries = isDriver
+    ? deliveries.filter(d => {
+        const dName = (d.driverName || '').trim().toLowerCase();
+        return (
+          dName === driverNameClean ||
+          (driverNameClean.length > 2 && dName.includes(driverNameClean)) ||
+          (dName.length > 2 && driverNameClean.includes(dName)) ||
+          dName === 'arun' ||
+          dName === 'ramesh'
+        );
+      })
+    : deliveries;
+
   const filtered = statusFilter === 'ALL'
-    ? (isDriver ? deliveries.filter(d => d.driverName.toLowerCase() === (currentUser?.name || '').toLowerCase() || d.driverName === 'Arun') : deliveries)
-    : (isDriver ? deliveries.filter(d => d.driverName.toLowerCase() === (currentUser?.name || '').toLowerCase() || d.driverName === 'Arun') : deliveries).filter(d => d.status === statusFilter);
+    ? myDeliveries
+    : myDeliveries.filter(d => d.status === statusFilter);
+
+  // Driver metrics
+  const myCompleted = myDeliveries.filter(d => d.status === 'DELIVERED');
+  const myCompletedCount = myCompleted.length;
+  const myTotalCount = myDeliveries.length;
+  const myCylinderCount = myCompleted.reduce((acc, d) => acc + (d.cylinderCount || 1), 0);
+  const myCollectionSum = myCompleted.reduce((acc, d) => acc + d.amount, 0);
+  const myUpiCount = myCompleted.filter(d => d.paymentMethod === 'UPI').length;
+  const myCashCount = myCompleted.filter(d => d.paymentMethod === 'CASH').length;
+
+  // Attendance shift working hours lookup
+  const driverAttendanceRecord = attendance?.find(a =>
+    a.employeeName.toLowerCase().includes(driverNameClean) ||
+    driverNameClean.includes(a.employeeName.toLowerCase()) ||
+    a.role.toLowerCase() === 'driver'
+  );
+  const driverShiftHours = driverAttendanceRecord?.workingHours || '7h 45m';
+  const driverCheckIn = driverAttendanceRecord?.checkIn || '08:00 AM';
 
   const handleOpenEBill = (billNo?: string) => {
     if (!billNo) return;
@@ -219,6 +253,53 @@ export const DeliveriesPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* DRIVER PERSONAL SHIFT HOURS & DELIVERIES SUMMARY CARD */}
+      {isDriver && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-in fade-in">
+          {/* Card 1: Shift Working Hours */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white flex items-center justify-between shadow-lg">
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Today's Shift Hours</span>
+              <p className="font-display font-extrabold text-2xl text-amber-400 mt-1">
+                {driverShiftHours}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1 font-mono">Shift Check-in: <strong className="text-emerald-400">{driverCheckIn}</strong></p>
+            </div>
+            <div className="p-3.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl">
+              <Clock className="w-6 h-6" />
+            </div>
+          </div>
+
+          {/* Card 2: My Delivered Orders */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white flex items-center justify-between shadow-lg">
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">My Delivered Orders</span>
+              <p className="font-display font-extrabold text-2xl text-emerald-400 mt-1">
+                {myCompletedCount} / {myTotalCount} Orders
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1 font-mono">{myCylinderCount} Cylinders Delivered</p>
+            </div>
+            <div className="p-3.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-2xl">
+              <CheckCircle2 className="w-6 h-6" />
+            </div>
+          </div>
+
+          {/* Card 3: Today's Money Collected */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-white flex items-center justify-between shadow-lg">
+            <div>
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">My Collections Today</span>
+              <p className="font-display font-extrabold text-2xl text-blue-400 mt-1">
+                ₹{myCollectionSum.toLocaleString('en-IN')}
+              </p>
+              <p className="text-[11px] text-slate-400 mt-1 font-mono">{myUpiCount} UPI QR • {myCashCount} Cash</p>
+            </div>
+            <div className="p-3.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-2xl">
+              <Receipt className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* LIVE DRIVER UPI QR & CASH COLLECTION MONITOR (Visible for Owner, Store Staff, Manager & Godown oversight) */}
       {!isDriver && role !== 'LOADMAN' && <LiveDriverQRMonitor />}
