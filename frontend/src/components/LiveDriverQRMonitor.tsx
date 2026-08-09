@@ -13,6 +13,11 @@ export const LiveDriverQRMonitor: React.FC = () => {
   const canConfirmOrEdit = role === 'OWNER' || role === 'STOREROOM_STAFF' || role === 'MANAGER';
   const isHighAdmin = role === 'OWNER' || role === 'STOREROOM_STAFF';
 
+  // Drivers and Loadmen should NOT see the live office audit monitor
+  if (role === 'DRIVER' || role === 'LOADMAN') {
+    return null;
+  }
+
   // Filter completed deliveries or bills with payments
   const completedDeliveries = deliveries.filter(d => d.status === 'DELIVERED');
   const pendingGPayCount = completedDeliveries.filter(d => d.paymentMethod === 'OWNER_GPAY_DIRECT' && d.paymentStatus === 'PENDING').length;

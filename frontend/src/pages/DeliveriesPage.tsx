@@ -220,8 +220,8 @@ export const DeliveriesPage: React.FC = () => {
         </div>
       </div>
 
-      {/* LIVE DRIVER UPI QR & CASH COLLECTION MONITOR */}
-      <LiveDriverQRMonitor />
+      {/* LIVE DRIVER UPI QR & CASH COLLECTION MONITOR (Visible for Owner, Store Staff, Manager & Godown oversight) */}
+      {!isDriver && role !== 'LOADMAN' && <LiveDriverQRMonitor />}
 
       {/* LIVE DRIVER GPS ROUTE NAVIGATION HUD BANNER */}
       {activeNavDelivery && (
