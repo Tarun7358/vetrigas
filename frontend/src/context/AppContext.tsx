@@ -143,8 +143,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [role, setRole] = useState<UserRole>(initialSession.role);
   
   const [integrations, setIntegrations] = useState<IntegrationState>({
-    fleettrackConnected: true,
-    easyTimeProConnected: true,
+    fleettrackConnected: false,
+    easyTimeProConnected: false,
     paymentGatewayConnected: true,
   });
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);

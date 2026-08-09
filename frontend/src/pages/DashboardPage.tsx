@@ -43,7 +43,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle, integrations, toggleIntegration } = useApp();
 
   const totalWorkers = employees.length;
   const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
@@ -612,77 +612,117 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
               </div>
 
               {/* REAL-TIME IOT HARDWARE TELEMETRY & BIOMETRIC SENSOR MONITOR (OWNER ONLY) */}
-              {role === 'OWNER' && (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-white shadow-xl space-y-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                        <Activity className="w-5 h-5 animate-pulse" />
-                      </div>
-                      <div>
-                        <h3 className="font-display font-extrabold text-base text-white flex items-center gap-2">
-                          Real-Time IoT Hardware Telemetry & Biometric Station
-                          <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
-                        </h3>
-                        <p className="text-xs text-slate-400">Live hardware socket heartbeats, GPS tracker pings & fingerprint punch stream (Owner Only)</p>
-                      </div>
-                    </div>
-                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[11px] font-mono font-bold px-3 py-1 rounded-full flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span> 2 HARDWARE NODES ONLINE
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-                    {/* Hardware Node 1: Fleettrack GPS */}
-                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-amber-400 flex items-center gap-2">
-                          <Truck className="w-4 h-4 text-amber-400" /> Fleettrack IoT GPS Hardware Server
-                        </span>
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">● CONNECTED (12ms)</span>
-                      </div>
-                      <div className="space-y-1 text-slate-300">
-                        <div className="flex justify-between border-b border-slate-900 pb-1">
-                          <span className="text-slate-400">Target Protocol:</span>
-                          <span className="text-slate-200">TCP Port 8088 (Teltonika M2M)</span>
+              {role === 'OWNER' && (() => {
+                const onlineNodesCount = (integrations.fleettrackConnected ? 1 : 0) + (integrations.easyTimeProConnected ? 1 : 0);
+                return (
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 text-white shadow-xl space-y-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2.5 rounded-2xl border ${onlineNodesCount > 0 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30'}`}>
+                          <Activity className={`w-5 h-5 ${onlineNodesCount > 0 ? 'animate-pulse' : ''}`} />
                         </div>
-                        <div className="flex justify-between border-b border-slate-900 pb-1">
-                          <span className="text-slate-400">Monitored Trucks:</span>
-                          <span className="text-slate-200">4 Vehicles (TN 38 BQ 1092, etc.)</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Live Packet Rate:</span>
-                          <span className="text-emerald-400 font-bold">Streaming • Last packet {hwSecGps}s ago</span>
+                        <div>
+                          <h3 className="font-display font-extrabold text-base text-white flex items-center gap-2">
+                            Real-Time IoT Hardware Telemetry & Biometric Station
+                            <Zap className={`w-4 h-4 ${onlineNodesCount > 0 ? 'text-amber-400 fill-amber-400' : 'text-slate-500'}`} />
+                          </h3>
+                          <p className="text-xs text-slate-400">Live hardware socket heartbeats, GPS tracker pings & fingerprint punch stream (Owner Only)</p>
                         </div>
                       </div>
+                      <span className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full flex items-center gap-2 border ${
+                        onlineNodesCount === 2
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                          : onlineNodesCount === 1
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-rose-500/20 text-rose-400 border-rose-500/40'
+                      }`}>
+                        <span className={`w-2.5 h-2.5 rounded-full ${
+                          onlineNodesCount === 2
+                            ? 'bg-emerald-400 animate-ping'
+                            : onlineNodesCount === 1
+                            ? 'bg-amber-400 animate-pulse'
+                            : 'bg-rose-500'
+                        }`}></span>
+                        {onlineNodesCount} HARDWARE {onlineNodesCount === 1 ? 'NODE' : 'NODES'} ONLINE {onlineNodesCount === 0 ? '(STANDBY / DISCONNECTED)' : ''}
+                      </span>
                     </div>
 
-                    {/* Hardware Node 2: Easy Time Pro Biometrics */}
-                    <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-amber-400 flex items-center gap-2">
-                          <Fingerprint className="w-4 h-4 text-amber-400" /> Easy Time Pro Biometric Scanner
-                        </span>
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">● CONNECTED (18ms)</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+                      {/* Hardware Node 1: Fleettrack GPS */}
+                      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-amber-400 flex items-center gap-2">
+                            <Truck className="w-4 h-4 text-amber-400" /> Fleettrack IoT GPS Hardware Server
+                          </span>
+                          <button
+                            onClick={() => toggleIntegration('fleettrackConnected')}
+                            title="Click to toggle hardware socket connection"
+                            className={`text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer transition-all ${
+                              integrations.fleettrackConnected
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
+                            }`}
+                          >
+                            {integrations.fleettrackConnected ? '● CONNECTED (12ms)' : '● DISCONNECTED (Awaiting Hardware Socket)'}
+                          </button>
+                        </div>
+                        <div className="space-y-1 text-slate-300">
+                          <div className="flex justify-between border-b border-slate-900 pb-1">
+                            <span className="text-slate-400">Target Protocol:</span>
+                            <span className="text-slate-200">TCP Port 8088 (Teltonika M2M)</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-900 pb-1">
+                            <span className="text-slate-400">Monitored Trucks:</span>
+                            <span className="text-slate-200">{vehicles.length} Vehicles ({vehicles.slice(0, 2).map(v => v.registrationNumber).join(', ')}{vehicles.length > 2 ? '...' : ''})</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Live Packet Rate:</span>
+                            <span className={integrations.fleettrackConnected ? 'text-emerald-400 font-bold' : 'text-rose-400 font-medium'}>
+                              {integrations.fleettrackConnected ? `Streaming • Last packet ${hwSecGps}s ago` : 'Offline • Waiting for physical GPS tracker'}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1 text-slate-300">
-                        <div className="flex justify-between border-b border-slate-900 pb-1">
-                          <span className="text-slate-400">Terminal IP:</span>
-                          <span className="text-slate-200">192.168.1.105 (Peelamedu Depot)</span>
+
+                      {/* Hardware Node 2: Easy Time Pro Biometrics */}
+                      <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-amber-400 flex items-center gap-2">
+                            <Fingerprint className="w-4 h-4 text-amber-400" /> Easy Time Pro Biometric Scanner
+                          </span>
+                          <button
+                            onClick={() => toggleIntegration('easyTimeProConnected')}
+                            title="Click to toggle biometric terminal connection"
+                            className={`text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer transition-all ${
+                              integrations.easyTimeProConnected
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
+                            }`}
+                          >
+                            {integrations.easyTimeProConnected ? '● CONNECTED (18ms)' : '● DISCONNECTED (Terminal Standby)'}
+                          </button>
                         </div>
-                        <div className="flex justify-between border-b border-slate-900 pb-1">
-                          <span className="text-slate-400">Fingerprint Punch Sync:</span>
-                          <span className="text-slate-200">ZKTeco Push SDK v3.0</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-400">Attendance Sync Status:</span>
-                          <span className="text-emerald-400 font-bold">Cloud Synced • Last punch {hwSecBio}s ago</span>
+                        <div className="space-y-1 text-slate-300">
+                          <div className="flex justify-between border-b border-slate-900 pb-1">
+                            <span className="text-slate-400">Terminal IP:</span>
+                            <span className="text-slate-200">192.168.1.105 (Peelamedu Depot)</span>
+                          </div>
+                          <div className="flex justify-between border-b border-slate-900 pb-1">
+                            <span className="text-slate-400">Fingerprint Punch Sync:</span>
+                            <span className="text-slate-200">ZKTeco Push SDK v3.0</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-400">Attendance Sync Status:</span>
+                            <span className={integrations.easyTimeProConnected ? 'text-emerald-400 font-bold' : 'text-rose-400 font-medium'}>
+                              {integrations.easyTimeProConnected ? `Cloud Synced • Last punch ${hwSecBio}s ago` : 'Offline • Waiting for fingerprint scanner'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* OWNER FLEET VEHICLE CONFIGURATION MANAGER */}
               {role === 'OWNER' && (
