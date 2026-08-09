@@ -170,3 +170,16 @@ export interface VehicleExpense {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvedBy?: string;
 }
+
+export interface StockIntakeRecord {
+  id: string;
+  intakeDate: string;
+  monthYear: string;
+  category: '14.2kg Domestic' | '19kg Commercial' | '5kg Mini' | string;
+  quantity: number;
+  challanNumber: string;
+  supplier: string;
+  receivedBy: string;
+  userRole: string;
+  timestamp: string;
+}

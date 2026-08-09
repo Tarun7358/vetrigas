@@ -555,6 +555,68 @@ app.put('/api/deliveries/:id/status', async (req: Request, res: Response) => {
   }
 });
 
+// ── MONTHLY STOCK INTAKE ENDPOINTS (Owner & Godown Keeper) ─────────────────
+app.get('/api/stock-intake', async (req: Request, res: Response) => {
+  try {
+    const intakeRecords = await fetchAll('SELECT * FROM stock_intake ORDER BY id DESC');
+    res.json({ success: true, intakeRecords });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to fetch stock intake records' });
+  }
+});
+
+app.post('/api/stock-intake', async (req: Request, res: Response) => {
+  const { category, quantity, monthYear, intakeDate, challanNumber, supplier, receivedBy, userRole } = req.body;
+  const roleUpper = (userRole || '').toUpperCase();
+
+  if (roleUpper !== 'OWNER' && roleUpper !== 'GODOWN_KEEPER' && roleUpper !== 'MANAGER') {
+    return res.status(403).json({ success: false, message: 'Access Denied: Only Owner or Godown Keeper can record monthly stock intake.' });
+  }
+
+  const id = `stk-${Date.now()}`;
+  const timestamp = new Date().toISOString();
+  const dateStr = intakeDate || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const monthStr = monthYear || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  try {
+    await runQuery(
+      `INSERT INTO stock_intake (id, intakeDate, monthYear, category, quantity, challanNumber, supplier, receivedBy, userRole, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        dateStr,
+        monthStr,
+        category || '14.2kg Domestic',
+        Number(quantity) || 0,
+        challanNumber || `IOCL-${Math.floor(100000 + Math.random() * 900000)}`,
+        supplier || 'Indian Oil Peelamedu Bottling Plant',
+        receivedBy || 'Godown Keeper',
+        roleUpper,
+        timestamp,
+      ]
+    );
+
+    console.log(`[STOCK INTAKE] Registered ${quantity} units of ${category} (${monthStr}) by ${receivedBy}`);
+    return res.json({
+      success: true,
+      intake: {
+        id,
+        intakeDate: dateStr,
+        monthYear: monthStr,
+        category,
+        quantity: Number(quantity),
+        challanNumber,
+        supplier,
+        receivedBy,
+        userRole: roleUpper,
+        timestamp,
+      },
+    });
+  } catch (err) {
+    console.error('Error inserting stock intake:', err);
+    return res.status(500).json({ success: false, error: 'Failed to record stock intake.' });
+  }
+});
+
 // SPA Fallback Route for React Frontend
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(frontendPath, 'index.html'));

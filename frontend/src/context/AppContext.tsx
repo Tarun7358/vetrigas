@@ -14,6 +14,7 @@ import type {
   AuditLog,
   IntegrationState,
   VehicleExpense,
+  StockIntakeRecord,
 } from '../types';
 import { API_BASE } from '../utils/api';
 
@@ -41,6 +42,7 @@ interface AppContextType {
   deliveries: DeliveryItem[];
   bills: BillRecord[];
   expenses: VehicleExpense[];
+  stockIntake: StockIntakeRecord[];
   inventory: InventoryMetrics;
   reconciliation: CashReconciliation;
   alerts: AlertItem[];
@@ -58,6 +60,7 @@ interface AppContextType {
   approveExpense: (expenseId: string) => void;
   rejectExpense: (expenseId: string) => void;
   addOrder: (orderData: { customerName: string; address: string; phone: string; category?: string; amount: number; assignedDriverName: string; cylinderCount?: number }) => Promise<void>;
+  addStockIntake: (stockData: { category: string; quantity: number; monthYear?: string; intakeDate?: string; challanNumber?: string; supplier?: string }) => Promise<void>;
 
   // Owner-Only Worker Actions
   addEmployee: (emp: Partial<Employee>) => void;
@@ -66,7 +69,7 @@ interface AppContextType {
 
 import vetriDataset from '../data/vetriDataset.json';
 
-const initialVehicles: Vehicle[] = vetriDataset.vehicles as Vehicle[];
+const initialVehicles: Vehicle[] = [];
 const initialEmployees: Employee[] = [
   {
     id: 'emp-00',
@@ -83,14 +86,14 @@ const initialEmployees: Employee[] = [
     hourlyRate: 150,
   },
 ];
-const initialAttendance: AttendanceRecord[] = vetriDataset.attendance as AttendanceRecord[];
-const initialPayroll: PayrollRecord[] = vetriDataset.payroll as PayrollRecord[];
-const initialBatches: LoadingBatch[] = vetriDataset.batches as LoadingBatch[];
-const initialDeliveries: DeliveryItem[] = vetriDataset.deliveries as DeliveryItem[];
-const initialBills: BillRecord[] = vetriDataset.bills as BillRecord[];
-const initialAlerts: AlertItem[] = vetriDataset.alerts as AlertItem[];
-const initialAuditLogs: AuditLog[] = vetriDataset.auditLogs as unknown as AuditLog[];
-const initialExpenses: VehicleExpense[] = (vetriDataset as any).expenses as VehicleExpense[];
+const initialAttendance: AttendanceRecord[] = [];
+const initialPayroll: PayrollRecord[] = [];
+const initialBatches: LoadingBatch[] = [];
+const initialDeliveries: DeliveryItem[] = [];
+const initialBills: BillRecord[] = [];
+const initialAlerts: AlertItem[] = [];
+const initialAuditLogs: AuditLog[] = [];
+const initialExpenses: VehicleExpense[] = [];
 
 const normalizeRole = (r?: string): UserRole => {
   const upper = (r || '').toUpperCase();
@@ -148,6 +151,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>(initialDeliveries);
   const [bills, setBills] = useState<BillRecord[]>(initialBills);
   const [expenses, setExpenses] = useState<VehicleExpense[]>(initialExpenses);
+  const [stockIntake, setStockIntake] = useState<StockIntakeRecord[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>(initialAlerts);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(initialAuditLogs);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>('v1');
@@ -168,6 +172,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const data = await expRes.json();
         if (data.expenses && data.expenses.length > 0) {
           setExpenses(data.expenses);
+        }
+      }
+
+      const stkRes = await fetch(`${API_BASE}/api/stock-intake`);
+      if (stkRes.ok) {
+        const data = await stkRes.json();
+        if (Array.isArray(data.intakeRecords)) {
+          setStockIntake(data.intakeRecords);
         }
       }
 
@@ -629,6 +641,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Backend sync warning on order creation');
     }
   };
+  const addStockIntake = async (stockData: {
+    category: string;
+    quantity: number;
+    monthYear?: string;
+    intakeDate?: string;
+    challanNumber?: string;
+    supplier?: string;
+  }) => {
+    const roleUpper = (role || '').toUpperCase();
+    if (roleUpper !== 'OWNER' && roleUpper !== 'GODOWN_KEEPER' && roleUpper !== 'MANAGER') {
+      alert('Access Denied: Only Owner or Godown Keeper can record monthly stock intake.');
+      return;
+    }
+
+    const dateStr = stockData.intakeDate || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const monthStr = stockData.monthYear || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const newRecord: StockIntakeRecord = {
+      id: `stk-${Date.now()}`,
+      intakeDate: dateStr,
+      monthYear: monthStr,
+      category: stockData.category || '14.2kg Domestic',
+      quantity: Number(stockData.quantity) || 0,
+      challanNumber: stockData.challanNumber || `IOCL-${Math.floor(100000 + Math.random() * 900000)}`,
+      supplier: stockData.supplier || 'Indian Oil Peelamedu Bottling Plant',
+      receivedBy: currentUser?.name || role,
+      userRole: roleUpper,
+      timestamp: new Date().toISOString(),
+    };
+
+    setStockIntake(prev => [newRecord, ...prev]);
+
+    try {
+      await fetch(`${API_BASE}/api/stock-intake`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...stockData,
+          receivedBy: currentUser?.name || role,
+          userRole: roleUpper,
+        }),
+      });
+      fetchBackendData();
+    } catch (err) {
+      console.warn('Stock intake saved locally.');
+    }
+  };
 
   return (
     <AppContext.Provider
@@ -649,6 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deliveries,
         bills,
         expenses,
+        stockIntake,
         inventory,
         reconciliation,
         alerts,
@@ -664,6 +723,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         approveExpense,
         rejectExpense,
         addOrder,
+        addStockIntake,
         addEmployee,
         removeEmployee,
       }}

@@ -127,6 +127,20 @@ CREATE TABLE public.attendance (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 8. Monthly Stock Intake Table
+CREATE TABLE public.stock_intake (
+    id TEXT PRIMARY KEY,
+    intake_date TEXT NOT NULL,
+    month_year TEXT NOT NULL,
+    category TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    challan_number TEXT,
+    supplier TEXT DEFAULT 'Indian Oil Peelamedu Bottling Plant',
+    received_by TEXT,
+    user_role TEXT,
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Disable Row-Level Security for direct REST/API sync
 ALTER TABLE public.employees DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vehicles DISABLE ROW LEVEL SECURITY;
@@ -135,3 +149,4 @@ ALTER TABLE public.bills DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.deliveries DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.loading_batches DISABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attendance DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.stock_intake DISABLE ROW LEVEL SECURITY;

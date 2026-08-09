@@ -114,11 +114,24 @@ export async function seedDatabase() {
         employeeId TEXT,
         employeeName TEXT,
         role TEXT,
-        date TEXT,
-        checkIn TEXT,
-        checkOut TEXT,
         workingHours TEXT,
         status TEXT
+      )
+    `);
+
+    // 8. Monthly Stock Intake Table (Owner & Godown Keeper Stock Entries)
+    await runQuery(`
+      CREATE TABLE IF NOT EXISTS stock_intake (
+        id TEXT PRIMARY KEY,
+        intakeDate TEXT NOT NULL,
+        monthYear TEXT NOT NULL,
+        category TEXT NOT NULL,
+        quantity INTEGER NOT NULL,
+        challanNumber TEXT,
+        supplier TEXT,
+        receivedBy TEXT,
+        userRole TEXT,
+        timestamp TEXT
       )
     `);
 
@@ -146,43 +159,7 @@ export async function seedDatabase() {
     await runQuery(`DELETE FROM employees WHERE id != 'emp-00' AND role != 'Owner'`);
     console.log('✓ Purged all employee accounts from SQLite database except Owner (emp-00).');
 
-    // Seed initial vehicles if table is empty
-    const vehCheck = await fetchOne('SELECT COUNT(*) as count FROM vehicles');
-    if (vehCheck && vehCheck.count === 0) {
-      const initialVehicles = [
-        ['v1', 'TN 38 AU 4821', 'Arun', 'emp-01', 'MOVING', 38, 1, 64.8, 17, 24, 11.0168, 76.9558, 1, 'LIVE'],
-        ['v2', 'TN 38 BV 9012', 'Suresh', 'emp-03', 'MOVING', 44, 1, 89.2, 21, 25, 11.0250, 76.9620, 1, 'LIVE'],
-        ['v3', 'TN 38 CW 1054', 'Ramesh', 'emp-04', 'STOPPED', 0, 0, 45.1, 14, 20, 11.0080, 76.9450, 1, 'LIVE'],
-        ['v4', 'TN 38 DX 6720', 'Vijay', 'emp-05', 'STOPPED', 0, 0, 12.0, 5, 18, 11.0310, 76.9700, 1, 'OFFLINE']
-      ];
-
-      for (const v of initialVehicles) {
-        await runQuery(
-          `INSERT INTO vehicles (id, registrationNumber, driverName, driverId, status, speed, ignition, todayDistanceKm, completedDeliveries, totalDeliveries, lat, lng, hasCamera, cameraStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          v
-        );
-      }
-      console.log('✓ Initial GPS Vehicle data seeded into SQLite Database!');
-    }
-
-    // Seed initial deliveries if table is empty
-    const delCheck = await fetchOne('SELECT COUNT(*) as count FROM deliveries');
-    if (delCheck && delCheck.count === 0) {
-      const initialDeliveries = [
-        ['del-101', 'Kavitha S.', '14 Avinashi Road, Peelamedu, Coimbatore', '+91 98421 11223', '14.2kg Domestic', 'DELIVERED', 'UPI', 940, 'emp-01', 'Arun', '10:30 AM', '10:28 AM'],
-        ['del-102', 'Hotel Anandha Bhavan', '88 Crosscut Road, Gandhipuram', '+91 98421 44556', '19kg Commercial', 'DELIVERED', 'CASH', 1850, 'emp-01', 'Arun', '11:15 AM', '11:10 AM'],
-        ['del-103', 'Murugan Bakery', '102 DB Road, RS Puram', '+91 98421 77889', '19kg Commercial', 'PENDING', 'UPI', 1850, 'emp-01', 'Arun', '02:00 PM', '']
-      ];
-
-      for (const d of initialDeliveries) {
-        await runQuery(
-          `INSERT INTO deliveries (id, customerName, address, phone, category, status, paymentType, amount, assignedDriverId, assignedDriverName, scheduledTime, deliveredTime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          d
-        );
-      }
-    }
-
-    console.log('✓ Local SQLite Database schema & initial dataset verified successfully!');
+    console.log('✓ Local SQLite Database schema verified successfully!');
   } catch (err) {
     console.error('Error seeding local SQLite database:', err);
   }
