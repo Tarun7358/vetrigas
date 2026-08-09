@@ -15,7 +15,7 @@ export const WorkforcePage: React.FC = () => {
 
   // Add Worker Form State
   const [newName, setNewName] = useState('');
-  const [newRole, setNewRole] = useState<'Driver' | 'Loadman' | 'Manager'>('Driver');
+  const [newRole, setNewRole] = useState<'Driver' | 'Loadman' | 'Manager' | 'Godown Keeper' | 'Storeroom Staff'>('Driver');
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('Vetri@2026');
   const [newPhone, setNewPhone] = useState('+91 ');
@@ -159,7 +159,9 @@ export const WorkforcePage: React.FC = () => {
                           ? 'badge-blue'
                           : emp.role === 'Loadman'
                           ? 'badge-amber'
-                          : 'badge-grey'
+                          : emp.role === 'Godown Keeper' || emp.role === 'Storeroom Staff'
+                          ? 'badge-green'
+                          : 'badge-purple'
                       }`}
                     >
                       {emp.role}
@@ -277,12 +279,14 @@ export const WorkforcePage: React.FC = () => {
                   </label>
                   <select
                     value={newRole}
-                    onChange={e => setNewRole(e.target.value as 'Driver' | 'Loadman' | 'Manager')}
+                    onChange={e => setNewRole(e.target.value as any)}
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500"
                   >
                     <option value="Driver">Driver (LPG Delivery Route)</option>
                     <option value="Loadman">Loadman (Depot Cylinder Loading)</option>
                     <option value="Manager">Manager (Operations Controller)</option>
+                    <option value="Godown Keeper">Godown Keeper (Depot Stock & Monthly Intake)</option>
+                    <option value="Storeroom Staff">Storeroom Staff (Inventory & Dispatch)</option>
                   </select>
                 </div>
 
