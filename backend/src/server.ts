@@ -136,16 +136,22 @@ app.post('/api/auth/login', loginLimiter, async (req: Request, res: Response) =>
       return res.status(401).json({ success: false, message: 'Invalid credentials.' });
     }
 
+    // Normalize role to uppercase UserRole standard
+    const normalizedRole = user.role ? user.role.toUpperCase() : 'OWNER';
+    const isOwnerRole = normalizedRole === 'OWNER' || user.role === 'Owner';
+
     // Issue signed JWT token (8h for employees, 24h for Owner)
-    const expiresIn = user.role === 'OWNER' ? '24h' : '8h';
+    const expiresIn = isOwnerRole ? '24h' : '8h';
     const { password: _, ...safeUser } = user;
+    safeUser.role = isOwnerRole ? 'OWNER' : normalizedRole;
+
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role, name: user.name },
+      { id: user.id, email: user.email, role: safeUser.role, name: user.name },
       JWT_SECRET,
       { expiresIn }
     );
 
-    console.log(`[AUTH] ✓ Login: ${user.name} (${user.role}) — token issued (${expiresIn})`);
+    console.log(`[AUTH] ✓ Login: ${user.name} (${safeUser.role}) — token issued (${expiresIn})`);
     return res.json({ success: true, user: safeUser, token });
 
   } catch (err) {

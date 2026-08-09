@@ -77,6 +77,17 @@ const initialAlerts: AlertItem[] = vetriDataset.alerts as AlertItem[];
 const initialAuditLogs: AuditLog[] = vetriDataset.auditLogs as unknown as AuditLog[];
 const initialExpenses: VehicleExpense[] = (vetriDataset as any).expenses as VehicleExpense[];
 
+const normalizeRole = (r?: string): UserRole => {
+  const upper = (r || '').toUpperCase();
+  if (upper === 'OWNER' || upper === 'OWNER') return 'OWNER';
+  if (upper === 'MANAGER') return 'MANAGER';
+  if (upper === 'DRIVER') return 'DRIVER';
+  if (upper === 'LOADMAN') return 'LOADMAN';
+  if (upper.includes('GODOWN')) return 'GODOWN_KEEPER';
+  if (upper.includes('OFFICE') || upper.includes('STOREROOM')) return 'STOREROOM_STAFF';
+  return 'OWNER';
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -86,10 +97,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && parsed.email && parsed.role) {
+          const normRole = normalizeRole(parsed.role);
           return {
             isAuthenticated: true,
-            currentUser: { name: parsed.name || parsed.email, email: parsed.email, role: parsed.role },
-            role: parsed.role as UserRole,
+            currentUser: { name: parsed.name || parsed.email, email: parsed.email, role: normRole },
+            role: normRole,
           };
         }
       }
@@ -290,8 +302,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [inventory] = useState<InventoryMetrics>(vetriDataset.inventory as InventoryMetrics);
 
   const login = (selectedRole: UserRole, email: string, name?: string, token?: string) => {
+    const normRole = normalizeRole(selectedRole);
     setIsAuthenticated(true);
-    setRole(selectedRole);
+    setRole(normRole);
 
     const defaultNames: Record<UserRole, string> = {
       OWNER: 'Vetri',
@@ -302,19 +315,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       STOREROOM_STAFF: 'Priya (Office Analytics)',
     };
 
-    const userName = name || defaultNames[selectedRole] || 'Vetri User';
+    const userName = name || defaultNames[normRole] || 'Vetri User';
 
     const sessionObj = {
       name: userName,
       email,
-      role: selectedRole,
+      role: normRole,
       token: token || `token-vetri-${Date.now()}`,
     };
 
     setCurrentUser({
       name: userName,
       email,
-      role: selectedRole,
+      role: normRole,
     });
 
     try {

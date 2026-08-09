@@ -56,7 +56,7 @@ export const WorkforcePage: React.FC = () => {
     }
   };
 
-  const isOwner = role === 'OWNER';
+  const isOwner = (role || '').toUpperCase() === 'OWNER';
 
   return (
     <div className="space-y-6">
