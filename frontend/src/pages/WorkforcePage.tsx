@@ -5,7 +5,7 @@ import { Users, Search, X, UserPlus, Trash2, ShieldAlert } from 'lucide-react';
 import { calculateProductivityReport } from '../utils/productivityAudit';
 
 export const WorkforcePage: React.FC = () => {
-  const { employees, role, addEmployee, removeEmployee } = useApp();
+  const { employees, deliveries, role, addEmployee, removeEmployee } = useApp();
   const [search, setSearch] = useState('');
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
 
@@ -133,11 +133,26 @@ export const WorkforcePage: React.FC = () => {
           </thead>
           <tbody>
             {filtered.map(emp => {
-              // Calculate productivity report for worker
-              const idleMins = emp.role === 'Driver' ? 45 : emp.role === 'Loadman' ? 15 : 0;
-              const grossHours = 9.0;
-              const delivered = emp.role === 'Driver' ? 18 : 86;
-              const audit = calculateProductivityReport(emp.id, emp.name, emp.role, grossHours, delivered, idleMins);
+              const roleNorm = (emp.role || '').toLowerCase();
+              const isOwner = roleNorm.includes('owner');
+
+              // Dynamic cylinders delivered calculation from real deliveries
+              let delivered = 0;
+              if (roleNorm.includes('driver')) {
+                const driverDels = deliveries.filter(d => (d.driverName || '').toLowerCase() === emp.name.toLowerCase() && d.status === 'DELIVERED');
+                delivered = driverDels.reduce((sum, d) => sum + (d.cylinderCount || 1), 0);
+              } else if (roleNorm.includes('loadman')) {
+                const completedDels = deliveries.filter(d => d.status === 'DELIVERED');
+                delivered = completedDels.reduce((sum, d) => sum + (d.cylinderCount || 1), 0);
+              }
+
+              // Dynamic gross shift hours & audit calculation
+              const grossHoursNum = isOwner ? 9.0 : 8.0;
+              const idleMins = 0;
+              const audit = calculateProductivityReport(emp.id, emp.name, emp.role, grossHoursNum, delivered, idleMins);
+
+              // Dynamic performance score calculation
+              const perfScore = isOwner ? 100 : delivered > 0 ? Math.min(100, Math.round(85 + (delivered / Math.max(delivered, 20)) * 15)) : 95;
 
               return (
                 <tr key={emp.id}>
@@ -170,7 +185,7 @@ export const WorkforcePage: React.FC = () => {
                   <td>
                     <div>
                       <p className="font-mono text-xs font-extrabold text-emerald-700">Net: {audit.netHoursFormatted}</p>
-                      <p className="text-[10px] text-slate-500">Gross: {emp.workingHours || '9h 00m'}</p>
+                      <p className="text-[10px] text-slate-500">Gross: {emp.workingHours || (isOwner ? '9h 00m' : '8h 00m')}</p>
                     </div>
                   </td>
                   <td>
@@ -191,9 +206,9 @@ export const WorkforcePage: React.FC = () => {
                   <td>
                     <div className="flex items-center gap-2">
                       <div className="w-12 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                        <div className="bg-emerald-500 h-full" style={{ width: `${emp.performanceScore}%` }}></div>
+                        <div className="bg-emerald-500 h-full" style={{ width: `${perfScore}%` }}></div>
                       </div>
-                      <span className="font-mono font-bold text-xs text-slate-900">{emp.performanceScore}</span>
+                      <span className="font-mono font-bold text-xs text-slate-900">{perfScore}</span>
                     </div>
                   </td>
                   <td>
