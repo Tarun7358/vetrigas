@@ -25,7 +25,7 @@ interface UserSession {
 interface AppContextType {
   isAuthenticated: boolean;
   currentUser: UserSession | null;
-  login: (role: UserRole, email: string, password: string) => boolean;
+  login: (role: UserRole, email: string, name?: string, token?: string) => boolean;
   logout: () => void;
 
   role: UserRole;
@@ -78,13 +78,33 @@ const initialExpenses: VehicleExpense[] = (vetriDataset as any).expenses as Vehi
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState<UserSession | null>({
-    name: 'Vetri',
-    email: 'owner@vetri.com',
-    role: 'OWNER',
-  });
-  const [role, setRole] = useState<UserRole>('OWNER');
+  const getInitialSession = (): { isAuthenticated: boolean; currentUser: UserSession | null; role: UserRole } => {
+    try {
+      const saved = localStorage.getItem('vetri_session');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.email && parsed.role) {
+          return {
+            isAuthenticated: true,
+            currentUser: { name: parsed.name || parsed.email, email: parsed.email, role: parsed.role },
+            role: parsed.role as UserRole,
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse saved session');
+    }
+    return {
+      isAuthenticated: false,
+      currentUser: null,
+      role: 'OWNER',
+    };
+  };
+
+  const initialSession = getInitialSession();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(initialSession.isAuthenticated);
+  const [currentUser, setCurrentUser] = useState<UserSession | null>(initialSession.currentUser);
+  const [role, setRole] = useState<UserRole>(initialSession.role);
   
   const [integrations, setIntegrations] = useState<IntegrationState>({
     fleettrackConnected: true,
@@ -226,7 +246,7 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
   const [reconciliation, setReconciliation] = useState<CashReconciliation>(vetriDataset.reconciliation as CashReconciliation);
   const [inventory] = useState<InventoryMetrics>(vetriDataset.inventory as InventoryMetrics);
 
-  const login = (selectedRole: UserRole, email: string) => {
+  const login = (selectedRole: UserRole, email: string, name?: string, token?: string) => {
     setIsAuthenticated(true);
     setRole(selectedRole);
 
@@ -239,17 +259,33 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
       STOREROOM_STAFF: 'Priya (Office Analytics)',
     };
 
+    const userName = name || defaultNames[selectedRole] || 'Vetri User';
+
+    const sessionObj = {
+      name: userName,
+      email,
+      role: selectedRole,
+      token: token || `token-vetri-${Date.now()}`,
+    };
+
     setCurrentUser({
-      name: defaultNames[selectedRole] || 'Vetri',
+      name: userName,
       email,
       role: selectedRole,
     });
+
+    try {
+      localStorage.setItem('vetri_session', JSON.stringify(sessionObj));
+    } catch (e) {
+      console.warn('Failed to save session to localStorage');
+    }
+
     setAuditLogs(prev => [
       {
         id: `audit-${Date.now()}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         user: `${selectedRole} (${email})`,
-        action: 'Authenticated Session Started',
+        action: 'Real-Time Authenticated Session Started',
         module: 'Auth',
         record: selectedRole,
         status: 'SUCCESS',
@@ -260,6 +296,11 @@ const API_BASE = typeof window !== 'undefined' && (window.location.hostname === 
   };
 
   const logout = () => {
+    try {
+      localStorage.removeItem('vetri_session');
+    } catch (e) {
+      console.warn('Failed to clear session from localStorage');
+    }
     setIsAuthenticated(false);
     setCurrentUser(null);
   };

@@ -31,26 +31,40 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Role-Based Auth Endpoint querying SQLite
+// Real-Time Role-Based Auth Endpoint querying SQLite
 app.post('/api/auth/login', async (req: Request, res: Response) => {
-  const { email, password, role } = req.body;
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Corporate Email and password are required.' });
+  }
 
   try {
-    const user = await fetchOne('SELECT * FROM employees WHERE email = ?', [email]);
-    if (user) {
-      const isPasswordValid = verifyPassword(password, user.password);
-      if (isPasswordValid) {
-        const { password: _, ...safeUser } = user;
-        return res.json({ success: true, user: safeUser, token: `token-vetri-${Date.now()}` });
-      } else {
-        return res.status(401).json({ success: false, message: 'Invalid credentials. Password verification failed.' });
-      }
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await fetchOne('SELECT * FROM employees WHERE LOWER(email) = ?', [cleanEmail]);
+    
+    if (!user) {
+      console.warn(`[REAL-TIME AUTH REJECTED] Account not found or deleted by Owner: ${cleanEmail}`);
+      return res.status(404).json({ success: false, message: 'Account not found or access revoked by System Owner.' });
+    }
+
+    if (user.status === 'Terminated' || user.status === 'Inactive') {
+      console.warn(`[REAL-TIME AUTH REJECTED] Account status is ${user.status}: ${cleanEmail}`);
+      return res.status(403).json({ success: false, message: 'Access Denied: Account terminated by System Owner.' });
+    }
+
+    const isPasswordValid = verifyPassword(password, user.password);
+    if (isPasswordValid) {
+      const { password: _, ...safeUser } = user;
+      console.log(`[REAL-TIME AUTH SUCCESS] Logged in: ${user.name} (${user.email}) - ${user.role}`);
+      return res.json({ success: true, user: safeUser, token: `token-vetri-${Date.now()}` });
     } else {
-      // Fallback for role preset matches
-      res.json({ success: true, user: { email, role: role || 'OWNER', name: 'Vetri User' }, token: `token-vetri-${Date.now()}` });
+      console.warn(`[REAL-TIME AUTH FAILED] Incorrect password for: ${cleanEmail}`);
+      return res.status(401).json({ success: false, message: 'Invalid credentials. Password verification failed.' });
     }
   } catch (err) {
-    res.json({ success: true, user: { email, role: role || 'OWNER', name: 'Vetri User' }, token: `token-vetri-${Date.now()}` });
+    console.error('[REAL-TIME AUTH ERROR] Login query error:', err);
+    return res.status(500).json({ success: false, message: 'Database authentication error occurred.' });
   }
 });
 

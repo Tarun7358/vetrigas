@@ -13,31 +13,39 @@ import {
   Truck,
   PackageCheck,
   Crown,
+  AlertCircle,
+  CheckCircle2,
+  LockKeyhole,
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const { login } = useApp();
   const [selectedRole, setSelectedRole] = useState<UserRole>('OWNER');
-  const [email, setEmail] = useState('owner@vetri.com');
-  const [password, setPassword] = useState('admin123');
+  
+  // Login Form State
+  const [email, setEmail] = useState('owner@vetriindane.com');
+  const [password, setPassword] = useState('Vetri@2026');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const rolePresets: Record<
     UserRole,
-    { email: string; title: string; subtitle: string; icon: React.ElementType; badgeColor: string }
+    { email: string; pass: string; title: string; subtitle: string; icon: React.ElementType; badgeColor: string }
   > = {
     OWNER: {
       email: 'owner@vetriindane.com',
-      title: 'Owner Portal (Vetri)',
-      subtitle: 'Full System Control, Worker Management & Financial Approvals',
+      pass: 'Vetri@2026',
+      title: 'Owner Control Room (Vetri)',
+      subtitle: 'Full System Control, Worker Onboarding & Financial Approvals',
       icon: Crown,
       badgeColor: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
     },
     MANAGER: {
       email: 'santhosh.manager@vetriindane.com',
+      pass: 'Santhosh@2026',
       title: 'Operations Manager (Santhosh)',
       subtitle: 'Fleet Live Tracking, Batch Dispatch & Delivery Control',
       icon: Briefcase,
@@ -45,6 +53,7 @@ export const LoginPage: React.FC = () => {
     },
     DRIVER: {
       email: 'arun.driver@vetriindane.com',
+      pass: 'Arun@2026',
       title: 'Driver Portal (Arun)',
       subtitle: 'Assigned Routes, Customer Payments & E-Bill Receipting',
       icon: Truck,
@@ -52,6 +61,7 @@ export const LoginPage: React.FC = () => {
     },
     LOADMAN: {
       email: 'kumar.loadman@vetriindane.com',
+      pass: 'Kumar@2026',
       title: 'Loadman Portal (Kumar)',
       subtitle: 'Cylinder Depot Loading & Discrepancy Audits',
       icon: PackageCheck,
@@ -59,6 +69,7 @@ export const LoginPage: React.FC = () => {
     },
     GODOWN_KEEPER: {
       email: 'karthik.godown@vetriindane.com',
+      pass: 'Karthik@2026',
       title: 'Godown Keeper (Karthik)',
       subtitle: 'Client Order Entry, Cylinder Stock Audits & Inventory Checking',
       icon: Flame,
@@ -66,6 +77,7 @@ export const LoginPage: React.FC = () => {
     },
     STOREROOM_STAFF: {
       email: 'priya.office@vetriindane.com',
+      pass: 'Priya@2026',
       title: 'Storeroom Staff / Office Analytics (Priya)',
       subtitle: 'Office Analytics Command Center, Live Tracking & Owner Updates',
       icon: ShieldCheck,
@@ -73,9 +85,9 @@ export const LoginPage: React.FC = () => {
     },
   };
 
-  // Forgot Password State
+  // Forgot Password Modal State
   const [showForgotModal, setShowForgotModal] = useState(false);
-  const [forgotStep, setForgotStep] = useState<1 | 2>(1); // 1: Send OTP, 2: Verify & Reset
+  const [forgotStep, setForgotStep] = useState<1 | 2>(1);
   const [forgotEmail, setForgotEmail] = useState('');
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [userEnteredOtp, setUserEnteredOtp] = useState('');
@@ -85,23 +97,22 @@ export const LoginPage: React.FC = () => {
   const handleRoleSelect = (r: UserRole) => {
     setSelectedRole(r);
     setEmail(rolePresets[r].email);
-    setPassword('Vetri@2026');
+    setPassword(rolePresets[r].pass);
     setErrorMsg('');
+    setSuccessMsg('');
   };
 
   const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
-      setForgotStatusMsg({ text: 'Please enter a valid Gmail / Email address.', isError: true });
+      setForgotStatusMsg({ text: 'Please enter a valid corporate email address.', isError: true });
       return;
     }
-
-    // Generate 6-digit OTP code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(code);
     setForgotStep(2);
     setForgotStatusMsg({
-      text: `✅ Security verification code (${code}) sent via Gmail to ${forgotEmail}`,
+      text: `✅ Security verification code (${code}) sent to ${forgotEmail}`,
       isError: false,
     });
   };
@@ -116,7 +127,6 @@ export const LoginPage: React.FC = () => {
       setForgotStatusMsg({ text: 'Password must be at least 4 characters long.', isError: true });
       return;
     }
-
     setForgotStatusMsg({
       text: `✅ Password updated successfully! Log in with your new password.`,
       isError: false,
@@ -131,38 +141,40 @@ export const LoginPage: React.FC = () => {
     }, 2000);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      setErrorMsg('Please enter valid corporate email and password.');
+      setErrorMsg('Please enter corporate email and password.');
       return;
     }
 
     setLoading(true);
     setErrorMsg('');
+    setSuccessMsg('');
 
     try {
       const apiBase = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? 'http://localhost:5000'
         : '';
-      // Connect to Express Backend API (with local fallback)
       const res = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role: selectedRole }),
+        body: JSON.stringify({ email, password }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        console.log('[AUTH SUCCESS] Authenticated via Express API:', data);
-        login(selectedRole, email, password);
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setSuccessMsg(`Welcome back, ${data.user.name || 'User'}! Redirecting...`);
+        setTimeout(() => {
+          login(data.user.role, data.user.email, data.user.name, data.token);
+        }, 400);
       } else {
-        // Fallback login for offline/standalone mode
-        login(selectedRole, email, password);
+        setErrorMsg(data.message || 'Authentication failed. Please check credentials.');
       }
     } catch (err) {
-      console.log('[AUTH NOTE] Backend offline or CORS fallback. Logging in with client state.');
-      login(selectedRole, email, password);
+      console.error('[REAL-TIME AUTH ERROR]', err);
+      setErrorMsg('Unable to connect to authentication server. Please ensure backend service is running.');
     } finally {
       setLoading(false);
     }
@@ -172,11 +184,11 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 relative overflow-hidden text-white font-sans">
-      {/* Dynamic Background Glows */}
+      {/* Background Ambient Glows */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="w-full max-w-md space-y-6 z-10">
+      <div className="w-full max-w-md space-y-5 z-10">
         {/* Branding Header */}
         <div className="text-center space-y-2">
           <div className="w-16 h-16 bg-amber-500 text-slate-950 rounded-2xl flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/30">
@@ -186,12 +198,12 @@ export const LoginPage: React.FC = () => {
             VETRI INDANE
           </h1>
           <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">
-            Enterprise LPG Operations Suite
+            ENTERPRISE LPG OPERATIONS SUITE
           </p>
           <p className="text-[11px] text-slate-400 font-medium">Engineered by RDK Technologies</p>
         </div>
 
-        {/* Quick Role Selection Tab Bar */}
+        {/* Quick Role Preset Bar */}
         <div className="bg-slate-900 border border-slate-800 p-1.5 rounded-xl grid grid-cols-2 sm:grid-cols-3 gap-1.5 text-[10px] font-bold">
           {(['OWNER', 'STOREROOM_STAFF', 'MANAGER', 'GODOWN_KEEPER', 'DRIVER', 'LOADMAN'] as UserRole[]).map(r => {
             const isSelected = selectedRole === r;
@@ -208,9 +220,9 @@ export const LoginPage: React.FC = () => {
                 key={r}
                 type="button"
                 onClick={() => handleRoleSelect(r)}
-                className={`py-2 px-1 rounded-lg transition-all flex items-center justify-center text-center ${
+                className={`py-2 px-1 rounded-lg transition-all flex items-center justify-center text-center cursor-pointer ${
                   isSelected
-                    ? 'bg-amber-500 text-slate-950 shadow-md font-black'
+                    ? 'bg-amber-500/20 border border-amber-500 text-amber-400 font-black shadow-sm'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
@@ -222,23 +234,34 @@ export const LoginPage: React.FC = () => {
 
         {/* Login Card */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-2xl backdrop-blur-md space-y-5">
-          <div className="border-b border-slate-800 pb-3">
-            <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-              <ActiveIcon className="w-4 h-4" />
-              <span>{rolePresets[selectedRole].title}</span>
+          <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                <ActiveIcon className="w-4 h-4" />
+                <span>{rolePresets[selectedRole].title}</span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                {rolePresets[selectedRole].subtitle}
+              </p>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              {rolePresets[selectedRole].subtitle}
-            </p>
+            <LockKeyhole className="w-5 h-5 text-amber-400/80 shrink-0" />
           </div>
 
           {errorMsg && (
-            <div className="bg-rose-950/80 border border-rose-800 text-rose-300 p-3 rounded-xl text-xs font-semibold">
-              ⚠️ {errorMsg}
+            <div className="bg-rose-950/90 border border-rose-800 text-rose-300 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{errorMsg}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {successMsg && (
+            <div className="bg-emerald-950/90 border border-emerald-800 text-emerald-300 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 animate-in fade-in duration-150">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
             <div>
               <label className="block text-slate-400 font-bold mb-1 uppercase tracking-wider">
                 Corporate Email / Identifier
@@ -250,7 +273,7 @@ export const LoginPage: React.FC = () => {
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2.5 text-white font-mono focus:outline-none focus:border-amber-500 transition-colors"
-                  placeholder="name@vetri.com"
+                  placeholder="name@vetriindane.com"
                   required
                 />
               </div>
@@ -273,7 +296,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                   title={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -281,7 +304,6 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between text-[11px]">
               <label className="flex items-center gap-2 cursor-pointer text-slate-400 hover:text-slate-200">
                 <input
@@ -316,18 +338,23 @@ export const LoginPage: React.FC = () => {
                 <span>AUTHENTICATING...</span>
               ) : (
                 <>
-                  <span>SECURE ACCESS PORTAL</span>
+                  <span>SIGN IN TO DASHBOARD</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
+          <div className="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80 text-[11px] text-slate-400 flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>Account creation & deletion are strictly managed by system <strong>OWNER</strong>.</span>
+          </div>
+
           <div className="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
             <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" /> 256-Bit Encrypted
+              <ShieldCheck className="w-3.5 h-3.5" /> PBKDF2 Salt Verification
             </span>
-            <span className="font-mono text-slate-400">v2.4.0 • RDK</span>
+            <span className="font-mono text-slate-400">v2.5.0 • RDK</span>
           </div>
         </div>
       </div>
@@ -343,7 +370,7 @@ export const LoginPage: React.FC = () => {
               </div>
               <button
                 onClick={() => setShowForgotModal(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
               >
                 ✕
               </button>
@@ -385,15 +412,15 @@ export const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowForgotModal(false)}
-                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold"
+                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all"
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition-all cursor-pointer"
                   >
-                    Send Code to Gmail ➔
+                    Send Code ➔
                   </button>
                 </div>
               </form>
@@ -436,15 +463,15 @@ export const LoginPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setForgotStep(1)}
-                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold"
+                    className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-semibold cursor-pointer"
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer"
                   >
-                    Reset & Update Password ✓
+                    Reset Password ✓
                   </button>
                 </div>
               </form>
@@ -455,4 +482,3 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
-

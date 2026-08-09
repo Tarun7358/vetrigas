@@ -45,22 +45,26 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
   final Map<String, Map<String, String>> rolePresets = {
     'OWNER': {
-      'email': 'owner@vetri.com',
+      'email': 'owner@vetriindane.com',
+      'pass': 'Vetri@2026',
       'title': 'Owner Control Room (Vetri)',
       'desc': 'Full depot operations & financial approvals',
     },
     'MANAGER': {
-      'email': 'manager@vetri.com',
+      'email': 'santhosh.manager@vetriindane.com',
+      'pass': 'Santhosh@2026',
       'title': 'Operations Manager',
       'desc': 'Fleet tracking & dispatch management',
     },
     'DRIVER': {
-      'email': 'arun@vetri.com',
+      'email': 'arun.driver@vetriindane.com',
+      'pass': 'Arun@2026',
       'title': 'Driver Mobile App',
       'desc': 'Assigned routes & customer payment receipts',
     },
     'LOADMAN': {
-      'email': 'kumar@vetri.com',
+      'email': 'kumar.loadman@vetriindane.com',
+      'pass': 'Kumar@2026',
       'title': 'Loadman Mobile App',
       'desc': 'Depot loading batches & cylinder count audits',
     },
@@ -70,7 +74,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
     setState(() {
       selectedRole = role;
       _emailController.text = rolePresets[role]!['email']!;
-      _passwordController.text = 'admin123';
+      _passwordController.text = rolePresets[role]!['pass']!;
     });
   }
 
