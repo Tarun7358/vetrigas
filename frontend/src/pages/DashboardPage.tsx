@@ -43,7 +43,7 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle, integrations, toggleIntegration } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle, integrations } = useApp();
 
   const totalWorkers = employees.length;
   const presentToday = employees.filter(e => e.attendanceStatus === 'Present').length;
@@ -654,17 +654,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           <span className="font-bold text-amber-400 flex items-center gap-2">
                             <Truck className="w-4 h-4 text-amber-400" /> Fleettrack IoT GPS Hardware Server
                           </span>
-                          <button
-                            onClick={() => toggleIntegration('fleettrackConnected')}
-                            title="Click to toggle hardware socket connection"
-                            className={`text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer transition-all ${
+                          <span
+                            className={`text-[10px] px-2.5 py-1 rounded font-bold transition-all ${
                               integrations.fleettrackConnected
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                             }`}
                           >
                             {integrations.fleettrackConnected ? '● CONNECTED (12ms)' : '● DISCONNECTED (Awaiting Hardware Socket)'}
-                          </button>
+                          </span>
                         </div>
                         <div className="space-y-1 text-slate-300">
                           <div className="flex justify-between border-b border-slate-900 pb-1">
@@ -695,17 +693,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           <span className="font-bold text-amber-400 flex items-center gap-2">
                             <Fingerprint className="w-4 h-4 text-amber-400" /> Easy Time Pro Biometric Scanner
                           </span>
-                          <button
-                            onClick={() => toggleIntegration('easyTimeProConnected')}
-                            title="Click to toggle biometric terminal connection"
-                            className={`text-[10px] px-2.5 py-1 rounded font-bold cursor-pointer transition-all ${
+                          <span
+                            className={`text-[10px] px-2.5 py-1 rounded font-bold transition-all ${
                               integrations.easyTimeProConnected
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
-                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                             }`}
                           >
                             {integrations.easyTimeProConnected ? '● CONNECTED (18ms)' : '● DISCONNECTED (Terminal Standby)'}
-                          </button>
+                          </span>
                         </div>
                         <div className="space-y-1 text-slate-300">
                           <div className="flex justify-between border-b border-slate-900 pb-1">

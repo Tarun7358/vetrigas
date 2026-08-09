@@ -248,6 +248,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setBills(data.bills);
         }
       }
+
+      const telRes = await fetch(`${API_BASE}/api/telemetry/status`);
+      if (telRes.ok) {
+        const data = await telRes.json();
+        setIntegrations(prev => ({
+          ...prev,
+          fleettrackConnected: data.fleettrackGps?.status === 'ONLINE',
+          easyTimeProConnected: data.easyTimeProBiometrics?.status === 'ONLINE',
+        }));
+      }
     } catch (err) {
       console.warn('Backend SQLite sync note: System synchronized with Express API');
     }
