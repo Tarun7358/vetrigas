@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { API_BASE } from '../utils/api';
 import {
   Flame,
   Search,
@@ -50,8 +51,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [isPingingBio, setIsPingingBio] = useState(false);
   const [hardwareNotice, setHardwareNotice] = useState<string | null>(null);
 
-  const API_BASE = (import.meta as any).env?.VITE_API_URL || '';
-
   const handlePingHardware = async (type: 'gps' | 'bio') => {
     if (type === 'gps') setIsPingingGps(true);
     else setIsPingingBio(true);
@@ -66,15 +65,15 @@ export const Header: React.FC<HeaderProps> = ({
           : data.easyTimeProBiometrics?.status === 'ONLINE';
 
         if (isOnline) {
-          setHardwareNotice(`✅ SUCCESS: ${type === 'gps' ? 'Fleettrack GPS' : 'Easy Time Pro Biometric'} hardware socket handshake verified!`);
+          setHardwareNotice(`✅ HANDSHAKE SUCCESS: ${type === 'gps' ? 'Fleettrack GPS' : 'Easy Time Pro Biometric'} hardware socket verified!`);
         } else {
-          setHardwareNotice(`⚠️ HANDSHAKE FAILED: ${type === 'gps' ? 'Fleettrack GPS hardware' : 'Easy Time Pro Biometric terminal'} is OFFLINE. Reverting to DISCONNECTED standby.`);
+          setHardwareNotice(`ℹ️ BACKEND CONNECTED • DEVICE OFFLINE: ${type === 'gps' ? 'Fleettrack GPS tracker' : 'Easy Time Pro Biometric terminal'} is not sending packets.`);
         }
       } else {
-        setHardwareNotice(`⚠️ SERVER OFFLINE: Unable to reach telemetry backend server.`);
+        setHardwareNotice(`⚠️ BACKEND RESPONSE ERROR: Telemetry server returned status ${res.status}.`);
       }
     } catch (err) {
-      setHardwareNotice(`⚠️ CONNECTION FAILED: Telemetry backend socket unreachable. Ensure backend server is active.`);
+      setHardwareNotice(`⚠️ SERVER UNREACHABLE: Backend API (${API_BASE}) waking up or offline. Please wait 15 seconds.`);
     } finally {
       if (type === 'gps') setIsPingingGps(false);
       else setIsPingingBio(false);
