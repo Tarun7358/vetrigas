@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { QrCode, DollarSign, Eye, RefreshCw } from 'lucide-react';
+import { QrCode, DollarSign, Eye, RefreshCw, CheckCircle2, MessageSquare } from 'lucide-react';
 import { EBillModal } from './EBillModal';
 import type { BillRecord, DeliveryItem } from '../types';
 
 export const LiveDriverQRMonitor: React.FC = () => {
-  const { deliveries, bills } = useApp();
+  const { deliveries, bills, confirmOwnerGPayPayment } = useApp();
   const [selectedQRItem, setSelectedQRItem] = useState<DeliveryItem | null>(null);
   const [selectedEBill, setSelectedEBill] = useState<BillRecord | null>(null);
 
   // Filter completed deliveries or bills with payments
   const completedDeliveries = deliveries.filter(d => d.status === 'DELIVERED');
+  const pendingGPayCount = completedDeliveries.filter(d => d.paymentMethod === 'OWNER_GPAY_DIRECT' && d.paymentStatus === 'PENDING').length;
+  const pendingGPaySum = completedDeliveries.filter(d => d.paymentMethod === 'OWNER_GPAY_DIRECT' && d.paymentStatus === 'PENDING').reduce((acc, d) => acc + d.amount, 0);
 
   const handleOpenEBill = (del: DeliveryItem) => {
     const existingBill = bills.find(b => b.customerName === del.customerName || b.amount === del.amount);
@@ -19,11 +21,11 @@ export const LiveDriverQRMonitor: React.FC = () => {
       billNumber: `VI-2026-${del.deliveryNumber}`,
       customerName: del.customerName,
       amount: del.amount,
-      paymentMethod: del.paymentMethod === 'CASH' ? 'CASH' : 'UPI',
+      paymentMethod: del.paymentMethod || 'UPI',
       transactionId: `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
       driverName: del.driverName,
       date: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'PAID',
+      status: del.paymentStatus === 'PENDING' ? 'PENDING' : 'PAID',
       cylinderCount: del.cylinderCount,
     };
     setSelectedEBill(billRecord);
@@ -39,44 +41,50 @@ export const LiveDriverQRMonitor: React.FC = () => {
           </div>
           <div>
             <h2 className="font-display font-extrabold text-lg text-white flex items-center gap-2">
-              <span>LIVE DRIVER UPI QR & CASH COLLECTION MONITOR</span>
+              <span>LIVE DRIVER PAYMENT & GPAY DIRECT MONITOR</span>
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
             </h2>
             <p className="text-xs text-slate-400">
-              Real-time audit stream of UPI QR codes scanned & cash proof receipts submitted by field drivers
+              Real-time audit stream of UPI QR codes scanned, cash receipts, and direct Owner GPay credit transfers
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-xs">
+        <div className="flex items-center gap-2 font-mono text-xs flex-wrap">
+          {pendingGPayCount > 0 && (
+            <span className="bg-purple-950/80 border border-purple-700 text-purple-300 font-extrabold px-3 py-1.5 rounded-xl animate-pulse">
+              📱 {pendingGPayCount} Pending Owner GPay (₹{pendingGPaySum})
+            </span>
+          )}
           <span className="bg-slate-950 border border-slate-800 text-emerald-400 font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5">
             <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-400" />
             LIVE AUDIT ACTIVE
           </span>
-          <span className="bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold px-3 py-1.5 rounded-xl">
-            {completedDeliveries.length} Transactions Verified
-          </span>
         </div>
       </div>
 
-      {/* Grid of Completed Driver QR Cards */}
+      {/* Grid of Completed Driver Payment Cards */}
       {completedDeliveries.length === 0 ? (
         <div className="bg-slate-950/60 rounded-2xl p-8 border border-slate-800 text-center space-y-2">
           <QrCode className="w-10 h-10 text-slate-600 mx-auto" />
           <p className="font-bold text-slate-300 text-sm">No Completed Delivery Payments Yet Today</p>
           <p className="text-xs text-slate-500">
-            When drivers complete an order via UPI QR or Cash proof, live transaction details will appear here instantly.
+            When drivers complete an order via UPI QR, Cash proof, or Owner GPay Direct, live transaction details will appear here.
           </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {completedDeliveries.map(del => {
+            const isPayLater = del.paymentMethod === 'OWNER_GPAY_DIRECT';
             const isUPI = del.paymentMethod === 'UPI' || !del.paymentMethod;
+            const isPendingGPay = isPayLater && del.paymentStatus === 'PENDING';
 
             return (
               <div
                 key={del.id}
-                className="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3 hover:border-amber-500/50 transition-all flex flex-col justify-between shadow-lg"
+                className={`bg-slate-950 border rounded-2xl p-4 space-y-3 transition-all flex flex-col justify-between shadow-lg ${
+                  isPendingGPay ? 'border-purple-600/80 bg-purple-950/20' : 'border-slate-800 hover:border-amber-500/50'
+                }`}
               >
                 <div>
                   {/* Top Bar: Driver & Payment Mode Badge */}
@@ -93,13 +101,15 @@ export const LiveDriverQRMonitor: React.FC = () => {
 
                     <span
                       className={`badge-status text-[10px] font-extrabold px-2.5 py-1 rounded-xl flex items-center gap-1 ${
-                        isUPI
+                        isPayLater
+                          ? 'bg-purple-950 text-purple-300 border border-purple-700'
+                          : isUPI
                           ? 'bg-blue-950 text-blue-300 border border-blue-800'
                           : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                       }`}
                     >
-                      {isUPI ? <QrCode className="w-3 h-3 text-blue-400" /> : <DollarSign className="w-3 h-3 text-emerald-400" />}
-                      {isUPI ? 'UPI DYNAMIC QR' : 'CASH PROOF'}
+                      {isPayLater ? <MessageSquare className="w-3 h-3 text-purple-400" /> : isUPI ? <QrCode className="w-3 h-3 text-blue-400" /> : <DollarSign className="w-3 h-3 text-emerald-400" />}
+                      {isPayLater ? 'PAY LATER (GPAY)' : isUPI ? 'UPI DYNAMIC QR' : 'CASH PROOF'}
                     </span>
                   </div>
 
@@ -115,26 +125,37 @@ export const LiveDriverQRMonitor: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-800">
-                      <span>Delivered Qty: {del.cylinderCount} Cylinder(s)</span>
-                      <span className="text-amber-400 font-bold">✓ VERIFIED</span>
+                    <div className="flex items-center justify-between text-[11px] font-mono bg-slate-900/90 px-2.5 py-1.5 rounded-xl border border-slate-800">
+                      <span className="text-slate-400">Delivered: {del.cylinderCount} Cylinder</span>
+                      {isPendingGPay ? (
+                        <span className="text-purple-300 font-bold animate-pulse">⏳ PENDING GPAY</span>
+                      ) : (
+                        <span className="text-amber-400 font-bold">✓ VERIFIED</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Actions: View Scanned QR & View E-Bill */}
-                <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2 text-xs">
-                  {isUPI ? (
+                {/* Actions */}
+                <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-2 text-xs">
+                  {isPendingGPay ? (
+                    <button
+                      onClick={() => confirmOwnerGPayPayment(del.id)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/30 transition-all cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" /> ✓ Confirm Owner GPay Received
+                    </button>
+                  ) : isUPI ? (
                     <button
                       onClick={() => setSelectedQRItem(del)}
-                      className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <QrCode className="w-3.5 h-3.5" /> Inspect Scanned QR
                     </button>
                   ) : (
                     <button
                       onClick={() => setSelectedQRItem(del)}
-                      className="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      className="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 font-bold py-2 rounded-xl text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5" /> Inspect Cash Proof
                     </button>
@@ -142,9 +163,9 @@ export const LiveDriverQRMonitor: React.FC = () => {
 
                   <button
                     onClick={() => handleOpenEBill(del)}
-                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2 px-3 rounded-xl text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-md shadow-amber-500/10"
+                    className="w-full bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold py-1.5 rounded-xl text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
                   >
-                    <span>E-Bill</span>
+                    <span>View / WhatsApp E-Bill Memo</span>
                   </button>
                 </div>
               </div>

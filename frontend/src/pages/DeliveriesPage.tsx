@@ -23,7 +23,7 @@ export const DeliveriesPage: React.FC = () => {
   const [inspectCashItem, setInspectCashItem] = useState<DeliveryItem | null>(null);
 
   // Payment Fulfill Form State
-  const [paymentMode, setPaymentMode] = useState<'UPI' | 'CASH'>('UPI');
+  const [paymentMode, setPaymentMode] = useState<'UPI' | 'CASH' | 'OWNER_GPAY_DIRECT'>('UPI');
   const [cashProofImage, setCashProofImage] = useState<string>('');
   const [cashProofFileName, setCashProofFileName] = useState<string>('');
 
@@ -133,11 +133,11 @@ export const DeliveriesPage: React.FC = () => {
       billNumber: billNo,
       customerName: fulfillItem.customerName,
       amount: fulfillItem.amount,
-      paymentMethod: paymentMode === 'UPI' ? 'UPI' : 'CASH',
-      transactionId: `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
+      paymentMethod: paymentMode,
+      transactionId: paymentMode === 'OWNER_GPAY_DIRECT' ? `GPAY-DUE-${Math.floor(100000 + Math.random() * 900000)}` : `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
       driverName: fulfillItem.driverName,
       date: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'PAID',
+      status: paymentMode === 'OWNER_GPAY_DIRECT' ? 'PENDING' : 'PAID',
       cylinderCount: fulfillItem.cylinderCount,
     };
 
@@ -148,7 +148,7 @@ export const DeliveriesPage: React.FC = () => {
       billNumber: billNo,
       cylinderCount: fulfillItem.cylinderCount,
       amount: fulfillItem.amount,
-      paymentMethod: paymentMode === 'UPI' ? 'UPI / Dynamic QR' : 'Cash (Proof Attached)',
+      paymentMethod: paymentMode === 'UPI' ? 'UPI / Dynamic QR' : paymentMode === 'OWNER_GPAY_DIRECT' ? 'Pay Later via Owner GPay (+91 96008 70814)' : 'Cash (Proof Attached)',
       driverName: fulfillItem.driverName,
       vehicleNumber: fulfillItem.vehicleNumber,
     });
@@ -442,31 +442,44 @@ export const DeliveriesPage: React.FC = () => {
             {/* Payment Method Selector Tabs */}
             <div className="space-y-4 text-xs">
               <label className="block text-slate-400 font-semibold">Select Customer Payment Collection Method *</label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <button
                   type="button"
                   onClick={() => setPaymentMode('UPI')}
-                  className={`py-3 px-4 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
                     paymentMode === 'UPI'
                       ? 'bg-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-600/30'
                       : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
                   }`}
                 >
-                  <QrCode className="w-5 h-5" />
-                  <span>UPI / Dynamic QR Scan</span>
+                  <QrCode className="w-4 h-4" />
+                  <span className="text-[11px]">UPI Scan QR</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setPaymentMode('CASH')}
-                  className={`py-3 px-4 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
                     paymentMode === 'CASH'
                       ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/30'
                       : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
                   }`}
                 >
-                  <DollarSign className="w-5 h-5" />
-                  <span>Cash Collection</span>
+                  <DollarSign className="w-4 h-4" />
+                  <span className="text-[11px]">Cash Collection</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('OWNER_GPAY_DIRECT')}
+                  className={`py-2.5 px-3 rounded-2xl font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                    paymentMode === 'OWNER_GPAY_DIRECT'
+                      ? 'bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-600/30'
+                      : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-[11px]">Pay Later (Owner GPay)</span>
                 </button>
               </div>
 
@@ -482,6 +495,23 @@ export const DeliveriesPage: React.FC = () => {
                     />
                   </div>
                   <p className="text-[11px] text-slate-400">Digital E-Bill receipt will be dispatched via WhatsApp upon confirmation.</p>
+                </div>
+              )}
+
+              {/* Pay Later via Owner GPay View */}
+              {paymentMode === 'OWNER_GPAY_DIRECT' && (
+                <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 text-center space-y-3">
+                  <div className="bg-blue-950/80 border border-blue-800 rounded-xl p-3 text-xs space-y-1.5">
+                    <p className="font-extrabold text-blue-300 uppercase tracking-wide text-[11px]">📱 Customer Deferred Payment Request</p>
+                    <p className="text-slate-300">Customer will transfer directly to Owner's GPay account:</p>
+                    <p className="text-white font-mono font-bold text-sm bg-slate-900 py-1 px-3 rounded-lg border border-slate-700 inline-block">
+                      +91 96008 70814 (Vetri Owner)
+                    </p>
+                    <p className="text-[11px] text-emerald-400 font-bold">Amount Due: ₹{fulfillItem.amount}</p>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Delivery will be marked <span className="text-amber-400 font-bold">DELIVERED (PENDING GPAY)</span>. Owner can confirm receipt in Owner Portal once payment arrives.
+                  </p>
                 </div>
               )}
 

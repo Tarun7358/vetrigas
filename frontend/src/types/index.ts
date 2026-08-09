@@ -89,7 +89,7 @@ export interface DeliveryItem {
   vehicleNumber: string;
   status: 'ASSIGNED' | 'READY' | 'OUT FOR DELIVERY' | 'DELIVERED' | 'FAILED' | 'RETURNED';
   distanceKm: number;
-  paymentMethod?: 'UPI' | 'CASH';
+  paymentMethod?: 'UPI' | 'CASH' | 'OWNER_GPAY_DIRECT';
   paymentStatus: 'PAID' | 'PENDING' | 'FAILED';
   billNumber?: string;
   deliveryTime?: string;
@@ -102,7 +102,7 @@ export interface BillRecord {
   billNumber: string; // "VI-2026-001025"
   customerName: string;
   amount: number;
-  paymentMethod: 'UPI' | 'CASH';
+  paymentMethod: 'UPI' | 'CASH' | 'OWNER_GPAY_DIRECT';
   transactionId: string;
   driverName: string;
   date: string;

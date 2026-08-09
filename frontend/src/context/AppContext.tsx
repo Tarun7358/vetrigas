@@ -51,7 +51,8 @@ interface AppContextType {
   setSelectedVehicleId: (id: string | null) => void;
   
   // Actions
-  completeDelivery: (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string, cashProofUrl?: string) => void;
+  completeDelivery: (deliveryId: string, paymentMethod: 'UPI' | 'CASH' | 'OWNER_GPAY_DIRECT', transactionId?: string, cashProofUrl?: string) => void;
+  confirmOwnerGPayPayment: (deliveryId: string, transactionId?: string) => void;
   verifyCashProof: (deliveryId: string) => void;
   reportBatchIssue: (batchId: string, loadedCount: number, reason: string) => void;
   updatePayrollStatus: (payrollId: string, status: PayrollRecord['status']) => void;
@@ -396,8 +397,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const completeDelivery = async (deliveryId: string, paymentMethod: 'UPI' | 'CASH', transactionId?: string, cashProofUrl?: string) => {
-    const txn = transactionId || `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`;
+  const completeDelivery = async (deliveryId: string, paymentMethod: 'UPI' | 'CASH' | 'OWNER_GPAY_DIRECT', transactionId?: string, cashProofUrl?: string) => {
+    const isOwnerGPay = paymentMethod === 'OWNER_GPAY_DIRECT';
+    const txn = transactionId || (isOwnerGPay ? `GPAY-DUE-${Math.floor(100000 + Math.random() * 900000)}` : `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`);
     const billNo = `VI-2026-00${Math.floor(10258 + Math.random() * 100)}`;
     const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -418,7 +420,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...del,
             status: 'DELIVERED',
             paymentMethod,
-            paymentStatus: 'PAID',
+            paymentStatus: isOwnerGPay ? 'PENDING' : 'PAID',
             billNumber: billNo,
             deliveryTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             cashProofUrl: cashProofUrl || del.cashProofUrl,
@@ -434,7 +436,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             transactionId: txn,
             driverName: del.driverName,
             date: dateStr,
-            status: 'PAID',
+            status: isOwnerGPay ? 'PENDING' : 'PAID',
             cylinderCount: del.cylinderCount,
           };
 
@@ -449,6 +451,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return updatedDel;
         }
         return del;
+      })
+    );
+  };
+
+  const confirmOwnerGPayPayment = (deliveryId: string, transactionId?: string) => {
+    const txn = transactionId || `GPAY-REC-${Math.floor(100000 + Math.random() * 900000)}`;
+
+    setDeliveries(prev =>
+      prev.map(del => {
+        if (del.id === deliveryId) {
+          return {
+            ...del,
+            paymentStatus: 'PAID',
+          };
+        }
+        return del;
+      })
+    );
+
+    setBills(prev =>
+      prev.map(b => {
+        const matchingDel = deliveries.find(d => d.id === deliveryId);
+        if (matchingDel && (b.customerName === matchingDel.customerName || b.billNumber === matchingDel.billNumber)) {
+          return {
+            ...b,
+            status: 'PAID',
+            transactionId: txn,
+          };
+        }
+        return b;
       })
     );
   };
@@ -740,6 +772,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedVehicleId,
         setSelectedVehicleId,
         completeDelivery,
+        confirmOwnerGPayPayment,
         verifyCashProof,
         reportBatchIssue,
         updatePayrollStatus,
