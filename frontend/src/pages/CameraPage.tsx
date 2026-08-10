@@ -212,83 +212,103 @@ export const CameraPage: React.FC = () => {
             </div>
           )}
 
-          {/* Stream Overlay Controls */}
-          <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 gap-2">
-            <div className="flex items-center gap-3">
-              <span className="font-bold text-amber-400 font-mono text-sm">🚚 {activeVehicle.registrationNumber}</span>
-              <span className="text-slate-400">Driver: <strong className="text-white">{activeVehicle.driverName}</strong></span>
-              <span className="text-slate-400">Speed: <strong className="text-emerald-400 font-mono">{activeVehicle.speed} km/h</strong></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-              <span className="text-emerald-400 font-extrabold uppercase text-[11px] tracking-wider">● LIVE STREAM</span>
-            </div>
-          </div>
+          {/* Stream Overlay Controls & Player */}
+          {(() => {
+            const isLiveFeed = useDeviceCam || integrations.fleettrackConnected;
+            const isIgnitionOn = isLiveFeed && activeVehicle.ignition;
 
-          {/* Video Player Display Box */}
-          <div className="relative w-full aspect-video bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-center overflow-hidden group shadow-inner">
-            {useDeviceCam ? (
-              /* Real Mobile/Webcam Video Element */
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              /* High-Tech Animated Dashcam Simulation Viewport */
-              <div className="absolute inset-0 bg-slate-950 flex flex-col justify-between p-6 overflow-hidden">
-                {/* Subtle Moving Grid Animation */}
-                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] animate-pulse"></div>
-
-                <div className="flex justify-between items-start z-10">
-                  <span className="bg-slate-900/90 text-amber-400 border border-slate-700 text-[11px] font-mono px-3 py-1 rounded-xl shadow-md">
-                    CAM {activeCam === 'ROAD' ? '01: FRONT ROAD VIEW' : '02: CABIN DRIVER VIEW'}
-                  </span>
-                  <span className="bg-slate-900/90 text-emerald-400 text-[10px] font-mono px-2.5 py-1 rounded-xl border border-emerald-500/30 flex items-center gap-1">
-                    <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
-                    1080P • 30FPS • H.265 ENCRYPTED
-                  </span>
-                </div>
-
-                {/* Simulated Moving Dashcam Center Visual */}
-                <div className="text-center space-y-3 my-auto z-10">
-                  <div className="p-4 rounded-full bg-amber-500/10 border border-amber-500/30 w-16 h-16 mx-auto flex items-center justify-center animate-pulse">
-                    <Video className="w-8 h-8 text-amber-400" />
+            return (
+              <>
+                <div className="flex flex-wrap items-center justify-between text-xs text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-slate-800 gap-2">
+                  <div className="flex items-center gap-3">
+                    <span className="font-bold text-amber-400 font-mono text-sm">🚚 {activeVehicle.registrationNumber}</span>
+                    <span className="text-slate-400">Driver: <strong className="text-white">{activeVehicle.driverName}</strong></span>
+                    <span className="text-slate-400">Speed: <strong className="text-emerald-400 font-mono">{isLiveFeed ? activeVehicle.speed : 0} km/h</strong></span>
                   </div>
-                  <div>
-                    <p className="font-mono text-sm font-bold text-white tracking-wide">
-                      {activeCam === 'ROAD'
-                        ? '[ LIVE FRONT ROAD STREAM — PEELAMEDU HIGHWAY ]'
-                        : `[ LIVE CABIN DRIVER FEED — ${activeVehicle.driverName.toUpperCase()} ]`}
-                    </p>
-                    <p className="text-xs text-amber-400 font-mono mt-1">
-                      Vehicle: {activeVehicle.registrationNumber} • Ignition: ON
-                    </p>
+                  <div className="flex items-center gap-2">
+                    {isLiveFeed ? (
+                      <>
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span className="text-emerald-400 font-extrabold uppercase text-[11px] tracking-wider">● LIVE STREAM</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                        <span className="text-amber-400 font-extrabold uppercase text-[11px] tracking-wider">● STANDBY / DISCONNECTED</span>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex justify-between items-end text-[11px] font-mono text-slate-300 z-10 border-t border-slate-800/80 pt-2">
-                  <span>GPS: {activeVehicle.lat.toFixed(4)} N, {activeVehicle.lng.toFixed(4)} E</span>
-                  <span className="text-amber-400 font-bold">{new Date().toLocaleTimeString()} • LIVE AUDIT</span>
-                </div>
-              </div>
-            )}
+                {/* Video Player Display Box */}
+                <div className="relative w-full aspect-video bg-slate-900 rounded-2xl border border-slate-800 flex items-center justify-center overflow-hidden group shadow-inner">
+                  {useDeviceCam ? (
+                    <video
+                      ref={videoRef}
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-slate-950 flex flex-col justify-between p-6 overflow-hidden">
+                      <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] animate-pulse"></div>
 
-            {/* Dashcam HUD Overlay over Video Stream */}
-            <div className="absolute top-3 right-3 bg-slate-950/80 text-white border border-slate-700/80 text-[10px] font-mono px-3 py-1.5 rounded-xl backdrop-blur-sm shadow-md pointer-events-none z-20">
-              HUD SPEED: {activeVehicle.speed} KM/H
-            </div>
+                      <div className="flex justify-between items-start z-10">
+                        <span className="bg-slate-900/90 text-amber-400 border border-slate-700 text-[11px] font-mono px-3 py-1 rounded-xl shadow-md">
+                          CAM {activeCam === 'ROAD' ? '01: FRONT ROAD VIEW' : '02: CABIN DRIVER VIEW'}
+                        </span>
+                        {isLiveFeed ? (
+                          <span className="bg-slate-900/90 text-emerald-400 text-[10px] font-mono px-2.5 py-1 rounded-xl border border-emerald-500/30 flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3 animate-spin text-emerald-400" />
+                            1080P • 30FPS • H.265 ENCRYPTED
+                          </span>
+                        ) : (
+                          <span className="bg-slate-900/90 text-slate-400 text-[10px] font-mono px-2.5 py-1 rounded-xl border border-slate-700 flex items-center gap-1">
+                            STANDBY • HARDWARE DISCONNECTED
+                          </span>
+                        )}
+                      </div>
 
-            {/* Flash notification on Snapshot */}
-            {snapshotTaken && (
-              <div className="absolute inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center animate-out fade-out duration-1000 z-30">
-                <div className="bg-slate-950 text-emerald-400 px-5 py-3 rounded-2xl font-bold text-xs border border-emerald-500 shadow-2xl">
-                  ✓ Snapshot Captured & Saved to Audit Log
+                      <div className="text-center space-y-3 my-auto z-10">
+                        <div className={`p-4 rounded-full border w-16 h-16 mx-auto flex items-center justify-center ${isLiveFeed ? 'bg-amber-500/10 border-amber-500/30 animate-pulse' : 'bg-slate-800/40 border-slate-700'}`}>
+                          <Video className={`w-8 h-8 ${isLiveFeed ? 'text-amber-400' : 'text-slate-500'}`} />
+                        </div>
+                        <div>
+                          <p className="font-mono text-sm font-bold text-white tracking-wide">
+                            {isLiveFeed
+                              ? (activeCam === 'ROAD'
+                                  ? '[ LIVE FRONT ROAD STREAM — PEELAMEDU HIGHWAY ]'
+                                  : `[ LIVE CABIN DRIVER FEED — ${activeVehicle.driverName.toUpperCase()} ]`)
+                              : '[ DASHCAM STANDBY — NO LIVE HARDWARE FEED ]'}
+                          </p>
+                          <p className={`text-xs font-mono mt-1 ${isIgnitionOn ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
+                            Vehicle: {activeVehicle.registrationNumber} • Ignition: {isIgnitionOn ? 'ON' : 'OFF'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-end text-[11px] font-mono text-slate-300 z-10 border-t border-slate-800/80 pt-2">
+                        <span>GPS: {activeVehicle.lat.toFixed(4)} N, {activeVehicle.lng.toFixed(4)} E</span>
+                        <span className="text-amber-400 font-bold">{new Date().toLocaleTimeString()} • {isLiveFeed ? 'LIVE AUDIT' : 'STANDBY'}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="absolute top-3 right-3 bg-slate-950/80 text-white border border-slate-700/80 text-[10px] font-mono px-3 py-1.5 rounded-xl backdrop-blur-sm shadow-md pointer-events-none z-20">
+                    HUD SPEED: {isLiveFeed ? activeVehicle.speed : 0} KM/H
+                  </div>
+
+                  {snapshotTaken && (
+                    <div className="absolute inset-0 bg-white/40 backdrop-blur-sm flex items-center justify-center animate-out fade-out duration-1000 z-30">
+                      <div className="bg-slate-950 text-emerald-400 px-5 py-3 rounded-2xl font-bold text-xs border border-emerald-500 shadow-2xl">
+                        ✓ Snapshot Captured & Saved to Audit Log
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
+              </>
+            );
+          })()}
 
           {/* Camera Controls Bar */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
