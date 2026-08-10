@@ -501,10 +501,10 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
 });
 
 // BIOMETRIC FINGERPRINT & ATTENDANCE HARDWARE INTEGRATION WEBHOOK
-// Supports ZKTeco, Mantra MFS100, Essl, Morpho, Anviz & Android Native Fingerprint SDKs
-app.post('/integrations/biometrics/clock-in', async (req: Request, res: Response) => {
-  const { employeeId, email, deviceId, templateHash, status, timestamp } = req.body;
-  const targetId = employeeId || 'emp-01';
+// Supports ZKTeco easyTimePro, Mantra MFS100, Essl, Morpho, Anviz & Android Native Fingerprint SDKs
+const handleBiometricClockIn = async (req: Request, res: Response) => {
+  const { employeeId, email, deviceId, templateHash, status, timestamp, userId, pin } = req.body;
+  const targetId = employeeId || userId || pin || 'emp-01';
 
   lastBiometricPunchTimestamp = Date.now();
 
@@ -513,11 +513,21 @@ app.post('/integrations/biometrics/clock-in', async (req: Request, res: Response
   try {
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     await runQuery(
-      `UPDATE employees SET attendanceStatus = 'Present', workingHours = '8h 00m' WHERE id = ? OR email = ?`,
-      [targetId, email || '']
+      `UPDATE employees SET attendanceStatus = 'Present', workingHours = '8h 30m' WHERE id = ? OR email = ? OR LOWER(name) LIKE ?`,
+      [targetId, email || '', `%${targetId.toLowerCase()}%`]
     );
 
-    const emp = await fetchOne('SELECT * FROM employees WHERE id = ? OR email = ?', [targetId, email || '']);
+    const emp = await fetchOne('SELECT * FROM employees WHERE id = ? OR email = ? OR LOWER(name) LIKE ?', [targetId, email || '', `%${targetId.toLowerCase()}%`]);
+
+    const attId = `att-${emp ? emp.id : targetId}`;
+    if (emp) {
+      await runQuery(
+        `INSERT INTO attendance (id, employeeId, employeeName, role, workingHours, status)
+         VALUES (?, ?, ?, ?, '8h 30m', 'Present')
+         ON CONFLICT(id) DO UPDATE SET status = 'Present', workingHours = '8h 30m'`,
+        [attId, emp.id, emp.name, emp.role]
+      );
+    }
 
     res.json({
       success: true,
@@ -531,7 +541,10 @@ app.post('/integrations/biometrics/clock-in', async (req: Request, res: Response
     console.error('[ERROR] [BIOMETRIC HARDWARE] Failed to update attendance:', err);
     res.status(500).json({ success: false, error: 'Biometric processing failed' });
   }
-});
+};
+
+app.post('/integrations/biometrics/clock-in', handleBiometricClockIn);
+app.post('/api/easytimepro/punch', handleBiometricClockIn);
 
 // ── ATTENDANCE LOGS ENDPOINT ───────────────────────────────────────────────
 app.get('/api/attendance', async (req: Request, res: Response) => {
