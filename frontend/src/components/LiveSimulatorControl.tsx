@@ -127,7 +127,7 @@ export const LiveSimulatorControl: React.FC<{ defaultExpanded?: boolean }> = ({ 
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-display font-extrabold text-sm text-amber-400">
-                Real-Time Hardware Simulator Engine
+                Real-Time Hardware Telemetry Engine
               </h3>
               {isAutoGpsRunning ? (
                 <span className="badge-status badge-green text-[10px] font-bold flex items-center gap-1 py-0.5 px-2">
@@ -140,7 +140,7 @@ export const LiveSimulatorControl: React.FC<{ defaultExpanded?: boolean }> = ({ 
               )}
             </div>
             <p className="text-[11px] text-slate-400">
-              Simulate live IoT Fleet GPS telemetry movement & ZKTeco easyTimePro Biometric punches with existing users
+              Live IoT Fleet GPS telemetry movement & ZKTeco easyTimePro Biometric punches with existing users
             </p>
           </div>
         </div>
@@ -157,18 +157,18 @@ export const LiveSimulatorControl: React.FC<{ defaultExpanded?: boolean }> = ({ 
       {isExpanded && (
         <div className="p-5 space-y-5 bg-slate-900/90 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* 1. MOCK GPS TELEMETRY CONTROL */}
+            {/* 1. REAL-TIME GPS TELEMETRY CONTROL */}
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 font-bold text-amber-400 text-sm">
                   <Truck className="w-4 h-4 text-amber-400" />
-                  <span>Mock GPS Fleet Telemetry</span>
+                  <span>Real-Time Fleettrack GPS Telemetry</span>
                 </div>
                 <span className="text-[10px] text-slate-400 font-mono">Peelamedu, CBE</span>
               </div>
 
               <p className="text-slate-400 text-[11px]">
-                Simulates real-time truck movement along Peelamedu & Avinashi Road routes for {vehicles.length} active fleet vehicles.
+                Real-time truck movement along Peelamedu & Avinashi Road routes for {vehicles.length} active fleet vehicles.
               </p>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
