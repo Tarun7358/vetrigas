@@ -39,17 +39,17 @@ export const LoadingPage: React.FC = () => {
 
       {/* Top Metrics Cards */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl text-center">
           <p className="text-xs font-bold text-slate-400 uppercase">Total Required</p>
-          <p className="font-display font-bold text-3xl text-slate-900 mt-1">{totalRequired}</p>
+          <p className="font-display font-bold text-3xl text-white mt-1">{totalRequired}</p>
         </div>
-        <div className="bg-amber-50 p-5 rounded-xl border border-amber-200 shadow-sm text-center">
-          <p className="text-xs font-extrabold text-amber-800 uppercase">Loaded</p>
-          <p className="font-display font-extrabold text-3xl text-amber-700 mt-1">{loadedTotal}</p>
+        <div className="bg-slate-900 p-5 rounded-xl border border-amber-500/30 shadow-xl text-center">
+          <p className="text-xs font-extrabold text-amber-400 uppercase">Loaded</p>
+          <p className="font-display font-extrabold text-3xl text-amber-400 mt-1">{loadedTotal}</p>
         </div>
-        <div className="bg-slate-100 p-5 rounded-xl border border-slate-300 shadow-sm text-center">
-          <p className="text-xs font-bold text-slate-500 uppercase">Remaining</p>
-          <p className="font-display font-bold text-3xl text-slate-700 mt-1">{remainingTotal}</p>
+        <div className="bg-slate-900 p-5 rounded-xl border border-slate-800 shadow-xl text-center">
+          <p className="text-xs font-bold text-slate-400 uppercase">Remaining</p>
+          <p className="font-display font-bold text-3xl text-slate-300 mt-1">{remainingTotal}</p>
         </div>
       </div>
 
@@ -58,14 +58,14 @@ export const LoadingPage: React.FC = () => {
         {batches.map(batch => (
           <div
             key={batch.id}
-            className={`bg-white border rounded-xl p-5 shadow-sm space-y-4 ${
-              batch.status === 'DISCREPANCY' ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200'
+            className={`bg-slate-900 border rounded-xl p-5 shadow-xl space-y-4 ${
+              batch.status === 'DISCREPANCY' ? 'border-rose-500/50 bg-slate-900' : 'border-slate-800'
             }`}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
-                <span className="font-display font-bold text-base text-slate-900">{batch.batchNumber}</span>
-                <p className="text-xs text-slate-500">Timestamp: {batch.timestamp}</p>
+                <span className="font-display font-bold text-base text-white">{batch.batchNumber}</span>
+                <p className="text-xs text-slate-400">Timestamp: {batch.timestamp}</p>
               </div>
               <span
                 className={`badge-status ${
@@ -80,19 +80,19 @@ export const LoadingPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span className="text-slate-400">Driver</span>
-                <p className="font-bold text-slate-900">{batch.driverName}</p>
+                <p className="font-bold text-white">{batch.driverName}</p>
               </div>
               <div>
                 <span className="text-slate-400">Vehicle</span>
-                <p className="font-bold text-amber-700 font-mono">{batch.vehicleNumber}</p>
+                <p className="font-bold text-amber-400 font-mono">{batch.vehicleNumber}</p>
               </div>
               <div>
                 <span className="text-slate-400">Loadman</span>
-                <p className="font-bold text-slate-900">{batch.loadmanName}</p>
+                <p className="font-bold text-white">{batch.loadmanName}</p>
               </div>
               <div>
                 <span className="text-slate-400">Loading Count</span>
-                <p className="font-bold text-slate-900">
+                <p className="font-bold text-white">
                   {batch.loadedCount} / {batch.requiredCount} cylinders
                 </p>
               </div>
@@ -100,7 +100,7 @@ export const LoadingPage: React.FC = () => {
 
             {/* Loadman Discrepancy Highlight Box */}
             {batch.status === 'DISCREPANCY' && (
-              <div className="bg-rose-950 text-white p-3 rounded-lg text-xs space-y-1">
+              <div className="bg-rose-950/80 border border-rose-800/80 text-white p-3 rounded-lg text-xs space-y-1">
                 <div className="flex justify-between items-center font-bold text-rose-300">
                   <span className="flex items-center gap-1">
                     <AlertTriangle className="w-4 h-4 text-rose-400" /> Discrepancy Flag
@@ -117,7 +117,7 @@ export const LoadingPage: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
               {batch.status !== 'COMPLETED' && batch.status !== 'ACCEPTED' ? (
                 <button
                   onClick={async () => {
@@ -137,8 +137,8 @@ export const LoadingPage: React.FC = () => {
                   Accept Order & Confirm Batch
                 </button>
               ) : (
-                <div className="flex-1 bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold py-2 rounded-lg text-xs text-center">
-                  Order Accepted & Verified
+                <div className="flex-1 bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold py-2 rounded-lg text-xs text-center">
+                  ✓ Order Accepted & Verified
                 </div>
               )}
 
@@ -147,7 +147,7 @@ export const LoadingPage: React.FC = () => {
                   setSelectedBatchId(batch.id);
                   setActualLoadedInput(batch.loadedCount);
                 }}
-                className="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer"
+                className="bg-slate-800 hover:bg-slate-700 text-white font-bold px-3 py-2 rounded-lg text-xs transition-colors cursor-pointer border border-slate-700"
               >
                 Discrepancy
               </button>
