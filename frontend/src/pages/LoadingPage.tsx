@@ -4,14 +4,16 @@ import { PackageCheck, AlertTriangle, X } from 'lucide-react';
 import { API_BASE } from '../utils/api';
 
 export const LoadingPage: React.FC = () => {
-  const { batches, reportBatchIssue } = useApp();
+  const { batches, reportBatchIssue, stockIntake } = useApp();
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [actualLoadedInput, setActualLoadedInput] = useState<number>(23);
   const [discrepancyReasonInput, setDiscrepancyReasonInput] = useState('Stock shortage');
 
-  const totalRequired = 250;
+  // Dynamic stock calculation synced with Monthly Stock Intake records
+  const stockReceivedTotal = stockIntake.reduce((acc, r) => acc + Number(r.quantity || 0), 0);
+  const totalRequired = stockReceivedTotal > 0 ? stockReceivedTotal : 250;
   const loadedTotal = batches.reduce((acc, b) => acc + b.loadedCount, 0);
-  const remainingTotal = totalRequired - loadedTotal;
+  const remainingTotal = Math.max(0, totalRequired - loadedTotal);
 
   const handleSaveDiscrepancy = () => {
     if (selectedBatchId) {
