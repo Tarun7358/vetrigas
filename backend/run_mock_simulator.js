@@ -58,6 +58,9 @@ const EXISTING_USERS = [
 // Start automated loop
 let gpsTickCount = 0;
 let bioTickCount = 0;
+let cameraTickCount = 0;
+
+const FLEET_VEHICLES = ['TN 38 AU 4821', 'TN 38 BV 9012', 'TN 38 CW 1054', 'TN 38 DX 6720'];
 
 setInterval(async () => {
   gpsTickCount++;
@@ -81,3 +84,19 @@ setInterval(async () => {
     console.log(`[BIOMETRIC SCAN #${bioTickCount}] 🖐️ Scan verified for ${targetUser.name} (${targetUser.id}) at ${res.punchTime || 'now'}`);
   }
 }, 12000);
+
+setInterval(async () => {
+  cameraTickCount++;
+  const targetVeh = FLEET_VEHICLES[cameraTickCount % FLEET_VEHICLES.length];
+  const res = await postJson('/api/simulator/camera-feed', {
+    vehicleRegistration: targetVeh,
+    cameraStatus: 'LIVE',
+    fps: 30,
+    resolution: '1080p HD',
+    recording: true,
+  });
+
+  if (res.success) {
+    console.log(`[DASHCAM TICK #${cameraTickCount}] 📹 AI Dashcam 1080p live stream verified for ${targetVeh} (30 FPS • H.265 RECORDING).`);
+  }
+}, 8000);

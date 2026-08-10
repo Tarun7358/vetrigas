@@ -713,6 +713,28 @@ app.post('/api/simulator/biometric-punch', async (req: Request, res: Response) =
   }
 });
 
+// Single Step Manual Dashcam Telemetry Feed Endpoint
+app.post('/api/simulator/camera-feed', async (req: Request, res: Response) => {
+  const { vehicleRegistration, cameraStatus } = req.body;
+  const statusStr = cameraStatus || 'LIVE';
+  const targetReg = vehicleRegistration || 'TN 38 AU 4821';
+
+  try {
+    await runQuery(
+      `UPDATE vehicles SET hasCamera = 1, cameraStatus = ? WHERE registrationNumber = ? OR id = ?`,
+      [statusStr, targetReg, targetReg]
+    );
+
+    res.json({
+      success: true,
+      message: `✓ Dashcam feed updated for ${targetReg} (Status: ${statusStr})`,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Camera feed update failed' });
+  }
+});
+
 // Single Step Manual GPS Telemetry Update Endpoint
 app.post('/api/simulator/gps-step', async (req: Request, res: Response) => {
   await executeGpsStep();
