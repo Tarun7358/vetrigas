@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { API_BASE } from '../utils/api';
 import {
@@ -28,17 +28,6 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { role, currentUser, integrations, alerts, logout } = useApp();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [gpsSec, setGpsSec] = useState<number>(2);
-  const [bioSec, setBioSec] = useState<number>(14);
-
-  // Live real-time heartbeat ticker
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setGpsSec(prev => (prev >= 5 ? 1 : prev + 1));
-      setBioSec(prev => (prev >= 20 ? 6 : prev + 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleLogout = () => {
     setUserMenuOpen(false);
@@ -143,7 +132,7 @@ export const Header: React.FC<HeaderProps> = ({
               ) : integrations.fleettrackConnected ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span>Fleettrack GPS: LIVE (12ms • packet {gpsSec}s ago)</span>
+                  <span>Fleettrack GPS: LIVE (12ms • packet {integrations.lastGpsSecAgo ?? 0}s ago)</span>
                 </>
               ) : (
                 <>
@@ -172,7 +161,7 @@ export const Header: React.FC<HeaderProps> = ({
               ) : integrations.easyTimeProConnected ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span>Easy Time Pro Bio: LIVE (18ms • punch {bioSec}s ago)</span>
+                  <span>Easy Time Pro Bio: LIVE (18ms • punch {integrations.lastBioSecAgo ?? 0}s ago)</span>
                 </>
               ) : (
                 <>

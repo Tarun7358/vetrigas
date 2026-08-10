@@ -105,17 +105,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
     setNewGpsId('');
   };
 
-  // Hardware Telemetry Real-time Tickers
-  const [hwSecGps, setHwSecGps] = useState(2);
-  const [hwSecBio, setHwSecBio] = useState(11);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setHwSecGps(prev => (prev >= 5 ? 1 : prev + 1));
-      setHwSecBio(prev => (prev >= 20 ? 4 : prev + 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     if (isStockLow && (role === 'OWNER' || role === 'MANAGER' || role === 'GODOWN_KEEPER')) {
@@ -712,7 +702,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           <div className="flex justify-between">
                             <span className="text-slate-400">Live Packet Rate:</span>
                             <span className={integrations.fleettrackConnected ? 'text-emerald-400 font-bold' : 'text-rose-400 font-medium'}>
-                              {integrations.fleettrackConnected ? `Streaming • Last packet ${hwSecGps}s ago` : 'Offline • Waiting for physical GPS tracker'}
+                              {integrations.fleettrackConnected ? `Streaming • Last packet ${integrations.lastGpsSecAgo ?? 0}s ago` : 'Offline • Waiting for physical GPS tracker'}
                             </span>
                           </div>
                         </div>
@@ -746,7 +736,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                           <div className="flex justify-between">
                             <span className="text-slate-400">Attendance Sync Status:</span>
                             <span className={integrations.easyTimeProConnected ? 'text-emerald-400 font-bold' : 'text-rose-400 font-medium'}>
-                              {integrations.easyTimeProConnected ? `Cloud Synced • Last punch ${hwSecBio}s ago` : 'Offline • Waiting for fingerprint scanner'}
+                              {integrations.easyTimeProConnected ? `Cloud Synced • Last punch ${integrations.lastBioSecAgo ?? 0}s ago` : 'Offline • Waiting for fingerprint scanner'}
                             </span>
                           </div>
                         </div>

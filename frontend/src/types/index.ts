@@ -159,6 +159,8 @@ export interface IntegrationState {
   fleettrackConnected: boolean;
   easyTimeProConnected: boolean;
   paymentGatewayConnected: boolean;
+  lastGpsSecAgo?: number | null;
+  lastBioSecAgo?: number | null;
 }
 
 export interface VehicleExpense {

@@ -434,8 +434,8 @@ app.post('/api/gps/update', async (req: Request, res: Response) => {
 });
 
 // Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
-let lastGpsPacketTimestamp: number | null = Date.now();
-let lastBiometricPunchTimestamp: number | null = Date.now();
+let lastGpsPacketTimestamp: number | null = null;
+let lastBiometricPunchTimestamp: number | null = null;
 
 // Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
 app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
@@ -543,8 +543,9 @@ let simulatorTimer: NodeJS.Timeout | null = null;
 // Hardware Telemetry & Socket Handshake Status Endpoint
 app.get('/api/telemetry/status', (req: Request, res: Response) => {
   const now = Date.now();
-  const isGpsOnline = isSimulatorRunning || (lastGpsPacketTimestamp !== null && (now - lastGpsPacketTimestamp < 180000));
-  const isBioOnline = lastBiometricPunchTimestamp !== null && (now - lastBiometricPunchTimestamp < 180000);
+  // Active if packet received in last 12 seconds (12000ms) or if automated simulator loop is active
+  const isGpsOnline = isSimulatorRunning || (lastGpsPacketTimestamp !== null && (now - lastGpsPacketTimestamp < 12000));
+  const isBioOnline = lastBiometricPunchTimestamp !== null && (now - lastBiometricPunchTimestamp < 12000);
 
   res.json({
     success: true,

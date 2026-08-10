@@ -256,6 +256,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev,
           fleettrackConnected: data.fleettrackGps?.status === 'ONLINE',
           easyTimeProConnected: data.easyTimeProBiometrics?.status === 'ONLINE',
+          lastGpsSecAgo: data.fleettrackGps?.secAgo ?? null,
+          lastBioSecAgo: data.easyTimeProBiometrics?.secAgo ?? null,
         }));
       }
     } catch (err) {
