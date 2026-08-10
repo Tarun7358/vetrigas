@@ -201,8 +201,8 @@ export async function seedDatabase() {
 
     // Seed default vehicles if missing
     const defaultVehicles = [
-      { id: 'v1', reg: 'TN 38 AU 4821', driver: 'Arun', driverId: 'emp-01', lat: 11.0168, lng: 76.9558, speed: 38, status: 'MOVING' },
-      { id: 'v2', reg: 'TN 38 BV 9012', driver: 'Suresh', driverId: 'emp-02', lat: 11.0250, lng: 76.9620, speed: 44, status: 'MOVING' },
+      { id: 'v1', reg: 'TN 38 AU 4821', driver: 'Arun', driverId: 'emp-01', lat: 11.0168, lng: 76.9558, speed: 0, status: 'STOPPED' },
+      { id: 'v2', reg: 'TN 38 BV 9012', driver: 'Suresh', driverId: 'emp-02', lat: 11.0250, lng: 76.9620, speed: 0, status: 'STOPPED' },
       { id: 'v3', reg: 'TN 38 CW 1054', driver: 'Ramesh', driverId: 'emp-03', lat: 11.0080, lng: 76.9450, speed: 0, status: 'STOPPED' },
       { id: 'v4', reg: 'TN 38 DX 6720', driver: 'Vijay', driverId: 'emp-04', lat: 11.0310, lng: 76.9700, speed: 0, status: 'STOPPED' },
     ];

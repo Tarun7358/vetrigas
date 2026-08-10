@@ -346,12 +346,25 @@ app.delete('/api/employees/:id', async (req: Request, res: Response) => {
 // Real-Time GPS Endpoints querying SQLite
 app.get('/api/gps/vehicles', async (req: Request, res: Response) => {
   try {
-    const vehicles = await fetchAll('SELECT * FROM vehicles');
+    const now = Date.now();
+    const isGpsOnline = isSimulatorRunning || (lastGpsPacketTimestamp !== null && (now - lastGpsPacketTimestamp < 12000));
+    const rawVehicles = await fetchAll('SELECT * FROM vehicles');
+    const processedVehicles = rawVehicles.map(v => {
+      const active = isGpsOnline;
+      return {
+        ...v,
+        speed: active ? (v.speed || 0) : 0,
+        ignition: active ? Boolean(v.ignition) : false,
+        status: active ? (v.status || 'STOPPED') : 'STOPPED',
+        hasCamera: Boolean(v.hasCamera),
+      };
+    });
+
     res.json({
       success: true,
-      totalVehicles: vehicles.length,
-      activeMoving: vehicles.filter(v => v.status === 'MOVING').length,
-      vehicles: vehicles.map(v => ({ ...v, ignition: Boolean(v.ignition), hasCamera: Boolean(v.hasCamera) })),
+      totalVehicles: processedVehicles.length,
+      activeMoving: processedVehicles.filter(v => v.status === 'MOVING').length,
+      vehicles: processedVehicles,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch vehicles' });
@@ -361,9 +374,20 @@ app.get('/api/gps/vehicles', async (req: Request, res: Response) => {
 app.get('/api/gps/vehicles/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const now = Date.now();
+    const isGpsOnline = isSimulatorRunning || (lastGpsPacketTimestamp !== null && (now - lastGpsPacketTimestamp < 12000));
     const vehicle = await fetchOne('SELECT * FROM vehicles WHERE id = ?', [id]);
     if (vehicle) {
-      res.json({ success: true, vehicle: { ...vehicle, ignition: Boolean(vehicle.ignition) } });
+      res.json({
+        success: true,
+        vehicle: {
+          ...vehicle,
+          speed: isGpsOnline ? (vehicle.speed || 0) : 0,
+          ignition: isGpsOnline ? Boolean(vehicle.ignition) : false,
+          status: isGpsOnline ? (vehicle.status || 'STOPPED') : 'STOPPED',
+          hasCamera: Boolean(vehicle.hasCamera),
+        },
+      });
     } else {
       res.status(404).json({ success: false, message: 'Vehicle not found' });
     }
@@ -720,6 +744,7 @@ app.post('/api/simulator/toggle-auto', async (req: Request, res: Response) => {
       clearInterval(simulatorTimer);
       simulatorTimer = null;
     }
+    await runQuery(`UPDATE vehicles SET speed = 0, ignition = 0, status = 'STOPPED'`);
     console.log('[REAL-TIME SIMULATOR] Live GPS Telemetry Stream PAUSED');
   }
 
