@@ -12,6 +12,7 @@ import {
   User,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { LiveSimulatorControl } from '../components/LiveSimulatorControl';
 
 export const MobileSimulatorPage: React.FC = () => {
   const { role, setRole, deliveries, completeDelivery, batches, reportBatchIssue } = useApp();
@@ -82,6 +83,11 @@ export const MobileSimulatorPage: React.FC = () => {
             Loadman App (Kumar)
           </button>
         </div>
+      </div>
+
+      {/* Real-Time Mock Simulator Engine Controls */}
+      <div className="w-full">
+        <LiveSimulatorControl defaultExpanded={false} />
       </div>
 
       {/* Embedded Phone Frame */}

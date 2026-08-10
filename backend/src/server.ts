@@ -434,8 +434,8 @@ app.post('/api/gps/update', async (req: Request, res: Response) => {
 });
 
 // Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
-let lastGpsPacketTimestamp: number | null = null;
-let lastBiometricPunchTimestamp: number | null = null;
+let lastGpsPacketTimestamp: number | null = Date.now();
+let lastBiometricPunchTimestamp: number | null = Date.now();
 
 // Fleettrack / Teltonika / Generic GPS Tracker Telemetry Webhook
 app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
@@ -509,37 +509,242 @@ app.post('/integrations/biometrics/clock-in', async (req: Request, res: Response
   }
 });
 
-// ZKTECO EASYTIMEPRO MOBILE & HARDWARE ADMS PUSH INTEGRATION WEBHOOK
-app.post(['/integrations/easytimepro', '/iclock/cdata', '/api/easytimepro/punch'], async (req: Request, res: Response) => {
-  const { userId, employeeId, email, deviceSn, pin, punchTime, status, attendanceType } = req.body;
-  const targetWorker = employeeId || userId || pin || 'emp-01';
-
-  lastBiometricPunchTimestamp = Date.now();
-
-  console.log(`[INFO] [easyTimePro ZKTeco] Attendance Punch Received | Device SN: ${deviceSn || 'ZKT-EASYTIME-PRO'} | Worker: ${targetWorker} | Time: ${punchTime || new Date().toISOString()}`);
-
+// ── ATTENDANCE LOGS ENDPOINT ───────────────────────────────────────────────
+app.get('/api/attendance', async (req: Request, res: Response) => {
   try {
-    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    await runQuery(
-      `UPDATE employees SET attendanceStatus = 'Present', workingHours = '8h 00m' WHERE id = ? OR email = ? OR name LIKE ?`,
-      [targetWorker, email || '', `%${targetWorker}%`]
-    );
-
-    const emp = await fetchOne('SELECT * FROM employees WHERE id = ? OR email = ? OR name LIKE ?', [targetWorker, email || '', `%${targetWorker}%`]);
-
-    res.json({
-      success: true,
-      product: 'ZKTeco easyTimePro',
-      hardwareStatus: 'ONLINE',
-      biometricPunchRecorded: true,
-      clockInTime: timeString,
-      worker: emp ? emp.name : targetWorker,
+    const employees = await fetchAll('SELECT id, name, role, attendanceStatus, workingHours FROM employees');
+    const logs = await fetchAll('SELECT * FROM attendance');
+    
+    const attendanceRecords = employees.map(emp => {
+      const log = logs.find(l => l.employeeId === emp.id || l.employeeName === emp.name);
+      return {
+        id: log ? log.id : `att-${emp.id}`,
+        employeeId: emp.id,
+        employeeName: emp.name,
+        role: emp.role,
+        checkIn: log ? log.checkIn || '08:30 AM' : '08:30 AM',
+        checkOut: log ? log.checkOut || '05:30 PM' : '05:30 PM',
+        workingHours: emp.workingHours || '8h 00m',
+        status: emp.attendanceStatus || 'Present',
+        date: log ? log.date || new Date().toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+      };
     });
+
+    res.json({ success: true, attendance: attendanceRecords });
   } catch (err) {
-    console.error('[ERROR] [easyTimePro ZKTeco] Punch processing error:', err);
-    res.status(500).json({ success: false, error: 'easyTimePro processing failed' });
+    res.status(500).json({ success: false, error: 'Failed to fetch attendance' });
   }
 });
+
+// ── REAL-TIME MOCK GPS & BIOMETRIC SIMULATOR ENGINE ─────────────────────────
+let isSimulatorRunning = false;
+let simulatorTimer: NodeJS.Timeout | null = null;
+
+// Hardware Telemetry & Socket Handshake Status Endpoint
+app.get('/api/telemetry/status', (req: Request, res: Response) => {
+  const now = Date.now();
+  const isGpsOnline = isSimulatorRunning || (lastGpsPacketTimestamp !== null && (now - lastGpsPacketTimestamp < 180000));
+  const isBioOnline = lastBiometricPunchTimestamp !== null && (now - lastBiometricPunchTimestamp < 180000);
+
+  res.json({
+    success: true,
+    isSimulatorRunning,
+    fleettrackGps: {
+      status: isGpsOnline ? 'ONLINE' : 'OFFLINE',
+      lastPacketReceived: lastGpsPacketTimestamp ? new Date(lastGpsPacketTimestamp).toISOString() : null,
+      secAgo: lastGpsPacketTimestamp ? Math.floor((now - lastGpsPacketTimestamp) / 1000) : null,
+    },
+    easyTimeProBiometrics: {
+      status: isBioOnline ? 'ONLINE' : 'OFFLINE',
+      lastPunchRecorded: lastBiometricPunchTimestamp ? new Date(lastBiometricPunchTimestamp).toISOString() : null,
+      secAgo: lastBiometricPunchTimestamp ? Math.floor((now - lastBiometricPunchTimestamp) / 1000) : null,
+    },
+  });
+});
+
+// Coimbatore Peelamedu Coordinates Routes for Simulation
+const SIMULATED_ROUTES: Record<string, { lat: number; lng: number }[]> = {
+  'TN 38 AU 4821': [
+    { lat: 11.0168, lng: 76.9558 }, // Peelamedu Depot
+    { lat: 11.0210, lng: 76.9610 }, // Hope College
+    { lat: 11.0260, lng: 76.9680 }, // TIDEL Park Coimbatore
+    { lat: 11.0230, lng: 76.9740 }, // Hopes Flyover
+    { lat: 11.0180, lng: 76.9660 }, // PSG College
+    { lat: 11.0168, lng: 76.9558 }, // Peelamedu Depot
+  ],
+  'TN 38 BV 9012': [
+    { lat: 11.0250, lng: 76.9620 }, // Avinashi Road
+    { lat: 11.0190, lng: 76.9690 }, // Singanallur Road
+    { lat: 11.0120, lng: 76.9750 }, // Trichy Road Signal
+    { lat: 11.0180, lng: 76.9700 }, // Ramanathapuram Junction
+    { lat: 11.0250, lng: 76.9620 },
+  ],
+  'TN 38 CW 1054': [
+    { lat: 11.0080, lng: 76.9450 }, // Peelamedu South
+    { lat: 11.0130, lng: 76.9490 }, // PSG IMS
+    { lat: 11.0190, lng: 76.9530 }, // Fun Republic Mall
+    { lat: 11.0080, lng: 76.9450 },
+  ],
+  'TN 38 DX 6720': [
+    { lat: 11.0310, lng: 76.9700 }, // Coimbatore Airport Road
+    { lat: 11.0360, lng: 76.9760 }, // SITRA Junction
+    { lat: 11.0420, lng: 76.9820 }, // Kalapatti Road
+    { lat: 11.0310, lng: 76.9700 },
+  ]
+};
+
+const routeIndexes: Record<string, number> = {
+  'TN 38 AU 4821': 0,
+  'TN 38 BV 9012': 0,
+  'TN 38 CW 1054': 0,
+  'TN 38 DX 6720': 0,
+};
+
+// Execute 1 GPS step across all simulated vehicles
+const executeGpsStep = async () => {
+  lastGpsPacketTimestamp = Date.now();
+  try {
+    const vehicles = await fetchAll('SELECT * FROM vehicles');
+    for (const v of vehicles) {
+      const reg = v.registrationNumber;
+      const waypoints = SIMULATED_ROUTES[reg] || [
+        { lat: 11.0168 + (Math.random() - 0.5) * 0.02, lng: 76.9558 + (Math.random() - 0.5) * 0.02 }
+      ];
+      let idx = (routeIndexes[reg] || 0) + 1;
+      if (idx >= waypoints.length) idx = 0;
+      routeIndexes[reg] = idx;
+
+      const nextPos = waypoints[idx];
+      const isMoving = Math.random() > 0.15;
+      const speed = isMoving ? Math.floor(32 + Math.random() * 22) : 0;
+      const status = speed > 0 ? 'MOVING' : 'STOPPED';
+      const todayDist = (Number(v.todayDistanceKm) || 20) + (isMoving ? 0.1 : 0);
+
+      await runQuery(
+        `UPDATE vehicles SET lat = ?, lng = ?, speed = ?, ignition = ?, status = ?, todayDistanceKm = ? WHERE id = ?`,
+        [nextPos.lat, nextPos.lng, speed, isMoving ? 1 : 0, status, Number(todayDist.toFixed(1)), v.id]
+      );
+    }
+  } catch (err) {
+    console.error('Error executing GPS simulator step:', err);
+  }
+};
+
+// Trigger Biometric Punch for existing worker
+app.post('/api/simulator/biometric-punch', async (req: Request, res: Response) => {
+  const { employeeId, employeeName, status } = req.body;
+  
+  try {
+    let target = null;
+    if (employeeId) {
+      target = await fetchOne('SELECT * FROM employees WHERE id = ? OR LOWER(email) = ?', [employeeId, employeeId.toLowerCase()]);
+    }
+    if (!target && employeeName) {
+      target = await fetchOne('SELECT * FROM employees WHERE LOWER(name) LIKE ?', [`%${employeeName.toLowerCase()}%`]);
+    }
+    if (!target) {
+      target = await fetchOne('SELECT * FROM employees ORDER BY id ASC LIMIT 1');
+    }
+
+    if (!target) {
+      return res.status(404).json({ success: false, message: 'No existing user found to punch attendance.' });
+    }
+
+    lastBiometricPunchTimestamp = Date.now();
+
+    const punchTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const attStatus = status || 'Present';
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    await runQuery(
+      `UPDATE employees SET attendanceStatus = ?, workingHours = '8h 30m' WHERE id = ?`,
+      [attStatus, target.id]
+    );
+
+    const attId = `att-${target.id}`;
+    await runQuery(
+      `INSERT INTO attendance (id, employeeId, employeeName, role, workingHours, status)
+       VALUES (?, ?, ?, ?, '8h 30m', ?)
+       ON CONFLICT(id) DO UPDATE SET status = excluded.status, workingHours = '8h 30m'`,
+      [attId, target.id, target.name, target.role, attStatus]
+    );
+
+    console.log(`[REAL-TIME MOCK BIOMETRIC SCAN] Verified Punch for ${target.name} (${target.role}) at ${punchTime}`);
+    return res.json({
+      success: true,
+      message: `✓ Biometric scan verified for ${target.name} (${target.role})`,
+      punchTime,
+      employee: {
+        id: target.id,
+        name: target.name,
+        role: target.role,
+        attendanceStatus: attStatus,
+        workingHours: '8h 30m',
+      },
+    });
+  } catch (err) {
+    console.error('Biometric simulator error:', err);
+    return res.status(500).json({ success: false, error: 'Biometric punch simulation failed' });
+  }
+});
+
+// Single Step Manual GPS Telemetry Update Endpoint
+app.post('/api/simulator/gps-step', async (req: Request, res: Response) => {
+  await executeGpsStep();
+  res.json({
+    success: true,
+    message: '✓ Real-time GPS coordinates updated for all fleet vehicles.',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Toggle Automated Continuous GPS Tracking Simulation (2s loop)
+app.post('/api/simulator/toggle-auto', async (req: Request, res: Response) => {
+  const { enabled } = req.body;
+  if (enabled !== undefined) {
+    isSimulatorRunning = Boolean(enabled);
+  } else {
+    isSimulatorRunning = !isSimulatorRunning;
+  }
+
+  if (isSimulatorRunning) {
+    if (!simulatorTimer) {
+      simulatorTimer = setInterval(() => {
+        executeGpsStep();
+      }, 2500);
+    }
+    console.log('[REAL-TIME SIMULATOR] Live GPS Telemetry Stream STARTED (2.5s update interval)');
+  } else {
+    if (simulatorTimer) {
+      clearInterval(simulatorTimer);
+      simulatorTimer = null;
+    }
+    console.log('[REAL-TIME SIMULATOR] Live GPS Telemetry Stream PAUSED');
+  }
+
+  res.json({
+    success: true,
+    isSimulatorRunning,
+    message: isSimulatorRunning
+      ? 'Live Real-Time GPS Tracking Stream STARTED'
+      : 'Live Real-Time GPS Tracking Stream PAUSED',
+  });
+});
+
+// Simulator Status Endpoint
+app.get('/api/simulator/status', (req: Request, res: Response) => {
+  const now = Date.now();
+  res.json({
+    success: true,
+    isSimulatorRunning,
+    lastGpsPacketSecAgo: lastGpsPacketTimestamp ? Math.floor((now - lastGpsPacketTimestamp) / 1000) : null,
+    lastBiometricPunchSecAgo: lastBiometricPunchTimestamp ? Math.floor((now - lastBiometricPunchTimestamp) / 1000) : null,
+    gpsHardwareStatus: lastGpsPacketTimestamp && (now - lastGpsPacketTimestamp < 60000) ? 'ONLINE' : 'OFFLINE',
+    biometricHardwareStatus: lastBiometricPunchTimestamp && (now - lastBiometricPunchTimestamp < 60000) ? 'ONLINE' : 'OFFLINE',
+  });
+});
+
+
 
 
 // WHATSAPP INSTANT DIGITAL RECEIPT ENDPOINT

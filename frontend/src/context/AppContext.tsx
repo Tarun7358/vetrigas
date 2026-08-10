@@ -132,7 +132,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
   const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
-  const [attendance] = useState<AttendanceRecord[]>(initialAttendance);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>(initialAttendance);
   const [payroll, setPayroll] = useState<PayrollRecord[]>(initialPayroll);
   const [batches, setBatches] = useState<LoadingBatch[]>(initialBatches);
   const [deliveries, setDeliveries] = useState<DeliveryItem[]>(initialDeliveries);
@@ -160,6 +160,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const localOnly = customEmps.filter(e => !backendEmails.has(e.email.toLowerCase()));
           const merged = [...data.employees, ...localOnly];
           setEmployees(merged);
+        }
+      }
+
+      const attRes = await fetch(`${API_BASE}/api/attendance`);
+      if (attRes.ok) {
+        const data = await attRes.json();
+        if (Array.isArray(data.attendance)) {
+          setAttendance(data.attendance);
         }
       }
 

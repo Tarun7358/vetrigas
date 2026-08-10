@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, ShieldCheck, CheckCircle2, Calendar, Filter } from 'lucide-react';
 import { calculateProductivityReport } from '../utils/productivityAudit';
+import { LiveSimulatorControl } from '../components/LiveSimulatorControl';
 
 export const AttendancePage: React.FC = () => {
   const { attendance, role, currentUser, integrations, toggleIntegration } = useApp();
@@ -56,6 +57,9 @@ export const AttendancePage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Hardware Simulator Controls */}
+      <LiveSimulatorControl defaultExpanded={true} />
 
       {/* Filters Bar for Management / Personal Notice for Workers */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border border-slate-200 p-4 rounded-xl shadow-sm gap-3">

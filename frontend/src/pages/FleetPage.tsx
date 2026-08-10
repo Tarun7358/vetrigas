@@ -16,6 +16,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { soundAlerts } from '../utils/audioAlerts';
+import { LiveSimulatorControl } from '../components/LiveSimulatorControl';
+import { API_BASE } from '../utils/api';
 
 const createCustomIcon = (status: string) => {
   const isMoving = status === 'MOVING';
@@ -68,7 +70,7 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
     const fetchGpsData = async () => {
       try {
         setIsSyncing(true);
-        const res = await fetch('http://localhost:5000/api/gps/vehicles');
+        const res = await fetch(`${API_BASE}/api/gps/vehicles`);
         if (res.ok) {
           const data = await res.json();
           if (data.vehicles && data.vehicles.length > 0) {
@@ -157,6 +159,9 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {/* Real-Time Mock Simulator Controls */}
+      <LiveSimulatorControl defaultExpanded={false} />
 
       {/* Main Map + Side Panel Split */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">

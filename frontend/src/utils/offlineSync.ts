@@ -1,4 +1,5 @@
 import { soundAlerts } from './audioAlerts';
+import { API_BASE } from './api';
 
 /**
  * PWA Offline Storage & Background Sync Manager for Drivers
@@ -64,13 +65,13 @@ class OfflineSyncManager {
     for (const item of queue) {
       try {
         if (item.type === 'BILL_COLLECTION') {
-          await fetch('http://localhost:5000/api/bills', {
+          await fetch(`${API_BASE}/api/bills`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(item.payload),
           });
         } else if (item.type === 'VEHICLE_EXPENSE') {
-          await fetch('http://localhost:5000/api/expenses', {
+          await fetch(`${API_BASE}/api/expenses`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ...item.payload, userRole: 'DRIVER' }),

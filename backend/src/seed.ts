@@ -175,25 +175,52 @@ export async function seedDatabase() {
       )
     `);
 
-    // Seed ONLY the master Owner account (emp-00) if no Owner exists
-    const ownerCheck = await fetchOne(`SELECT id FROM employees WHERE id = 'emp-00' OR LOWER(email) = 'owner@vetriindane.com'`);
-    if (!ownerCheck) {
-      const hashedPassword = hashPassword('Vetri@2026');
-      await runQuery(
-        `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate)
-         VALUES ('emp-00', 'Vetri', 'Owner', 'owner@vetriindane.com', ?, '+91 96008 70814', '01 Jan 2023', 'Present', '9h 00m', '100%', 100, 'Active', 150)`,
-        [hashedPassword]
-      );
-      console.log('✓ Master Owner account (emp-00) created in SQLite database.');
+    // Seed default existing employees if missing
+    const defaultEmps = [
+      { id: 'emp-00', name: 'Vetri', role: 'Owner', email: 'owner@vetriindane.com', phone: '+91 96008 70814', att: 'Present' },
+      { id: 'emp-01', name: 'Arun', role: 'Driver', email: 'arun@vetriindane.com', phone: '+91 98421 12345', att: 'Present' },
+      { id: 'emp-02', name: 'Suresh', role: 'Driver', email: 'suresh@vetriindane.com', phone: '+91 98421 23456', att: 'Present' },
+      { id: 'emp-03', name: 'Ramesh', role: 'Driver', email: 'ramesh@vetriindane.com', phone: '+91 98421 34567', att: 'Present' },
+      { id: 'emp-04', name: 'Vijay', role: 'Driver', email: 'vijay@vetriindane.com', phone: '+91 98421 45678', att: 'Present' },
+      { id: 'emp-05', name: 'Kumar', role: 'Loadman', email: 'kumar@vetriindane.com', phone: '+91 98421 56789', att: 'Present' },
+      { id: 'emp-06', name: 'Priya', role: 'Storeroom Staff', email: 'priya@vetriindane.com', phone: '+91 98421 67890', att: 'Present' },
+      { id: 'emp-07', name: 'Karthik', role: 'Godown Keeper', email: 'karthik@vetriindane.com', phone: '+91 98421 78901', att: 'Present' },
+    ];
+
+    const hashedPassword = hashPassword('Vetri@2026');
+    for (const emp of defaultEmps) {
+      const exists = await fetchOne('SELECT id FROM employees WHERE id = ? OR LOWER(email) = ?', [emp.id, emp.email.toLowerCase()]);
+      if (!exists) {
+        await runQuery(
+          `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate)
+           VALUES (?, ?, ?, ?, ?, ?, '01 Jan 2024', ?, '8h 00m', '15/20', 92, 'Active', 85)`,
+          [emp.id, emp.name, emp.role, emp.email.toLowerCase(), hashedPassword, emp.phone, emp.att]
+        );
+      }
     }
 
-    // PURGE DEMO MOCK ACCOUNTS AND MOCK TRUCKS SO NONE RE-APPEAR AUTOMATICALLY
-    await runQuery(`DELETE FROM employees WHERE id IN ('emp-01', 'emp-02', 'emp-03', 'emp-04', 'emp-05', 'emp-06', 'emp-07', 'emp-08') OR email LIKE '%@vetriindane.com' AND id != 'emp-00'`);
-    await runQuery(`DELETE FROM vehicles WHERE id IN ('v1', 'v2', 'v3', 'v4') OR registrationNumber IN ('TN 38 AU 4821', 'TN 38 BV 9012', 'TN 38 CW 1054', 'TN 38 DX 6720')`);
-    await runQuery(`DELETE FROM payroll WHERE id IN ('pay-01', 'pay-02', 'pay-03', 'pay-04', 'pay-05')`);
-    
-    console.log('✓ Database clean! Zero mock users or trucks automatically created.');
+    // Seed default vehicles if missing
+    const defaultVehicles = [
+      { id: 'v1', reg: 'TN 38 AU 4821', driver: 'Arun', driverId: 'emp-01', lat: 11.0168, lng: 76.9558, speed: 38, status: 'MOVING' },
+      { id: 'v2', reg: 'TN 38 BV 9012', driver: 'Suresh', driverId: 'emp-02', lat: 11.0250, lng: 76.9620, speed: 44, status: 'MOVING' },
+      { id: 'v3', reg: 'TN 38 CW 1054', driver: 'Ramesh', driverId: 'emp-03', lat: 11.0080, lng: 76.9450, speed: 0, status: 'STOPPED' },
+      { id: 'v4', reg: 'TN 38 DX 6720', driver: 'Vijay', driverId: 'emp-04', lat: 11.0310, lng: 76.9700, speed: 0, status: 'STOPPED' },
+    ];
+
+    for (const veh of defaultVehicles) {
+      const vExists = await fetchOne('SELECT id FROM vehicles WHERE id = ? OR registrationNumber = ?', [veh.id, veh.reg]);
+      if (!vExists) {
+        await runQuery(
+          `INSERT INTO vehicles (id, registrationNumber, driverName, driverId, gpsDeviceId, simCardNumber, status, speed, ignition, todayDistanceKm, completedDeliveries, totalDeliveries, lat, lng, hasCamera, cameraStatus)
+           VALUES (?, ?, ?, ?, ?, '+91 96008 70814', ?, ?, 1, 24.5, 12, 18, ?, ?, 1, 'LIVE')`,
+          [veh.id, veh.reg, veh.driver, veh.driverId, `GPS-EH21-${veh.id.toUpperCase()}`, veh.status, veh.speed, veh.lat, veh.lng]
+        );
+      }
+    }
+
+    console.log('✓ Default employees & fleet vehicles verified in SQLite database.');
   } catch (err) {
     console.error('Error verifying database schema:', err);
   }
 }
+
