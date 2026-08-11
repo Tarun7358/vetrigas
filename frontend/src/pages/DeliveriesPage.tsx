@@ -199,10 +199,30 @@ export const DeliveriesPage: React.FC = () => {
   const driverShiftHours = driverAttendanceRecord?.workingHours || '7h 45m';
   const driverCheckIn = driverAttendanceRecord?.checkIn || '08:00 AM';
 
-  const handleOpenEBill = (billNo?: string) => {
-    if (!billNo) return;
-    const b = bills.find(x => x.billNumber === billNo);
-    if (b) setSelectedBill(b);
+  const handleOpenEBill = (billNo?: string, del?: DeliveryItem) => {
+    if (billNo) {
+      const b = bills.find(x => x.billNumber === billNo || x.id === billNo);
+      if (b) {
+        setSelectedBill(b);
+        return;
+      }
+    }
+    // Dynamic E-Bill fallback if record is not matched in central bills state
+    if (del) {
+      const fallbackBill: BillRecord = {
+        id: `bill-${del.id}`,
+        billNumber: billNo || del.billNumber || `VI-2026-${del.deliveryNumber || Math.floor(10000 + Math.random() * 90000)}`,
+        customerName: del.customerName,
+        amount: del.amount,
+        paymentMethod: del.paymentMethod || 'UPI',
+        transactionId: `TXN-${Math.floor(10000000 + Math.random() * 90000000)}`,
+        driverName: del.driverName || 'Arun',
+        date: new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        status: 'PAID',
+        cylinderCount: del.cylinderCount || 1,
+      };
+      setSelectedBill(fallbackBill);
+    }
   };
 
   return (
@@ -498,7 +518,7 @@ export const DeliveriesPage: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => handleOpenEBill(del.billNumber)}
+                    onClick={() => handleOpenEBill(del.billNumber, del)}
                     className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-bold py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Receipt className="w-3.5 h-3.5 text-amber-400" /> View E-Bill

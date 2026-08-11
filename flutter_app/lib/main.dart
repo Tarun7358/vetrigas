@@ -46,6 +46,18 @@ class _MainAppScreenState extends State<MainAppScreen> {
       ..setBackgroundColor(const Color(0xFF0F172A))
       ..setNavigationDelegate(
         NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) {
+            final String url = request.url.toLowerCase();
+            if (url.contains('google.com/maps') ||
+                url.contains('maps.google') ||
+                url.startsWith('geo:') ||
+                url.startsWith('intent:') ||
+                url.contains('wa.me') ||
+                url.contains('whatsapp')) {
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
           onPageStarted: (String url) {
             if (mounted) {
               setState(() {
@@ -62,9 +74,17 @@ class _MainAppScreenState extends State<MainAppScreen> {
             }
           },
           onWebResourceError: (WebResourceError error) {
-            debugPrint('WebView Load Error: ${error.description} (isForMainFrame: ${error.isForMainFrame})');
-            // Only show offline screen if the primary frame/page failed to load (ignore subresource/favicon errors)
-            if (error.isForMainFrame ?? true) {
+            debugPrint('WebView Load Error: ${error.description} (isForMainFrame: ${error.isForMainFrame}, url: ${error.url})');
+            final failingUrl = (error.url ?? '').toLowerCase();
+            if (failingUrl.contains('google') ||
+                failingUrl.contains('maps') ||
+                failingUrl.startsWith('geo:') ||
+                failingUrl.startsWith('intent:') ||
+                failingUrl.contains('wa.me')) {
+              return;
+            }
+            // Only trip offline screen if initial page load failed
+            if ((error.isForMainFrame ?? true) && _isLoading) {
               if (mounted) {
                 setState(() {
                   _isLoading = false;
