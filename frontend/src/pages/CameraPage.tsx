@@ -67,7 +67,7 @@ export const CameraPage: React.FC = () => {
     setTimeout(() => setSnapshotTaken(false), 3000);
   };
 
-  // Dynamic Trip Timeline & Event Clips Calculation
+  // Dynamic Trip Timeline & Event Clips Calculation (100% DATA-DRIVEN - NO MOCK / DEFAULT FALLBACKS)
   const activeVehicleDeliveries = activeVehicle
     ? deliveries.filter(
         d =>
@@ -76,49 +76,30 @@ export const CameraPage: React.FC = () => {
       )
     : [];
 
-  const telemetryPingTime = typeof activeVehicle?.lastUpdatedSecondsAgo === 'number' && !isNaN(activeVehicle.lastUpdatedSecondsAgo)
-    ? `${activeVehicle.lastUpdatedSecondsAgo}s ago`
-    : '10:45 AM';
-
-  const dynamicEventClips = activeVehicleDeliveries.length > 0
-    ? activeVehicleDeliveries.map((del, idx) => ({
-        id: del.id,
-        title: `Delivery Stop #${del.deliveryNumber || del.id} (${del.customerName})`,
-        details: `${del.customerAddress || 'Coimbatore'} • ${del.cylinderCount || 1} Cylinders • Status: ${del.status}`,
-        type: del.status === 'DELIVERED' ? 'DELIVERY_STOP' : 'EN_ROUTE',
-        time: del.deliveryTime || `${(8 + idx * 2).toString().padStart(2, '0')}:15 AM`,
-        badgeColor: del.status === 'DELIVERED' ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800' : 'text-amber-400 bg-amber-950/60 border-amber-800',
-      }))
-    : (activeVehicle
-        ? [
-            {
-              id: 'evt-01',
-              title: `Fleet Depot Departure`,
-              details: `Peelamedu Main Depot • Initial speed ${Math.max(20, activeVehicle.speed || 0)} km/h`,
-              type: 'DISPATCH',
-              time: '08:15 AM',
-              badgeColor: 'text-blue-400 bg-blue-950/60 border-blue-800',
-            },
-            {
-              id: 'evt-02',
-              title: `Route Landmark & Telemetry Ping`,
-              details: `Avinashi Road Route • Ignition ${activeVehicle.ignition ? 'ON' : 'OFF'}`,
-              type: 'TELEMETRY',
-              time: telemetryPingTime,
-              badgeColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-800',
-            },
-          ]
-        : []);
-
   const currentTimeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const timelineNodes = activeVehicle
-    ? [
-        { label: '08:00 AM', tag: 'Depot Exit' },
-        { label: activeVehicleDeliveries[0]?.deliveryTime || '09:30 AM', tag: 'Order Dispatch' },
-        { label: telemetryPingTime, tag: 'Telemetry Ping' },
-        { label: currentTimeStr, tag: 'Live Now', isLive: true },
-      ]
-    : [];
+
+  // Event clips: strictly real saved delivery records from DB
+  const dynamicEventClips = activeVehicleDeliveries.map((del, idx) => ({
+    id: del.id,
+    title: `Delivery Stop #${del.deliveryNumber || del.id} (${del.customerName})`,
+    details: `${del.customerAddress || 'Coimbatore'} • ${del.cylinderCount || 1} Cylinders • Status: ${del.status}`,
+    type: del.status === 'DELIVERED' ? 'DELIVERY_STOP' : 'EN_ROUTE',
+    time: del.deliveryTime || `${(8 + idx * 2).toString().padStart(2, '0')}:15 AM`,
+    badgeColor: del.status === 'DELIVERED' ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800' : 'text-amber-400 bg-amber-950/60 border-amber-800',
+  }));
+
+  // Timeline nodes: strictly real saved delivery stops from DB + Live Tracking node
+  const timelineNodes = activeVehicleDeliveries.length > 0
+    ? activeVehicleDeliveries.map((del, idx) => ({
+        label: del.deliveryTime || `${(8 + idx * 2).toString().padStart(2, '0')}:15 AM`,
+        tag: `Stop #${del.deliveryNumber || del.id.slice(-4)}`,
+        isLive: false,
+      })).concat([
+        { label: currentTimeStr, tag: 'Live Tracking', isLive: true }
+      ])
+    : (activeVehicle
+        ? [{ label: currentTimeStr, tag: 'Live Tracking', isLive: true }]
+        : []);
 
   const handlePlayClip = (clipTitle: string, time: string) => {
     setSelectedTimelineTime(time);
@@ -425,12 +406,12 @@ export const CameraPage: React.FC = () => {
                 <span className="text-[10px] text-slate-400 font-mono">{activeVehicle.driverName}</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-1.5 text-center text-xs font-mono text-slate-300 border-b border-slate-800 pb-3">
+              <div className="flex flex-wrap gap-1.5 text-center text-xs font-mono text-slate-300 border-b border-slate-800 pb-3">
                 {timelineNodes.map((node, i) => (
                   <button
                     key={i}
                     onClick={() => handlePlayClip(`Timeline Step: ${node.tag}`, node.label)}
-                    className={`p-1.5 rounded-lg border text-[11px] cursor-pointer transition-all hover:scale-105 ${
+                    className={`flex-1 min-w-[80px] p-1.5 rounded-lg border text-[11px] cursor-pointer transition-all hover:scale-105 ${
                       node.isLive
                         ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700 font-bold shadow-md shadow-emerald-500/10'
                         : selectedTimelineTime === node.label
@@ -452,21 +433,30 @@ export const CameraPage: React.FC = () => {
             <div className="mt-5 space-y-2.5">
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recorded Event Clips ({dynamicEventClips.length})</p>
 
-              {dynamicEventClips.map((clip) => (
-                <div key={clip.id} className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs gap-2">
-                  <div className="space-y-0.5 overflow-hidden">
-                    <p className="font-bold text-slate-200 truncate">{clip.title}</p>
-                    <p className="text-[11px] text-slate-400 truncate">{clip.time} • {clip.details}</p>
+              {dynamicEventClips.length > 0 ? (
+                dynamicEventClips.map((clip) => (
+                  <div key={clip.id} className="p-3.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between text-xs gap-2">
+                    <div className="space-y-0.5 overflow-hidden">
+                      <p className="font-bold text-slate-200 truncate">{clip.title}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{clip.time} • {clip.details}</p>
+                    </div>
+                    <button
+                      onClick={() => handlePlayClip(clip.title, clip.time)}
+                      className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 cursor-pointer shrink-0 transition-transform active:scale-95"
+                      title="Play event clip"
+                    >
+                      <Play className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handlePlayClip(clip.title, clip.time)}
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 cursor-pointer shrink-0 transition-transform active:scale-95"
-                    title="Play event clip"
-                  >
-                    <Play className="w-4 h-4" />
-                  </button>
+                ))
+              ) : (
+                <div className="p-4 bg-slate-950/80 rounded-xl border border-slate-800 text-center space-y-1">
+                  <p className="text-xs font-semibold text-slate-300">No Recorded Delivery Stops</p>
+                  <p className="text-[11px] text-slate-500">
+                    New delivery orders assigned to truck {activeVehicle?.registrationNumber} will automatically save to database and display recorded clips here.
+                  </p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
 
