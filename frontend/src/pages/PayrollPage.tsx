@@ -4,6 +4,7 @@ import type { PayrollRecord } from '../types';
 import { CircleDollarSign, Download, X, Edit3, ShieldCheck, CheckCircle2, Flame, Award } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { API_BASE } from '../utils/api';
 
 export const PayrollPage: React.FC = () => {
   const { payroll, employees, updatePayrollStatus, role, currentUser } = useApp();
@@ -112,6 +113,14 @@ export const PayrollPage: React.FC = () => {
             <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs px-3 py-1.5 rounded-xl font-bold font-mono flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4 text-emerald-400" /> OWNER VALIDATION ACTIVE
             </span>
+            <a
+              href={`${API_BASE}/api/export/payroll`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs px-3 py-1.5 rounded-xl font-bold font-mono flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Download className="w-4 h-4 text-amber-300" /> Export Payroll CSV
+            </a>
           </div>
         )}
       </div>

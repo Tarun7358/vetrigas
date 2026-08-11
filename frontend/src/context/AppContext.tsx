@@ -249,6 +249,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
 
+      const payRes = await fetch(`${API_BASE}/api/payroll`);
+      if (payRes.ok) {
+        const data = await payRes.json();
+        if (Array.isArray(data.payrollRecords) && data.payrollRecords.length > 0) {
+          setPayroll(data.payrollRecords.map((p: any) => ({
+            id: p.id,
+            employeeId: p.employeeId,
+            employeeName: p.employeeName,
+            role: p.role,
+            regularHours: Number(p.regularHours) || 0,
+            hourlyRate: Number(p.hourlyRate) || 0,
+            otHours: Number(p.otHours) || 0,
+            otRate: Number(p.otRate) || 0,
+            cylinderIncentive: Number(p.cylinderIncentive) || 0,
+            bonus: Number(p.bonus) || 0,
+            deduction: Number(p.deduction) || 0,
+            netSalary: Number(p.netSalary) || 0,
+            ownerAdjustedSalary: Number(p.ownerAdjustedSalary) || 0,
+            ownerNotes: p.ownerNotes || '',
+            approvedByOwner: Boolean(p.approvedByOwner),
+            status: p.status || 'Pending',
+            month: p.month || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          })));
+        }
+      }
+
       const telRes = await fetch(`${API_BASE}/api/telemetry/status`);
       if (telRes.ok) {
         const data = await telRes.json();

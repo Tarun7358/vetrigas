@@ -1283,6 +1283,152 @@ app.get('/api/telemetry/status', (req: Request, res: Response) => {
   });
 });
 
+// ── DATA EXPORT ENDPOINTS (CSV + JSON) ───────────────────────────────────────
+// Export Attendance Records as CSV (date-filtered or all)
+app.get('/api/export/attendance', async (req: Request, res: Response) => {
+  try {
+    const { date, month, format } = req.query as { date?: string; month?: string; format?: string };
+    let logs = await fetchAll('SELECT * FROM attendance ORDER BY date DESC, employee_name ASC');
+
+    // Normalize field names from Supabase snake_case or SQLite camelCase
+    logs = logs.map((l: any) => ({
+      id: l.id,
+      employeeId: l.employee_id || l.employeeId || '',
+      employeeName: l.employee_name || l.employeeName || '',
+      role: l.role || '',
+      date: l.date || '',
+      checkIn: l.check_in || l.checkIn || '--:--',
+      checkOut: l.check_out || l.checkOut || '--:--',
+      workingHours: l.working_hours || l.workingHours || '--',
+      status: l.status || 'Unknown',
+    }));
+
+    if (date) {
+      logs = logs.filter((l: any) => l.date === date || l.date?.includes(date));
+    }
+    if (month) {
+      logs = logs.filter((l: any) => (l.date || '').toLowerCase().includes(month.toLowerCase()));
+    }
+
+    if ((format || 'csv') === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="vetri_attendance_${date || month || 'all'}.json"`);
+      return res.json({ success: true, total: logs.length, records: logs });
+    }
+
+    // CSV output
+    const header = 'ID,Employee ID,Employee Name,Role,Date,Check-In,Check-Out,Working Hours,Status\n';
+    const rows = logs.map((l: any) =>
+      `"${l.id}","${l.employeeId}","${l.employeeName}","${l.role}","${l.date}","${l.checkIn}","${l.checkOut}","${l.workingHours}","${l.status}"`
+    ).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="vetri_attendance_${date || month || 'all'}.csv"`);
+    return res.send(header + rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Attendance export failed' });
+  }
+});
+
+// Export Payroll as CSV
+app.get('/api/export/payroll', async (req: Request, res: Response) => {
+  try {
+    const { month, format } = req.query as { month?: string; format?: string };
+    let records = await fetchAll('SELECT * FROM payroll ORDER BY id DESC');
+    if (month) {
+      records = records.filter((r: any) => (r.month || '').toLowerCase().includes(month.toLowerCase()));
+    }
+
+    if ((format || 'csv') === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="vetri_payroll_${month || 'all'}.json"`);
+      return res.json({ success: true, total: records.length, records });
+    }
+
+    const header = 'ID,Employee Name,Role,Regular Hours,Hourly Rate,OT Hours,Cylinder Incentive,Bonus,Deduction,Net Salary,Owner Adjusted Salary,Status,Month\n';
+    const rows = records.map((r: any) =>
+      `"${r.id}","${r.employeeName}","${r.role}",${r.regularHours},${r.hourlyRate},${r.otHours},${r.cylinderIncentive || 0},${r.bonus || 0},${r.deduction || 0},${r.netSalary},"${r.ownerAdjustedSalary || r.netSalary}","${r.status}","${r.month}"`
+    ).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="vetri_payroll_${month || 'all'}.csv"`);
+    return res.send(header + rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Payroll export failed' });
+  }
+});
+
+// Export Deliveries as CSV
+app.get('/api/export/deliveries', async (req: Request, res: Response) => {
+  try {
+    const { status, format } = req.query as { status?: string; format?: string };
+    let records = await fetchAll('SELECT * FROM deliveries ORDER BY id DESC');
+    if (status) records = records.filter((r: any) => r.status === status.toUpperCase());
+
+    if ((format || 'csv') === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="vetri_deliveries.json"`);
+      return res.json({ success: true, total: records.length, records });
+    }
+
+    const header = 'ID,Customer Name,Address,Phone,Category,Status,Payment Type,Amount,Driver,Scheduled Time,Delivered Time\n';
+    const rows = records.map((r: any) =>
+      `"${r.id}","${r.customerName}","${r.address}","${r.phone}","${r.category}","${r.status}","${r.paymentType}",${r.amount},"${r.assignedDriverName}","${r.scheduledTime}","${r.deliveredTime || ''}"`
+    ).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="vetri_deliveries.csv"`);
+    return res.send(header + rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Deliveries export failed' });
+  }
+});
+
+// Export Employees as CSV
+app.get('/api/export/employees', async (req: Request, res: Response) => {
+  try {
+    const { format } = req.query as { format?: string };
+    const records = await fetchAll('SELECT id, name, role, email, phone, joiningDate, attendanceStatus, workingHours, performanceScore, status, hourlyRate FROM employees ORDER BY role, name');
+
+    if ((format || 'csv') === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="vetri_employees.json"`);
+      return res.json({ success: true, total: records.length, records });
+    }
+
+    const header = 'ID,Name,Role,Email,Phone,Joining Date,Attendance Status,Working Hours,Performance Score,Status,Hourly Rate\n';
+    const rows = records.map((r: any) =>
+      `"${r.id}","${r.name}","${r.role}","${r.email}","${r.phone}","${r.joiningDate}","${r.attendanceStatus || 'Not Scanned'}","${r.workingHours || '--'}",${r.performanceScore || 0},"${r.status}",${r.hourlyRate || 0}`
+    ).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="vetri_employees.csv"`);
+    return res.send(header + rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Employee export failed' });
+  }
+});
+
+// Export Bills / Collections as CSV
+app.get('/api/export/bills', async (req: Request, res: Response) => {
+  try {
+    const { format } = req.query as { format?: string };
+    const records = await fetchAll('SELECT * FROM bills ORDER BY date DESC');
+
+    if ((format || 'csv') === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="vetri_bills.json"`);
+      return res.json({ success: true, total: records.length, records });
+    }
+
+    const header = 'ID,Bill Number,Customer Name,Amount,Payment Method,Transaction ID,Driver Name,Date,Status,Cylinder Count\n';
+    const rows = records.map((r: any) =>
+      `"${r.id}","${r.billNumber}","${r.customerName}",${r.amount},"${r.paymentMethod}","${r.transactionId || ''}","${r.driverName}","${r.date}","${r.status}",${r.cylinderCount || 1}`
+    ).join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="vetri_bills.csv"`);
+    return res.send(header + rows);
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Bills export failed' });
+  }
+});
+
 // SPA Fallback Route for React Frontend
 app.get('*', (req: Request, res: Response) => {
   res.sendFile(path.join(frontendPath, 'index.html'));

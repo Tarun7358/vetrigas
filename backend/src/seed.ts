@@ -195,14 +195,24 @@ export async function seedDatabase() {
       { id: 'emp-07', name: 'Karthik', role: 'Godown Keeper', email: 'karthik@vetriindane.com', phone: '+91 98421 78901', att: 'Not Scanned' },
     ];
 
+    const roleHourlyRate = (role: string) => {
+      const r = role.toLowerCase();
+      if (r.includes('loadman')) return 70;
+      if (r.includes('manager')) return 120;
+      if (r.includes('storeroom')) return 90;
+      if (r.includes('godown')) return 85;
+      return 85; // Driver default
+    };
+
     const hashedPassword = hashPassword('Vetri@2026');
     for (const emp of defaultEmps) {
       const exists = await fetchOne('SELECT id FROM employees WHERE id = ? OR LOWER(email) = ?', [emp.id, emp.email.toLowerCase()]);
       if (!exists) {
+        const rate = roleHourlyRate(emp.role);
         await runQuery(
           `INSERT INTO employees (id, name, role, email, password, phone, joiningDate, attendanceStatus, workingHours, todayWorkProgress, performanceScore, status, hourlyRate)
-           VALUES (?, ?, ?, ?, ?, ?, '01 Jan 2024', ?, '--', '0/0', 92, 'Active', 85)`,
-          [emp.id, emp.name, emp.role, emp.email.toLowerCase(), hashedPassword, emp.phone, emp.att]
+           VALUES (?, ?, ?, ?, ?, ?, '01 Jan 2024', ?, '--', '0/0', 0, 'Active', ?)`,
+          [emp.id, emp.name, emp.role, emp.email.toLowerCase(), hashedPassword, emp.phone, emp.att, rate]
         );
       }
     }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Clock, ShieldCheck, CheckCircle2, Calendar, Filter, FileSpreadsheet, AlertCircle, XCircle } from 'lucide-react';
+import { Clock, ShieldCheck, CheckCircle2, Calendar, Filter, FileSpreadsheet, AlertCircle, XCircle, Download } from 'lucide-react';
 import { calculateProductivityReport } from '../utils/productivityAudit';
+import { API_BASE } from '../utils/api';
 
 export const AttendancePage: React.FC = () => {
   const { attendance, employees, role, integrations, toggleIntegration } = useApp();
@@ -150,6 +151,18 @@ export const AttendancePage: React.FC = () => {
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> Monthly Analysis & Audit
           </button>
+
+          {/* Export Button */}
+          {isManagement && (
+            <a
+              href={`${API_BASE}/api/export/attendance${activeTab === 'DAILY' ? `?date=${selectedDateFormatted}` : `?month=Aug`}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-all cursor-pointer ml-auto"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </a>
+          )}
         </div>
 
         <div className="text-xs text-slate-500 font-semibold font-mono hidden md:block">
