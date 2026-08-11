@@ -57,7 +57,8 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ limit: '20mb', extended: true }));
 app.use('/downloads', express.static(path.join(__dirname, '../public/downloads')));
 
 // APK Direct Download Endpoint
@@ -986,20 +987,42 @@ app.get('/api/expenses', async (req: Request, res: Response) => {
 });
 
 app.post('/api/expenses', async (req: Request, res: Response) => {
-  const { vehicleId, driverName, type, amount, liters, odometerReading, description, billPhotoUrl } = req.body;
+  const {
+    vehicleId: reqVehId,
+    vehicleNumber,
+    driverName,
+    type,
+    amount,
+    liters: reqLiters,
+    litersFilled,
+    odometerReading,
+    vendorName,
+    description,
+    billPhotoUrl: reqPhotoUrl,
+    receiptImage,
+  } = req.body;
+
   const id = `exp-${Date.now()}`;
+  const vehicleId = vehicleNumber || reqVehId || 'TN 38 AU 4821';
+  const liters = Number(litersFilled || reqLiters) || 0;
+  const photoUrl = receiptImage || reqPhotoUrl || '';
+  const desc = vendorName ? `${vendorName}${description ? ' - ' + description : ''}` : description || '';
   const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const status = 'PENDING';
 
   try {
     await runQuery(
       `INSERT INTO vehicle_expenses (id, vehicleId, driverName, type, amount, liters, odometerReading, description, billPhotoUrl, date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, vehicleId, driverName, type, Number(amount), Number(liters) || 0, Number(odometerReading) || 0, description || '', billPhotoUrl || '', date, status]
+      [id, vehicleId, driverName || 'Driver', type || 'FUEL', Number(amount) || 0, liters, Number(odometerReading) || 0, desc, photoUrl, date, status]
     );
 
-    console.log(`[SQL DATABASE INSERT] Expense logged in SQLite: ${driverName} - ${type} ₹${amount}`);
-    res.json({ success: true, expense: { id, vehicleId, driverName, type, amount, liters, odometerReading, description, billPhotoUrl, date, status } });
+    console.log(`[SQL DATABASE INSERT] Expense logged: ${driverName} - ${type} ₹${amount} (Image length: ${photoUrl.length})`);
+    res.json({
+      success: true,
+      expense: { id, vehicleId, vehicleNumber: vehicleId, driverName, type, amount, liters, odometerReading, vendorName: desc, description: desc, billPhotoUrl: photoUrl, receiptImage: photoUrl, date, status }
+    });
   } catch (err) {
+    console.error('Expense insert error:', err);
     res.status(500).json({ success: false, error: 'Failed to insert expense into SQLite' });
   }
 });

@@ -318,57 +318,64 @@ export const ExpensesPage: React.FC = () => {
             <div className="p-6 overflow-y-auto space-y-5 flex-1">
               {/* Image Preview Box */}
               <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden">
-                {inspectExpense.receiptImage && (
-                  inspectExpense.receiptImage.startsWith('data:image') ||
-                  inspectExpense.receiptImage.startsWith('http') ||
-                  inspectExpense.receiptImage.startsWith('blob:')
-                ) ? (
-                  /* Real uploaded image — show it directly */
-                  <div className="w-full flex flex-col items-center gap-3">
-                    <img
-                      src={inspectExpense.receiptImage}
-                      alt="Driver Uploaded Bill Receipt"
-                      className="max-h-80 w-auto object-contain rounded-xl shadow-xl border border-slate-700"
-                    />
-                    <span className="text-[11px] text-emerald-400 font-mono font-bold flex items-center gap-1">
-                      ✓ ORIGINAL RECEIPT IMAGE ATTACHED BY DRIVER
-                    </span>
-                  </div>
-                ) : (
-                  /* No real image — show clear "no image" notice with expense details */
-                  <div className="w-full flex flex-col items-center gap-4 py-4">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-                      <FileText className="w-8 h-8 text-slate-500" />
+                {(() => {
+                  const imgCandidate = inspectExpense.receiptImage || (inspectExpense as any).billPhotoUrl || (inspectExpense as any).receipt_image || '';
+                  const hasImg = Boolean(imgCandidate && imgCandidate.trim().length > 5);
+
+                  if (hasImg) {
+                    const srcUrl = imgCandidate.startsWith('data:') || imgCandidate.startsWith('http') || imgCandidate.startsWith('blob:') || imgCandidate.startsWith('/')
+                      ? imgCandidate
+                      : `data:image/jpeg;base64,${imgCandidate}`;
+
+                    return (
+                      <div className="w-full flex flex-col items-center gap-3">
+                        <img
+                          src={srcUrl}
+                          alt="Driver Uploaded Bill Receipt"
+                          className="max-h-80 w-auto object-contain rounded-xl shadow-xl border border-slate-700 bg-black/40"
+                        />
+                        <span className="text-[11px] text-emerald-400 font-mono font-bold flex items-center gap-1">
+                          ✓ ORIGINAL RECEIPT SCAN ATTACHED BY DRIVER
+                        </span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="w-full flex flex-col items-center gap-4 py-4">
+                      <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                        <FileText className="w-8 h-8 text-slate-500" />
+                      </div>
+                      <div className="text-center space-y-1">
+                        <p className="text-slate-400 font-semibold text-sm">No Receipt Image Uploaded</p>
+                        <p className="text-slate-600 text-[11px]">
+                          Driver submitted this expense without attaching a physical bill scan.
+                        </p>
+                      </div>
+                      <div className="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs space-y-2 font-mono text-left">
+                        <div className="flex justify-between text-slate-400">
+                          <span>Bill No:</span>
+                          <span className="text-white font-bold">{inspectExpense.billNumber || inspectExpense.id}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Vendor:</span>
+                          <span className="text-white">{inspectExpense.vendorName || inspectExpense.description || 'Not specified'}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Submitted:</span>
+                          <span className="text-white">{inspectExpense.date}</span>
+                        </div>
+                        <div className="flex justify-between text-amber-400 font-bold border-t border-slate-800 pt-2">
+                          <span>Amount Claimed:</span>
+                          <span>₹{inspectExpense.amount.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-amber-500 font-semibold flex items-center gap-1 bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 rounded-lg">
+                        ⚠ Request driver to upload physical receipt photo for verification
+                      </span>
                     </div>
-                    <div className="text-center space-y-1">
-                      <p className="text-slate-400 font-semibold text-sm">No Receipt Image Uploaded</p>
-                      <p className="text-slate-600 text-[11px]">
-                        Driver submitted this expense without attaching a physical bill scan.
-                      </p>
-                    </div>
-                    <div className="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs space-y-2 font-mono text-left">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Bill No:</span>
-                        <span className="text-white font-bold">{inspectExpense.billNumber || 'N/A'}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Vendor:</span>
-                        <span className="text-white">{inspectExpense.vendorName || 'Not specified'}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Submitted:</span>
-                        <span className="text-white">{inspectExpense.date}</span>
-                      </div>
-                      <div className="flex justify-between text-amber-400 font-bold border-t border-slate-800 pt-2">
-                        <span>Amount Claimed:</span>
-                        <span>₹{inspectExpense.amount.toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <span className="text-[11px] text-amber-500 font-semibold flex items-center gap-1 bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 rounded-lg">
-                      ⚠ Request driver to upload physical receipt photo for verification
-                    </span>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Expense Information Grid */}
@@ -593,11 +600,10 @@ export const ExpensesPage: React.FC = () => {
               {/* Real Bill Attachment with Base64 preview */}
               <div>
                 <label className="block text-slate-400 font-semibold mb-1">Upload Bill Photo / Receipt Copy</label>
-                <div className="border-2 border-dashed border-slate-800 bg-slate-950 rounded-xl p-4 text-center cursor-pointer hover:border-amber-500 transition-colors">
-                  <Upload className="w-5 h-5 text-amber-400 mx-auto mb-1" />
-                  <span className="text-xs text-slate-300 block font-medium">
-                    {billFileName ? `Attached: ${billFileName}` : 'Click to upload bill receipt image'}
-                  </span>
+                <label
+                  htmlFor="bill-upload-input"
+                  className="border-2 border-dashed border-slate-700 hover:border-amber-500 bg-slate-950 rounded-xl p-4 text-center cursor-pointer transition-colors block"
+                >
                   <input
                     type="file"
                     accept="image/*"
@@ -609,10 +615,29 @@ export const ExpensesPage: React.FC = () => {
                     className="hidden"
                     id="bill-upload-input"
                   />
-                  <label htmlFor="bill-upload-input" className="mt-1 inline-block text-xs text-amber-400 font-bold hover:underline cursor-pointer">
-                    Browse Image File
-                  </label>
-                </div>
+                  {billImageBase64 ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img
+                        src={billImageBase64}
+                        alt="Uploaded Bill Receipt Preview"
+                        className="max-h-36 object-contain rounded-lg border border-amber-500/50 shadow-md"
+                      />
+                      <span className="text-xs text-emerald-400 font-bold">
+                        ✓ Image Attached ({billFileName || 'Photo'}) — Click to replace
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="py-2 space-y-1">
+                      <Upload className="w-6 h-6 text-amber-400 mx-auto" />
+                      <span className="text-xs text-slate-200 block font-bold">
+                        Click anywhere here to select / capture bill photo
+                      </span>
+                      <span className="text-[11px] text-slate-500 block">
+                        Supports PNG, JPG, JPEG, WEBP photos
+                      </span>
+                    </div>
+                  )}
+                </label>
               </div>
 
               {/* Submit Buttons */}

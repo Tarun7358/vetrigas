@@ -175,16 +175,20 @@ async function fetchFromSupabase(sql: string, params: any[], supabase: any): Pro
       const { data } = await supabase.from('vehicle_expenses').select('*').order('id', { ascending: false });
       if (data) return data.map((e: any) => ({
         id: e.id,
-        vehicleId: e.vehicle_id,
-        driverName: e.driver_name,
-        type: e.type,
-        amount: e.amount,
-        liters: e.liters,
-        odometerReading: e.odometer_reading,
-        description: e.description,
-        billPhotoUrl: e.bill_photo_url,
-        date: e.date,
-        status: e.status,
+        vehicleId: e.vehicle_id || '',
+        vehicleNumber: e.vehicle_id || '',
+        driverName: e.driver_name || '',
+        type: e.type || 'FUEL',
+        amount: e.amount || 0,
+        liters: e.liters || 0,
+        litersFilled: e.liters || 0,
+        odometerReading: e.odometer_reading || 0,
+        description: e.description || '',
+        vendorName: e.description || '',
+        billPhotoUrl: e.bill_photo_url || '',
+        receiptImage: e.bill_photo_url || '',
+        date: e.date || '',
+        status: e.status || 'PENDING',
       }));
     }
 

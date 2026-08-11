@@ -325,7 +325,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await fetch(`${API_BASE}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expenseData),
+        body: JSON.stringify({
+          ...expenseData,
+          billPhotoUrl: expenseData.receiptImage,
+          vehicleId: expenseData.vehicleNumber,
+          liters: expenseData.litersFilled,
+        }),
       });
     } catch (err) {
       console.warn('SQLite expense post failed, saved locally.');
