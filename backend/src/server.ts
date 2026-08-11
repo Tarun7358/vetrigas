@@ -587,9 +587,10 @@ const processBiometricPunch = async (emp: any, statusOverride?: string) => {
     );
   }
 
+  const dynamicPerfScore = attStatus === 'Present' ? 85 : 65;
   await runQuery(
-    `UPDATE employees SET attendanceStatus = ?, workingHours = ? WHERE id = ?`,
-    [attStatus, workingHours, emp.id]
+    `UPDATE employees SET attendanceStatus = ?, workingHours = ?, performanceScore = ? WHERE id = ?`,
+    [attStatus, workingHours, dynamicPerfScore, emp.id]
   );
 
   return { punchTime, checkIn, checkOut, status: attStatus, workingHours, date: todayDateStr };

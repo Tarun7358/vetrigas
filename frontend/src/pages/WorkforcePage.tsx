@@ -5,7 +5,7 @@ import { Users, Search, X, UserPlus, Trash2, ShieldAlert } from 'lucide-react';
 import { calculateProductivityReport } from '../utils/productivityAudit';
 
 export const WorkforcePage: React.FC = () => {
-  const { employees, deliveries, role, addEmployee, removeEmployee } = useApp();
+  const { employees, deliveries, role, addEmployee, removeEmployee, attendance } = useApp();
   const [search, setSearch] = useState('');
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
 
@@ -148,13 +148,28 @@ export const WorkforcePage: React.FC = () => {
                 delivered = completedDels.reduce((sum, d) => sum + (d.cylinderCount || 1), 0);
               }
 
+              // Dynamic biometric clock-in check
+              const att = attendance.find(a => a.employeeId === emp.id || a.employeeName?.toLowerCase() === emp.name?.toLowerCase());
+              const hasClockedIn = att && att.checkIn && att.checkIn !== '--:--';
+              const isPresent = att?.status === 'Present' || (!att && emp.attendanceStatus === 'Present');
+              const isLate = att?.status === 'Late' || (!att && emp.attendanceStatus === 'Late');
+
               // Dynamic gross shift hours & audit calculation
-              const grossHoursNum = isOwner ? 9.0 : 8.0;
+              const grossHoursNum = isOwner ? 9.0 : (hasClockedIn ? 8.0 : 0);
               const idleMins = 0;
               const audit = calculateProductivityReport(emp.id, emp.name, emp.role, grossHoursNum, delivered, idleMins);
 
-              // Dynamic performance score calculation
-              const perfScore = isOwner ? 100 : delivered > 0 ? Math.min(100, Math.round(85 + (delivered / Math.max(delivered, 20)) * 15)) : 95;
+              // Dynamic performance score calculation: starts at 0 before biometric entry
+              let perfScore = 0;
+              if (isOwner) {
+                perfScore = 100;
+              } else if (hasClockedIn || isPresent || isLate) {
+                const baseScore = isPresent ? 85 : 65;
+                const deliveryBonus = delivered > 0 ? Math.min(15, Math.round((delivered / 20) * 15)) : 0;
+                perfScore = Math.min(100, baseScore + deliveryBonus);
+              } else {
+                perfScore = 0;
+              }
 
               return (
                 <tr key={emp.id}>
@@ -450,7 +465,7 @@ export const WorkforcePage: React.FC = () => {
                 </div>
                 <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
                   <p className="text-slate-400 text-[11px]">Performance Score</p>
-                  <p className="font-bold text-emerald-400 mt-0.5 font-mono">{selectedEmp.performanceScore} / 100</p>
+                  <p className="font-bold text-emerald-400 mt-0.5 font-mono">{selectedEmp.performanceScore || 0} / 100</p>
                 </div>
               </div>
             </div>

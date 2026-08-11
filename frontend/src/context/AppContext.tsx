@@ -583,12 +583,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       role: empData.role || 'Driver',
       phone: empData.phone || '+91 96008 70814',
       joiningDate: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-      attendanceStatus: 'Present',
-      workingHours: '0h 0m',
-      todayWorkProgress: '0/20',
-      performanceScore: 90,
+      attendanceStatus: 'Not Scanned',
+      workingHours: '--',
+      todayWorkProgress: '0/0',
+      performanceScore: 0,
       status: 'Active',
-      hourlyRate: Number(empData.hourlyRate) || 75,
+      hourlyRate: Number(empData.hourlyRate) || (empData.role === 'Loadman' ? 70 : empData.role === 'Manager' ? 120 : empData.role === 'Storeroom Staff' ? 90 : 85),
     };
 
     setEmployees(prev => {

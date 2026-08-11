@@ -28,7 +28,7 @@ export interface Employee {
   role: 'Driver' | 'Loadman' | 'Manager' | 'Owner' | 'Godown Keeper' | 'Storeroom Staff';
   phone: string;
   joiningDate: string;
-  attendanceStatus: 'Present' | 'Absent' | 'Late';
+  attendanceStatus: 'Present' | 'Absent' | 'Late' | 'Not Scanned';
   workingHours: string; // e.g. "8h 42m"
   todayWorkProgress: string; // e.g. "17/24" or "86/100"
   performanceScore: number; // e.g. 92
