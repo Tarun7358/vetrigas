@@ -70,15 +70,21 @@ export const CameraPage: React.FC = () => {
   // Dynamic Trip Timeline & Event Clips Calculation
   const activeVehicleDeliveries = activeVehicle
     ? deliveries.filter(
-        d => d.vehicleNumber === activeVehicle.registrationNumber || d.driverName?.toLowerCase() === activeVehicle.driverName?.toLowerCase()
+        d =>
+          (d.vehicleNumber && d.vehicleNumber.replace(/\s+/g, '').toLowerCase() === activeVehicle.registrationNumber.replace(/\s+/g, '').toLowerCase()) ||
+          (d.driverName && d.driverName.toLowerCase() === activeVehicle.driverName.toLowerCase())
       )
     : [];
+
+  const telemetryPingTime = typeof activeVehicle?.lastUpdatedSecondsAgo === 'number' && !isNaN(activeVehicle.lastUpdatedSecondsAgo)
+    ? `${activeVehicle.lastUpdatedSecondsAgo}s ago`
+    : '10:45 AM';
 
   const dynamicEventClips = activeVehicleDeliveries.length > 0
     ? activeVehicleDeliveries.map((del, idx) => ({
         id: del.id,
         title: `Delivery Stop #${del.deliveryNumber || del.id} (${del.customerName})`,
-        details: `${del.customerAddress} • ${del.cylinderCount} Cylinders • Status: ${del.status}`,
+        details: `${del.customerAddress || 'Coimbatore'} • ${del.cylinderCount || 1} Cylinders • Status: ${del.status}`,
         type: del.status === 'DELIVERED' ? 'DELIVERY_STOP' : 'EN_ROUTE',
         time: del.deliveryTime || `${(8 + idx * 2).toString().padStart(2, '0')}:15 AM`,
         badgeColor: del.status === 'DELIVERED' ? 'text-emerald-400 bg-emerald-950/60 border-emerald-800' : 'text-amber-400 bg-amber-950/60 border-amber-800',
@@ -88,7 +94,7 @@ export const CameraPage: React.FC = () => {
             {
               id: 'evt-01',
               title: `Fleet Depot Departure`,
-              details: `Peelamedu Main Depot • Initial speed ${Math.max(20, activeVehicle.speed)} km/h`,
+              details: `Peelamedu Main Depot • Initial speed ${Math.max(20, activeVehicle.speed || 0)} km/h`,
               type: 'DISPATCH',
               time: '08:15 AM',
               badgeColor: 'text-blue-400 bg-blue-950/60 border-blue-800',
@@ -98,7 +104,7 @@ export const CameraPage: React.FC = () => {
               title: `Route Landmark & Telemetry Ping`,
               details: `Avinashi Road Route • Ignition ${activeVehicle.ignition ? 'ON' : 'OFF'}`,
               type: 'TELEMETRY',
-              time: `${activeVehicle.lastUpdatedSecondsAgo}s ago`,
+              time: telemetryPingTime,
               badgeColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-800',
             },
           ]
@@ -109,7 +115,7 @@ export const CameraPage: React.FC = () => {
     ? [
         { label: '08:00 AM', tag: 'Depot Exit' },
         { label: activeVehicleDeliveries[0]?.deliveryTime || '09:30 AM', tag: 'Order Dispatch' },
-        { label: `${activeVehicle.lastUpdatedSecondsAgo}s ago`, tag: 'Telemetry Ping' },
+        { label: telemetryPingTime, tag: 'Telemetry Ping' },
         { label: currentTimeStr, tag: 'Live Now', isLive: true },
       ]
     : [];
