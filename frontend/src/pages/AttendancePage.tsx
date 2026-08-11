@@ -73,7 +73,7 @@ export const AttendancePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
-          <Calendar className="w-4 h-4 text-slate-400" /> Date: 08 August 2026
+          <Calendar className="w-4 h-4 text-slate-400" /> Date: {new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
         </div>
       </div>
 
@@ -97,6 +97,10 @@ export const AttendancePage: React.FC = () => {
               visibleAttendance.map(att => {
                 const idleMins = att.role === 'Driver' ? 45 : 15;
                 const audit = calculateProductivityReport(att.employeeId, att.employeeName, att.role, 9.0, 18, idleMins);
+
+                const isPresent = att.status === 'Present';
+                const isLate = att.status === 'Late';
+                const isNotScanned = att.status === 'Not Scanned' || att.checkIn === '--:--';
 
                 return (
                   <tr key={att.id}>
@@ -131,9 +135,21 @@ export const AttendancePage: React.FC = () => {
                       )}
                     </td>
                     <td>
-                      <span className="badge-status badge-green flex items-center gap-1 w-fit">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> {att.status}
-                      </span>
+                      {isPresent && (
+                        <span className="badge-status badge-green flex items-center gap-1 w-fit font-bold">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> PRESENT
+                        </span>
+                      )}
+                      {isLate && (
+                        <span className="badge-status badge-amber flex items-center gap-1 w-fit font-bold">
+                          ● LATE CHECK-IN
+                        </span>
+                      )}
+                      {isNotScanned && (
+                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1 w-fit">
+                          ○ NOT SCANNED
+                        </span>
+                      )}
                     </td>
                     <td>
                       <span className="badge-status badge-blue flex items-center gap-1 font-bold text-[11px]">

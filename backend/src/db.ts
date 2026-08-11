@@ -211,10 +211,10 @@ async function fetchFromSupabase(sql: string, params: any[], supabase: any): Pro
         employeeId: a.employee_id || a.employeeId,
         employeeName: a.employee_name || a.employeeName,
         role: a.role,
-        checkIn: a.check_in || a.checkIn || '08:30 AM',
-        checkOut: a.check_out || a.checkOut || '05:30 PM',
-        workingHours: a.working_hours || a.workingHours || '8h 30m',
-        status: a.status || 'Present',
+        checkIn: a.check_in || a.checkIn || '--:--',
+        checkOut: a.check_out || a.checkOut || '--:--',
+        workingHours: a.working_hours || a.workingHours || '--',
+        status: a.status || 'Not Scanned',
         date: a.date,
       }));
     }
@@ -318,14 +318,14 @@ async function syncSqlToSupabase(sql: string, params: any[], supabase: any) {
   }
 
   else if (lowerSql.includes('update employees set attendancestatus')) {
-    const [attendance_status, id] = params;
-    await supabase.from('employees').update({ attendance_status, working_hours: '8h 30m' }).eq('id', id);
+    const [attendance_status, working_hours, id] = params;
+    await supabase.from('employees').update({ attendance_status, working_hours: working_hours || '--' }).eq('id', id);
   }
 
   else if (lowerSql.includes('insert into attendance')) {
-    const [id, employee_id, employee_name, role, status] = params;
+    const [id, employee_id, employee_name, role, check_in, check_out, working_hours, status, date] = params;
     await supabase.from('attendance').upsert([{
-      id, employee_id, employee_name, role, status, working_hours: '8h 30m'
+      id, employee_id, employee_name, role, check_in, check_out, working_hours, status, date
     }], { onConflict: 'id' });
   }
 

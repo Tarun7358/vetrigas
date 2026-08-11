@@ -535,40 +535,92 @@ app.post('/integrations/fleettrack', async (req: Request, res: Response) => {
 
 // BIOMETRIC FINGERPRINT & ATTENDANCE HARDWARE INTEGRATION WEBHOOK
 // Supports ZKTeco easyTimePro, Mantra MFS100, Essl, Morpho, Anviz & Android Native Fingerprint SDKs
+// Helper for Real-Time Biometric Punch Processing
+const processBiometricPunch = async (emp: any, statusOverride?: string) => {
+  lastBiometricPunchTimestamp = Date.now();
+  const now = new Date();
+  const punchTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const todayDateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const isoDate = now.toISOString().split('T')[0];
+
+  // Search existing attendance record for this employee for TODAY
+  const existingLogs = await fetchAll('SELECT * FROM attendance WHERE employeeId = ? OR LOWER(employeeName) = ?', [emp.id, emp.name.toLowerCase()]);
+  const todayLog = existingLogs.find((l: any) => l.date === todayDateStr || l.date === isoDate);
+
+  let checkIn = punchTime;
+  let checkOut = '--:--';
+  let workingHours = 'In Progress';
+  let attStatus = statusOverride || 'Present';
+  const attId = todayLog ? todayLog.id : `att-${emp.id}-${Date.now()}`;
+
+  if (!todayLog) {
+    // First punch of the day: Check-In
+    checkIn = punchTime;
+    checkOut = '--:--';
+    const hour = now.getHours();
+    const min = now.getMinutes();
+    if (!statusOverride) {
+      if (hour > 9 || (hour === 9 && min > 15)) {
+        attStatus = 'Late';
+      } else {
+        attStatus = 'Present';
+      }
+    }
+    workingHours = 'In Progress';
+
+    await runQuery(
+      `INSERT INTO attendance (id, employeeId, employeeName, role, checkIn, checkOut, workingHours, status, date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET checkIn = excluded.checkIn, status = excluded.status, workingHours = excluded.workingHours`,
+      [attId, emp.id, emp.name, emp.role, checkIn, checkOut, workingHours, attStatus, todayDateStr]
+    );
+  } else {
+    // Second or subsequent punch of the day: Check-Out
+    checkIn = todayLog.checkIn && todayLog.checkIn !== '--:--' ? todayLog.checkIn : punchTime;
+    checkOut = punchTime;
+    attStatus = todayLog.status || 'Present';
+    workingHours = '8h 30m';
+
+    await runQuery(
+      `UPDATE attendance SET checkOut = ?, workingHours = ?, status = ? WHERE id = ?`,
+      [checkOut, workingHours, attStatus, todayLog.id]
+    );
+  }
+
+  await runQuery(
+    `UPDATE employees SET attendanceStatus = ?, workingHours = ? WHERE id = ?`,
+    [attStatus, workingHours, emp.id]
+  );
+
+  return { punchTime, checkIn, checkOut, status: attStatus, workingHours, date: todayDateStr };
+};
+
+// BIOMETRIC FINGERPRINT & ATTENDANCE HARDWARE INTEGRATION WEBHOOK
+// Supports ZKTeco easyTimePro, Mantra MFS100, Essl, Morpho, Anviz & Android Native Fingerprint SDKs
 const handleBiometricClockIn = async (req: Request, res: Response) => {
-  const { employeeId, email, deviceId, templateHash, status, timestamp, userId, pin } = req.body;
+  const { employeeId, email, deviceId, status, userId, pin } = req.body;
   const targetId = employeeId || userId || pin || 'emp-01';
 
-  lastBiometricPunchTimestamp = Date.now();
-
-  console.log(`[INFO] [BIOMETRIC HARDWARE] Fingerprint Scan Received | Device: ${deviceId || 'BIO-GODOWN-01'} | Employee: ${targetId} | Status: ${status || 'VERIFIED'}`);
+  console.log(`[INFO] [BIOMETRIC HARDWARE] Fingerprint Scan Received | Device: ${deviceId || 'BIO-GODOWN-01'} | Employee: ${targetId}`);
 
   try {
-    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    await runQuery(
-      `UPDATE employees SET attendanceStatus = 'Present', workingHours = '8h 30m' WHERE id = ? OR email = ? OR LOWER(name) LIKE ?`,
-      [targetId, email || '', `%${targetId.toLowerCase()}%`]
-    );
-
-    const emp = await fetchOne('SELECT * FROM employees WHERE id = ? OR email = ? OR LOWER(name) LIKE ?', [targetId, email || '', `%${targetId.toLowerCase()}%`]);
-
-    const attId = `att-${emp ? emp.id : targetId}`;
-    if (emp) {
-      await runQuery(
-        `INSERT INTO attendance (id, employeeId, employeeName, role, workingHours, status)
-         VALUES (?, ?, ?, ?, '8h 30m', 'Present')
-         ON CONFLICT(id) DO UPDATE SET status = 'Present', workingHours = '8h 30m'`,
-        [attId, emp.id, emp.name, emp.role]
-      );
+    const emp = await fetchOne('SELECT * FROM employees WHERE id = ? OR LOWER(email) = ? OR LOWER(name) LIKE ?', [targetId, (email || '').toLowerCase(), `%${targetId.toLowerCase()}%`]);
+    if (!emp) {
+      return res.status(404).json({ success: false, error: 'Employee not found for biometric punch' });
     }
+
+    const result = await processBiometricPunch(emp, status);
 
     res.json({
       success: true,
       hardwareStatus: 'ONLINE',
       biometricVerified: true,
-      clockInTime: timeString,
+      clockInTime: result.punchTime,
+      checkIn: result.checkIn,
+      checkOut: result.checkOut,
+      status: result.status,
       employee: emp,
-      message: `Biometric attendance verified for ${emp ? emp.name : targetId}`,
+      message: `Biometric attendance recorded for ${emp.name}`,
     });
   } catch (err) {
     console.error('[ERROR] [BIOMETRIC HARDWARE] Failed to update attendance:', err);
@@ -579,28 +631,50 @@ const handleBiometricClockIn = async (req: Request, res: Response) => {
 app.post('/integrations/biometrics/clock-in', handleBiometricClockIn);
 app.post('/api/easytimepro/punch', handleBiometricClockIn);
 
-// ── ATTENDANCE LOGS ENDPOINT ───────────────────────────────────────────────
+// ── ATTENDANCE LOGS ENDPOINT (REAL TIME + MIDNIGHT RESET) ─────────────────
 app.get('/api/attendance', async (req: Request, res: Response) => {
   try {
+    const todayDateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const isoDate = new Date().toISOString().split('T')[0];
+
     const employees = await fetchAll('SELECT id, name, role, attendanceStatus, workingHours FROM employees');
     const logs = await fetchAll('SELECT * FROM attendance');
-    
+
     const attendanceRecords = employees.map(emp => {
-      const log = logs.find(l => l.employeeId === emp.id || l.employeeName === emp.name);
+      const todayLog = logs.find(l => 
+        (l.employeeId === emp.id || l.employeeName?.toLowerCase() === emp.name?.toLowerCase()) &&
+        (l.date === todayDateStr || l.date === isoDate)
+      );
+
+      if (todayLog) {
+        return {
+          id: todayLog.id,
+          employeeId: emp.id,
+          employeeName: emp.name,
+          role: emp.role,
+          checkIn: todayLog.checkIn || '--:--',
+          checkOut: todayLog.checkOut || '--:--',
+          workingHours: todayLog.workingHours || '--',
+          status: todayLog.status || 'Present',
+          date: todayLog.date || todayDateStr,
+        };
+      }
+
+      // Midnight Reset State: No punches recorded yet for today
       return {
-        id: log ? log.id : `att-${emp.id}`,
+        id: `att-${emp.id}-${todayDateStr.replace(/\s+/g, '')}`,
         employeeId: emp.id,
         employeeName: emp.name,
         role: emp.role,
-        checkIn: log ? log.checkIn || '08:30 AM' : '08:30 AM',
-        checkOut: log ? log.checkOut || '05:30 PM' : '05:30 PM',
-        workingHours: emp.workingHours || '8h 00m',
-        status: emp.attendanceStatus || 'Present',
-        date: log ? log.date || new Date().toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB'),
+        checkIn: '--:--',
+        checkOut: '--:--',
+        workingHours: '--',
+        status: 'Not Scanned',
+        date: todayDateStr,
       };
     });
 
-    res.json({ success: true, attendance: attendanceRecords });
+    res.json({ success: true, attendance: attendanceRecords, date: todayDateStr });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch attendance' });
   }
@@ -721,36 +795,20 @@ app.post('/api/simulator/biometric-punch', async (req: Request, res: Response) =
       return res.status(404).json({ success: false, message: 'No existing user found to punch attendance.' });
     }
 
-    lastBiometricPunchTimestamp = Date.now();
+    const result = await processBiometricPunch(target, status);
 
-    const punchTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const attStatus = status || 'Present';
-    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
-    await runQuery(
-      `UPDATE employees SET attendanceStatus = ?, workingHours = '8h 30m' WHERE id = ?`,
-      [attStatus, target.id]
-    );
-
-    const attId = `att-${target.id}`;
-    await runQuery(
-      `INSERT INTO attendance (id, employeeId, employeeName, role, workingHours, status)
-       VALUES (?, ?, ?, ?, '8h 30m', ?)
-       ON CONFLICT(id) DO UPDATE SET status = excluded.status, workingHours = '8h 30m'`,
-      [attId, target.id, target.name, target.role, attStatus]
-    );
-
-    console.log(`[REAL-TIME MOCK BIOMETRIC SCAN] Verified Punch for ${target.name} (${target.role}) at ${punchTime}`);
+    console.log(`[REAL-TIME BIOMETRIC SCAN] Verified Punch for ${target.name} (${target.role}) at ${result.punchTime}`);
     return res.json({
       success: true,
       message: `✓ Biometric scan verified for ${target.name} (${target.role})`,
-      punchTime,
+      punchTime: result.punchTime,
+      checkIn: result.checkIn,
+      checkOut: result.checkOut,
+      status: result.status,
       employee: {
         id: target.id,
         name: target.name,
         role: target.role,
-        attendanceStatus: attStatus,
-        workingHours: '8h 30m',
       },
     });
   } catch (err) {

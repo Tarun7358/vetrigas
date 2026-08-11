@@ -131,10 +131,17 @@ export async function seedDatabase() {
         employeeId TEXT,
         employeeName TEXT,
         role TEXT,
+        checkIn TEXT,
+        checkOut TEXT,
         workingHours TEXT,
-        status TEXT
+        status TEXT,
+        date TEXT
       )
     `);
+
+    try { await runQuery(`ALTER TABLE attendance ADD COLUMN checkIn TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE attendance ADD COLUMN checkOut TEXT`); } catch (e) {}
+    try { await runQuery(`ALTER TABLE attendance ADD COLUMN date TEXT`); } catch (e) {}
 
     // 8. Monthly Stock Intake Table Schema
     await runQuery(`

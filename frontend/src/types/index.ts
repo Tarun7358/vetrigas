@@ -44,8 +44,8 @@ export interface AttendanceRecord {
   checkIn: string; // e.g. "08:15 AM"
   checkOut: string; // e.g. "05:30 PM"
   workingHours: string;
-  status: 'Present' | 'Late' | 'Absent';
-  source: 'Easy Time Pro'; // Biometric requirement
+  status: 'Present' | 'Late' | 'Absent' | 'Not Scanned';
+  source?: 'Easy Time Pro'; // Biometric requirement
   date: string;
 }
 
