@@ -71,22 +71,47 @@ async function fetchFromSupabase(sql: string, params: any[], supabase: any): Pro
     const lowerSql = sql.toLowerCase();
     
     if (lowerSql.includes('from employees')) {
-      const { data } = await supabase.from('employees').select('*');
-      if (data) return data.map((e: any) => ({
-        id: e.id,
-        name: e.name,
-        role: e.role,
-        email: e.email,
-        password: e.password,
-        phone: e.phone,
-        joiningDate: e.joining_date,
-        attendanceStatus: e.attendance_status,
-        workingHours: e.working_hours,
-        todayWorkProgress: e.today_work_progress,
-        performanceScore: e.performance_score,
-        status: e.status,
-        hourlyRate: e.hourly_rate,
-      }));
+      const { data: empData } = await supabase.from('employees').select('*');
+      if (empData && empData.length > 0) {
+        return empData.map((e: any) => ({
+          id: e.id,
+          name: e.name,
+          role: e.role,
+          email: e.email,
+          password: e.password,
+          phone: e.phone,
+          joiningDate: e.joining_date,
+          attendanceStatus: e.attendance_status,
+          workingHours: e.working_hours,
+          todayWorkProgress: e.today_work_progress,
+          performanceScore: e.performance_score,
+          status: e.status,
+          hourlyRate: e.hourly_rate,
+        }));
+      }
+
+      // Supabase users table fallback (from schema public.users)
+      const { data: userData } = await supabase.from('users').select('*');
+      if (userData && userData.length > 0) {
+        return userData.map((u: any) => {
+          const uName = u.username || 'Staff';
+          let uRole = 'Owner';
+          if (uName.includes('manager')) uRole = 'Manager';
+          else if (uName.includes('driver')) uRole = 'Driver';
+          else if (uName.includes('loadman')) uRole = 'Loadman';
+          else if (uName.includes('godown')) uRole = 'Godown Keeper';
+          else if (uName.includes('storeroom')) uRole = 'Storeroom Staff';
+
+          return {
+            id: u.id,
+            name: uName.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            role: uRole,
+            email: u.email,
+            password: u.password_hash || u.password,
+            status: u.is_active !== false ? 'Active' : 'Inactive',
+          };
+        });
+      }
     }
 
     if (lowerSql.includes('from vehicles')) {
@@ -178,6 +203,37 @@ async function fetchFromSupabase(sql: string, params: any[], supabase: any): Pro
         cylinderCount: b.cylinder_count,
       }));
     }
+
+    if (lowerSql.includes('from attendance')) {
+      const { data } = await supabase.from('attendance').select('*');
+      if (data) return data.map((a: any) => ({
+        id: a.id,
+        employeeId: a.employee_id || a.employeeId,
+        employeeName: a.employee_name || a.employeeName,
+        role: a.role,
+        checkIn: a.check_in || a.checkIn || '08:30 AM',
+        checkOut: a.check_out || a.checkOut || '05:30 PM',
+        workingHours: a.working_hours || a.workingHours || '8h 30m',
+        status: a.status || 'Present',
+        date: a.date,
+      }));
+    }
+
+    if (lowerSql.includes('from stock_intake')) {
+      const { data } = await supabase.from('stock_intake').select('*').order('id', { ascending: false });
+      if (data) return data.map((s: any) => ({
+        id: s.id,
+        intakeDate: s.intake_date || s.intakeDate,
+        monthYear: s.month_year || s.monthYear,
+        category: s.category,
+        quantity: s.quantity,
+        challanNumber: s.challan_number || s.challanNumber,
+        supplier: s.supplier,
+        receivedBy: s.received_by || s.receivedBy,
+        userRole: s.user_role || s.userRole,
+        timestamp: s.timestamp,
+      }));
+    }
   } catch (err) {
     console.warn('Supabase fetch note, falling back to SQLite');
   }
@@ -237,4 +293,47 @@ async function syncSqlToSupabase(sql: string, params: any[], supabase: any) {
       id, bill_number, customer_name, amount, payment_method, transaction_id, driver_name, date, status, cylinder_count
     }], { onConflict: 'id' });
   }
+
+  else if (lowerSql.includes('update vehicles')) {
+    if (lowerSql.includes('set lat =')) {
+      const lat = params[0];
+      const lng = params[1];
+      const speed = params[2];
+      const ignition = Boolean(params[3]);
+      const status = params[4];
+      const targetId = params[params.length - 1];
+      await supabase.from('vehicles').update({ lat, lng, speed, ignition, status }).or(`id.eq.${targetId},registration_number.eq.${targetId}`);
+    } else if (lowerSql.includes('hascamera = 1')) {
+      const [camera_status, targetReg] = params;
+      await supabase.from('vehicles').update({ has_camera: true, camera_status }).or(`id.eq.${targetReg},registration_number.eq.${targetReg}`);
+    }
+  }
+
+  else if (lowerSql.includes('insert into vehicles')) {
+    const [id, registration_number, driver_name, driver_id, gps_device_id, sim_card_number, has_camera, camera_status] = params;
+    await supabase.from('vehicles').upsert([{
+      id, registration_number, driver_name, driver_id, gps_device_id, sim_card_number,
+      has_camera: Boolean(has_camera), camera_status: camera_status || 'OFFLINE'
+    }], { onConflict: 'id' });
+  }
+
+  else if (lowerSql.includes('update employees set attendancestatus')) {
+    const [attendance_status, id] = params;
+    await supabase.from('employees').update({ attendance_status, working_hours: '8h 30m' }).eq('id', id);
+  }
+
+  else if (lowerSql.includes('insert into attendance')) {
+    const [id, employee_id, employee_name, role, status] = params;
+    await supabase.from('attendance').upsert([{
+      id, employee_id, employee_name, role, status, working_hours: '8h 30m'
+    }], { onConflict: 'id' });
+  }
+
+  else if (lowerSql.includes('insert into stock_intake')) {
+    const [id, intake_date, month_year, category, quantity, challan_number, supplier, received_by, user_role, timestamp] = params;
+    await supabase.from('stock_intake').upsert([{
+      id, intake_date, month_year, category, quantity, challan_number, supplier, received_by, user_role, timestamp
+    }], { onConflict: 'id' });
+  }
 }
+

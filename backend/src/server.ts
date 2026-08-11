@@ -131,7 +131,40 @@ app.post('/api/auth/login', loginLimiter, async (req: Request, res: Response) =>
 
   try {
     const cleanEmail = email.trim().toLowerCase();
-    const user = await fetchOne('SELECT * FROM employees WHERE LOWER(email) = ?', [cleanEmail]);
+    let user = await fetchOne('SELECT * FROM employees WHERE LOWER(email) = ?', [cleanEmail]);
+
+    // Flexible alias resolution across domain & username variations
+    if (!user) {
+      const emailAliases: Record<string, string[]> = {
+        'manager@vetri.com': ['manager@vetriindane.com', 'santhosh.manager@vetriindane.com', 'santhosh@vetriindane.com'],
+        'manager@vetriindane.com': ['manager@vetri.com', 'santhosh.manager@vetriindane.com', 'santhosh@vetriindane.com'],
+        'santhosh.manager@vetriindane.com': ['manager@vetri.com', 'manager@vetriindane.com', 'santhosh@vetriindane.com'],
+        'owner@vetri.com': ['owner@vetriindane.com', 'vetri@vetriindane.com'],
+        'owner@vetriindane.com': ['owner@vetri.com', 'vetri@vetriindane.com'],
+        'arun@vetri.com': ['arun@vetriindane.com', 'arun.driver@vetriindane.com', 'driver.arun@vetriindane.com'],
+        'arun@vetriindane.com': ['arun@vetri.com', 'arun.driver@vetriindane.com', 'driver.arun@vetriindane.com'],
+        'arun.driver@vetriindane.com': ['arun@vetri.com', 'arun@vetriindane.com'],
+        'kumar@vetri.com': ['kumar@vetriindane.com', 'kumar.loadman@vetriindane.com', 'loadman.kumar@vetriindane.com'],
+        'kumar@vetriindane.com': ['kumar@vetri.com', 'kumar.loadman@vetriindane.com', 'loadman.kumar@vetriindane.com'],
+        'kumar.loadman@vetriindane.com': ['kumar@vetri.com', 'kumar@vetriindane.com'],
+        'priya.office@vetriindane.com': ['priya@vetriindane.com', 'priya@vetri.com', 'storeroom@vetriindane.com'],
+        'priya@vetriindane.com': ['priya.office@vetriindane.com', 'priya@vetri.com', 'storeroom@vetriindane.com'],
+        'karthik.godown@vetriindane.com': ['karthik@vetriindane.com', 'karthik@vetri.com', 'godown@vetriindane.com'],
+        'karthik@vetriindane.com': ['karthik.godown@vetriindane.com', 'karthik@vetri.com', 'godown@vetriindane.com'],
+      };
+
+      const possibleTargets = emailAliases[cleanEmail] || [];
+      if (cleanEmail.endsWith('@vetri.com')) {
+        possibleTargets.push(cleanEmail.replace('@vetri.com', '@vetriindane.com'));
+      } else if (cleanEmail.endsWith('@vetriindane.com')) {
+        possibleTargets.push(cleanEmail.replace('@vetriindane.com', '@vetri.com'));
+      }
+
+      for (const target of possibleTargets) {
+        user = await fetchOne('SELECT * FROM employees WHERE LOWER(email) = ?', [target.toLowerCase()]);
+        if (user) break;
+      }
+    }
 
     if (!user) {
       console.warn(`[AUTH] Rejected — account not found: ${cleanEmail}`);

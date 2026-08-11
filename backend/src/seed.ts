@@ -178,6 +178,7 @@ export async function seedDatabase() {
     // Seed default existing employees if missing
     const defaultEmps = [
       { id: 'emp-00', name: 'Vetri', role: 'Owner', email: 'owner@vetriindane.com', phone: '+91 96008 70814', att: 'Present' },
+      { id: 'emp-08', name: 'Santhosh', role: 'Manager', email: 'manager@vetriindane.com', phone: '+91 98421 00002', att: 'Present' },
       { id: 'emp-01', name: 'Arun', role: 'Driver', email: 'arun@vetriindane.com', phone: '+91 98421 12345', att: 'Present' },
       { id: 'emp-02', name: 'Suresh', role: 'Driver', email: 'suresh@vetriindane.com', phone: '+91 98421 23456', att: 'Present' },
       { id: 'emp-03', name: 'Ramesh', role: 'Driver', email: 'ramesh@vetriindane.com', phone: '+91 98421 34567', att: 'Present' },

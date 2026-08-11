@@ -2,21 +2,17 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Clock, ShieldCheck, CheckCircle2, Calendar, Filter } from 'lucide-react';
 import { calculateProductivityReport } from '../utils/productivityAudit';
-import { LiveSimulatorControl } from '../components/LiveSimulatorControl';
 
 export const AttendancePage: React.FC = () => {
-  const { attendance, role, currentUser, integrations, toggleIntegration } = useApp();
+  const { attendance, role, integrations, toggleIntegration } = useApp();
   const [roleFilter, setRoleFilter] = useState('ALL');
 
   const isManagement = role === 'OWNER' || role === 'MANAGER';
 
-  // If management (OWNER/MANAGER), display all or role-filtered attendance
-  // If field worker (DRIVER/LOADMAN), display ONLY their own attendance record
-  const visibleAttendance = isManagement
-    ? (roleFilter === 'ALL' ? attendance : attendance.filter(a => a.role.toUpperCase() === roleFilter))
-    : attendance.filter(a => 
-        a.employeeName.toLowerCase() === (currentUser?.name || '').toLowerCase()
-      );
+  // Display all real-time attendance logs across workforce (or filtered by role)
+  const visibleAttendance = roleFilter === 'ALL'
+    ? attendance
+    : attendance.filter(a => a.role.toUpperCase().includes(roleFilter.replace('_', ' ')));
 
   return (
     <div className="space-y-6">
@@ -28,12 +24,10 @@ export const AttendancePage: React.FC = () => {
           </div>
           <div>
             <h1 className="font-display font-bold text-xl text-white">
-              {isManagement ? 'Biometric Attendance Registry' : `Personal Attendance Log (${currentUser?.name || 'Worker'})`}
+              Biometric Attendance Registry
             </h1>
             <p className="text-xs text-slate-400">
-              {isManagement
-                ? 'Enterprise Biometric Workforce Log Direct Sync via Easy Time Pro Integration'
-                : `Verified Biometric Check-in & Punch Logs for ${currentUser?.name || 'Your Account'}`}
+              Enterprise Biometric Workforce Log Direct Sync via Easy Time Pro Hardware Integration
             </p>
           </div>
         </div>
@@ -58,35 +52,25 @@ export const AttendancePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Hardware Simulator Controls */}
-      <LiveSimulatorControl defaultExpanded={true} />
-
-      {/* Filters Bar for Management / Personal Notice for Workers */}
+      {/* Filters Bar for Role-based Attendance View */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border border-slate-200 p-4 rounded-xl shadow-sm gap-3">
-        {isManagement ? (
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-bold text-slate-700">Filter Role:</span>
-            {['ALL', 'DRIVER', 'LOADMAN'].map(r => (
-              <button
-                key={r}
-                onClick={() => setRoleFilter(r)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
-                  roleFilter === r
-                    ? 'bg-amber-500 text-slate-950 font-bold'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            <span>Showing verified attendance logs for <strong>{currentUser?.name}</strong></span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <span className="text-xs font-bold text-slate-700">Filter Role:</span>
+          {['ALL', 'DRIVER', 'LOADMAN', 'MANAGER', 'STOREROOM STAFF', 'GODOWN KEEPER'].map(r => (
+            <button
+              key={r}
+              onClick={() => setRoleFilter(r)}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                roleFilter === r
+                  ? 'bg-amber-500 text-slate-950 font-bold'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
           <Calendar className="w-4 h-4 text-slate-400" /> Date: 08 August 2026
@@ -161,8 +145,8 @@ export const AttendancePage: React.FC = () => {
               })
             ) : (
               <tr>
-                <td colSpan={7} className="text-center py-8 text-slate-400 text-xs italic">
-                  No attendance records found for {currentUser?.name || 'your profile'}.
+                <td colSpan={8} className="text-center py-8 text-slate-400 text-xs italic">
+                  No attendance records found.
                 </td>
               </tr>
             )}

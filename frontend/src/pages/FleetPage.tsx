@@ -16,7 +16,6 @@ import {
   Trash2,
 } from 'lucide-react';
 import { soundAlerts } from '../utils/audioAlerts';
-import { LiveSimulatorControl } from '../components/LiveSimulatorControl';
 import { API_BASE } from '../utils/api';
 
 const createCustomIcon = (status: string) => {
@@ -159,9 +158,6 @@ export const FleetPage: React.FC<FleetPageProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
-
-      {/* Real-Time Mock Simulator Controls */}
-      <LiveSimulatorControl defaultExpanded={false} />
 
       {/* Main Map + Side Panel Split */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
