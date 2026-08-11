@@ -329,6 +329,11 @@ async function syncSqlToSupabase(sql: string, params: any[], supabase: any) {
     }], { onConflict: 'id' });
   }
 
+  else if (lowerSql.includes('update attendance')) {
+    const [check_out, working_hours, status, id] = params;
+    await supabase.from('attendance').update({ check_out, working_hours, status }).eq('id', id);
+  }
+
   else if (lowerSql.includes('insert into stock_intake')) {
     const [id, intake_date, month_year, category, quantity, challan_number, supplier, received_by, user_role, timestamp] = params;
     await supabase.from('stock_intake').upsert([{

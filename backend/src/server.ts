@@ -635,47 +635,58 @@ app.post('/api/easytimepro/punch', handleBiometricClockIn);
 // ── ATTENDANCE LOGS ENDPOINT (REAL TIME + MIDNIGHT RESET) ─────────────────
 app.get('/api/attendance', async (req: Request, res: Response) => {
   try {
-    const todayDateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-    const isoDate = new Date().toISOString().split('T')[0];
+    const queryDate = req.query.date as string;
+    const returnAll = req.query.all === 'true';
+
+    const now = new Date();
+    const todayDateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const todayIsoDate = now.toISOString().split('T')[0];
 
     const employees = await fetchAll('SELECT id, name, role, attendanceStatus, workingHours FROM employees');
     const logs = await fetchAll('SELECT * FROM attendance');
 
+    if (returnAll) {
+      return res.json({ success: true, attendance: logs, date: todayDateStr });
+    }
+
+    const targetDateStr = queryDate || todayDateStr;
+    const isToday = targetDateStr === todayDateStr || targetDateStr === todayIsoDate;
+
     const attendanceRecords = employees.map(emp => {
-      const todayLog = logs.find(l => 
+      const matchedLog = logs.find(l => 
         (l.employeeId === emp.id || l.employeeName?.toLowerCase() === emp.name?.toLowerCase()) &&
-        (l.date === todayDateStr || l.date === isoDate)
+        (l.date === targetDateStr || (queryDate && l.date?.includes(queryDate)))
       );
 
-      if (todayLog) {
+      if (matchedLog) {
         return {
-          id: todayLog.id,
+          id: matchedLog.id,
           employeeId: emp.id,
           employeeName: emp.name,
           role: emp.role,
-          checkIn: todayLog.checkIn || '--:--',
-          checkOut: todayLog.checkOut || '--:--',
-          workingHours: todayLog.workingHours || '--',
-          status: todayLog.status || 'Present',
-          date: todayLog.date || todayDateStr,
+          checkIn: matchedLog.checkIn || '--:--',
+          checkOut: matchedLog.checkOut || '--:--',
+          workingHours: matchedLog.workingHours || '--',
+          status: matchedLog.status || 'Present',
+          date: matchedLog.date || targetDateStr,
         };
       }
 
-      // Midnight Reset State: No punches recorded yet for today
+      // No punch recorded for requested date
       return {
-        id: `att-${emp.id}-${todayDateStr.replace(/\s+/g, '')}`,
+        id: `att-${emp.id}-${targetDateStr.replace(/\s+/g, '')}`,
         employeeId: emp.id,
         employeeName: emp.name,
         role: emp.role,
         checkIn: '--:--',
         checkOut: '--:--',
         workingHours: '--',
-        status: 'Not Scanned',
-        date: todayDateStr,
+        status: isToday ? 'Not Scanned' : 'Absent',
+        date: targetDateStr,
       };
     });
 
-    res.json({ success: true, attendance: attendanceRecords, date: todayDateStr });
+    res.json({ success: true, attendance: attendanceRecords, date: targetDateStr, logs });
   } catch (err) {
     res.status(500).json({ success: false, error: 'Failed to fetch attendance' });
   }
