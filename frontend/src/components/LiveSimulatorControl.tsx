@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { API_BASE } from '../utils/api';
 import {
@@ -10,10 +10,6 @@ import {
   CheckCircle2,
   Truck,
   Users,
-  Camera,
-  Video,
-  X,
-  RefreshCw,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { soundAlerts } from '../utils/audioAlerts';
@@ -26,99 +22,6 @@ export const LiveSimulatorControl: React.FC<{ defaultExpanded?: boolean }> = ({ 
   const [isPunching, setIsPunching] = useState(false);
   const [isSteppingGps, setIsSteppingGps] = useState(false);
   const [lastScanMessage, setLastScanMessage] = useState<string | null>(null);
-
-  // PC Camera Webcam State
-  const [showCameraModal, setShowCameraModal] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-
-  // Start PC Camera Stream
-  const startCamera = async () => {
-    try {
-      setCapturedPhoto(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-        setCameraActive(true);
-      }
-    } catch (err) {
-      alert('Could not access PC Camera / Webcam. Please check browser camera permissions.');
-      setCameraActive(false);
-    }
-  };
-
-  // Stop PC Camera Stream
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setCameraActive(false);
-  };
-
-  // Open Camera Modal
-  const handleOpenCamera = () => {
-    setShowCameraModal(true);
-    setTimeout(() => startCamera(), 200);
-  };
-
-  // Close Camera Modal
-  const handleCloseCamera = () => {
-    stopCamera();
-    setShowCameraModal(false);
-    setCapturedPhoto(null);
-  };
-
-  // Capture Photo & Clock In Selected User
-  const handleSnapAndClockIn = async () => {
-    if (!videoRef.current) return;
-
-    // Capture frame on canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth || 640;
-    canvas.height = videoRef.current.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    const photoBase64 = canvas.toDataURL('image/jpeg', 0.85);
-
-    setCapturedPhoto(photoBase64);
-    stopCamera();
-
-    // Trigger Biometric Punch with photo payload
-    const targetId = selectedEmpId || (employees[0]?.id || 'emp-01');
-    const targetEmp = employees.find(e => e.id === targetId || e.email.toLowerCase() === targetId.toLowerCase()) || employees[0];
-
-    try {
-      setIsPunching(true);
-      const res = await fetch(`${API_BASE}/api/simulator/biometric-punch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          employeeId: targetEmp ? targetEmp.id : targetId,
-          employeeName: targetEmp?.name,
-          photoUrl: photoBase64,
-        }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setLastScanMessage(data.message || `📷 PC Camera Face Scan Verified for ${targetEmp?.name}`);
-        soundAlerts.playSuccessSyncChime();
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.7 } });
-      }
-    } catch (err) {
-      alert('Camera biometric scan failed.');
-    } finally {
-      setIsPunching(false);
-      setTimeout(() => setShowCameraModal(false), 1200);
-    }
-  };
 
   // Poll simulator status from Express backend
   useEffect(() => {
@@ -339,23 +242,14 @@ export const LiveSimulatorControl: React.FC<{ defaultExpanded?: boolean }> = ({ 
                   ))}
                 </select>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => handleBiometricPunch()}
                     disabled={isPunching}
                     className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-2 px-2.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-md shadow-emerald-600/20 cursor-pointer"
                   >
                     <Fingerprint className={`w-3.5 h-3.5 ${isPunching ? 'animate-bounce' : ''}`} />
-                    Fingerprint
-                  </button>
-
-                  <button
-                    onClick={handleOpenCamera}
-                    disabled={isPunching}
-                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-2 px-2.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-md shadow-amber-500/20 cursor-pointer"
-                  >
-                    <Camera className="w-3.5 h-3.5" />
-                    PC Camera Scan
+                    Fingerprint / Face Scan
                   </button>
 
                   <button
@@ -374,98 +268,6 @@ export const LiveSimulatorControl: React.FC<{ defaultExpanded?: boolean }> = ({ 
                   <span>{lastScanMessage}</span>
                 </div>
               )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* PC CAMERA WEBCAM MODAL */}
-      {showCameraModal && (
-        <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl space-y-4 p-5 text-white">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-bold">
-                  <Video className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-display font-bold text-base text-white">
-                    PC Webcam Facial Recognition Scanner
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    Live video stream for testing biometric attendance clock-in
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleCloseCamera}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Video Live Stream Box */}
-            <div className="relative bg-black rounded-2xl border-2 border-slate-800 overflow-hidden min-h-[300px] flex items-center justify-center">
-              {capturedPhoto ? (
-                /* Show Captured Snapshot */
-                <div className="relative w-full h-full flex flex-col items-center">
-                  <img src={capturedPhoto} alt="Camera Snap" className="w-full max-h-72 object-cover rounded-xl" />
-                  <div className="absolute inset-0 bg-emerald-950/40 border-4 border-emerald-500 rounded-xl flex items-center justify-center">
-                    <span className="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-lg flex items-center gap-2 animate-bounce">
-                      <CheckCircle2 className="w-4 h-4" /> FACE MATCH VERIFIED — CLOCKING IN...
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                /* Live Camera Stream with Target Alignment Lines */
-                <>
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full max-h-72 object-cover rounded-xl"
-                  />
-                  {cameraActive && (
-                    <div className="absolute inset-0 border-2 border-amber-500/50 rounded-xl pointer-events-none flex items-center justify-center">
-                      <div className="w-48 h-48 border-2 border-dashed border-amber-400/80 rounded-full animate-pulse flex items-center justify-center">
-                        <span className="text-[10px] text-amber-300 font-mono bg-slate-950/80 px-2 py-1 rounded border border-amber-400/50">
-                          ALIGN FACE IN CIRCLE
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  {!cameraActive && (
-                    <div className="text-center py-10 space-y-2">
-                      <RefreshCw className="w-8 h-8 text-amber-400 animate-spin mx-auto" />
-                      <p className="text-xs text-slate-300">Connecting PC Camera stream...</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center justify-between gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleCloseCamera}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold cursor-pointer"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSnapAndClockIn}
-                disabled={!cameraActive || Boolean(capturedPhoto)}
-                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-emerald-500/20 cursor-pointer"
-              >
-                <Camera className="w-4 h-4" /> Snap Photo & Clock In User
-              </button>
             </div>
           </div>
         </div>
