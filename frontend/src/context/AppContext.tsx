@@ -175,7 +175,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (expRes.ok) {
         const data = await expRes.json();
         if (Array.isArray(data.expenses)) {
-          setExpenses(data.expenses);
+          setExpenses(data.expenses.map((e: any) => ({
+            ...e,
+            // Normalize field names: Supabase uses snake_case, local state expects camelCase
+            vehicleNumber: e.vehicleNumber || e.vehicle_id || '',
+            driverName: e.driverName || e.driver_name || '',
+            vendorName: e.vendorName || e.description || '',
+            litersFilled: e.litersFilled || e.liters,
+            odometerReading: e.odometerReading || e.odometer_reading,
+            billNumber: e.billNumber || e.id,
+            // Critical: map billPhotoUrl → receiptImage so the modal can show the actual uploaded image
+            receiptImage: e.receiptImage || e.billPhotoUrl || e.bill_photo_url || '',
+          })));
         }
       }
 

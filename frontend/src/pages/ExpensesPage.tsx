@@ -317,63 +317,56 @@ export const ExpensesPage: React.FC = () => {
             {/* Modal Body */}
             <div className="p-6 overflow-y-auto space-y-5 flex-1">
               {/* Image Preview Box */}
-              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[220px]">
-                {inspectExpense.receiptImage && inspectExpense.receiptImage.startsWith('data:image') ? (
-                  <img
-                    src={inspectExpense.receiptImage}
-                    alt="Driver Uploaded Bill Receipt"
-                    className="max-h-72 object-contain rounded-xl shadow-lg border border-slate-700"
-                  />
+              <div className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden">
+                {inspectExpense.receiptImage && (
+                  inspectExpense.receiptImage.startsWith('data:image') ||
+                  inspectExpense.receiptImage.startsWith('http') ||
+                  inspectExpense.receiptImage.startsWith('blob:')
+                ) ? (
+                  /* Real uploaded image — show it directly */
+                  <div className="w-full flex flex-col items-center gap-3">
+                    <img
+                      src={inspectExpense.receiptImage}
+                      alt="Driver Uploaded Bill Receipt"
+                      className="max-h-80 w-auto object-contain rounded-xl shadow-xl border border-slate-700"
+                    />
+                    <span className="text-[11px] text-emerald-400 font-mono font-bold flex items-center gap-1">
+                      ✓ ORIGINAL RECEIPT IMAGE ATTACHED BY DRIVER
+                    </span>
+                  </div>
                 ) : (
-                  /* Realistic Rendered Fuel Station Bill Graphic */
-                  <div className="w-full max-w-md bg-amber-50 text-slate-900 p-5 rounded-2xl border-2 border-dashed border-amber-300 font-mono text-xs space-y-3 shadow-md">
-                    <div className="text-center border-b border-amber-200 pb-2">
-                      <p className="font-bold text-sm tracking-wider text-slate-900 uppercase">{inspectExpense.vendorName}</p>
-                      <p className="text-[10px] text-slate-600">Peelamedu Main Road, Coimbatore, TN</p>
-                      <p className="text-[10px] text-slate-600">GSTIN: 33AAAAA0000A1Z5 | POS #04</p>
+                  /* No real image — show clear "no image" notice with expense details */
+                  <div className="w-full flex flex-col items-center gap-4 py-4">
+                    <div className="w-16 h-16 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                      <FileText className="w-8 h-8 text-slate-500" />
                     </div>
-
-                    <div className="space-y-1 pt-1 text-[11px]">
-                      <div className="flex justify-between">
+                    <div className="text-center space-y-1">
+                      <p className="text-slate-400 font-semibold text-sm">No Receipt Image Uploaded</p>
+                      <p className="text-slate-600 text-[11px]">
+                        Driver submitted this expense without attaching a physical bill scan.
+                      </p>
+                    </div>
+                    <div className="w-full max-w-xs bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs space-y-2 font-mono text-left">
+                      <div className="flex justify-between text-slate-400">
                         <span>Bill No:</span>
-                        <span className="font-bold">{inspectExpense.billNumber || 'BILL-482910'}</span>
+                        <span className="text-white font-bold">{inspectExpense.billNumber || 'N/A'}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Date & Time:</span>
-                        <span>{inspectExpense.date}</span>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Vendor:</span>
+                        <span className="text-white">{inspectExpense.vendorName || 'Not specified'}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Vehicle Reg:</span>
-                        <span className="font-bold">{inspectExpense.vehicleNumber}</span>
+                      <div className="flex justify-between text-slate-400">
+                        <span>Submitted:</span>
+                        <span className="text-white">{inspectExpense.date}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Driver Claiming:</span>
-                        <span>{inspectExpense.driverName}</span>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-b border-amber-200 py-2 space-y-1 text-[11px]">
-                      <div className="flex justify-between font-bold">
-                        <span>{inspectExpense.type} CHARGE:</span>
+                      <div className="flex justify-between text-amber-400 font-bold border-t border-slate-800 pt-2">
+                        <span>Amount Claimed:</span>
                         <span>₹{inspectExpense.amount.toLocaleString()}</span>
                       </div>
-                      {inspectExpense.litersFilled && (
-                        <div className="flex justify-between text-[10px] text-slate-600">
-                          <span>Quantity (Liters):</span>
-                          <span>{inspectExpense.litersFilled} L</span>
-                        </div>
-                      )}
-                      {inspectExpense.odometerReading && (
-                        <div className="flex justify-between text-[10px] text-slate-600">
-                          <span>Odometer Reading:</span>
-                          <span>{inspectExpense.odometerReading} km</span>
-                        </div>
-                      )}
                     </div>
-
-                    <div className="text-center pt-1 text-[10px] text-emerald-800 font-bold bg-emerald-100 p-1.5 rounded-lg border border-emerald-300">
-                      ✓ ORIGINAL PETROL BUNK RECEIPT SCAN ATTACHED
-                    </div>
+                    <span className="text-[11px] text-amber-500 font-semibold flex items-center gap-1 bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 rounded-lg">
+                      ⚠ Request driver to upload physical receipt photo for verification
+                    </span>
                   </div>
                 )}
               </div>
