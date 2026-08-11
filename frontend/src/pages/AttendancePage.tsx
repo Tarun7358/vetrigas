@@ -121,12 +121,12 @@ export const AttendancePage: React.FC = () => {
                     <td className="font-mono text-xs font-semibold text-slate-700">{att.checkOut}</td>
                     <td>
                       <div className="font-mono text-xs">
-                        <span className="font-bold text-emerald-700">Net: {audit.netHoursFormatted}</span>
+                        <span className="font-bold text-emerald-700">Net: {isNotScanned ? '--' : audit.netHoursFormatted}</span>
                         <span className="text-[10px] text-slate-400 block">Gross: {att.workingHours}</span>
                       </div>
                     </td>
                     <td>
-                      {audit.unproductiveIdleMinutes > 0 ? (
+                      {!isNotScanned && audit.unproductiveIdleMinutes > 0 ? (
                         <span className="badge-status badge-red text-[10px] font-mono font-bold">
                           -{audit.deductedHoursFormatted} Deducted ({audit.fuelWastedLiters}L Idle)
                         </span>

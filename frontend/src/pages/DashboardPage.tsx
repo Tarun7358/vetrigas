@@ -43,11 +43,11 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
-  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle, integrations } = useApp();
+  const { employees, vehicles, deliveries, bills, currentUser, role, addOrder, addVehicle, removeVehicle, integrations, attendance } = useApp();
 
   const workerEmployees = employees.filter(e => (e.role || '').toLowerCase() !== 'owner');
   const totalWorkers = workerEmployees.length;
-  const presentToday = workerEmployees.filter(e => e.attendanceStatus === 'Present').length;
+  const presentToday = attendance.filter(a => (a.status === 'Present' || a.status === 'Late') && a.checkIn !== '--:--').length;
   const driversCount = employees.filter(e => (e.role || '').toLowerCase().includes('driver')).length;
   const loadmenCount = employees.filter(e => (e.role || '').toLowerCase().includes('loadman')).length;
   const activeVehicles = vehicles.filter(v => v.status === 'MOVING' || v.status === 'STOPPED').length;
@@ -484,13 +484,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate }) => {
                         }
                       }
 
+                      const att = attendance.find(a => a.employeeId === emp.id || a.employeeName?.toLowerCase() === emp.name?.toLowerCase());
+                      const attStatus = att ? att.status : (emp.attendanceStatus === 'Present' || emp.attendanceStatus === 'Late' ? emp.attendanceStatus : 'Not Scanned');
+                      const isPresent = attStatus === 'Present';
+                      const isLate = attStatus === 'Late';
+                      const isNotScanned = attStatus === 'Not Scanned' || !att || att.checkIn === '--:--';
+
                       return (
                         <tr key={emp.id}>
                           <td className="font-bold text-slate-900">{emp.name}</td>
                           <td><span className="badge-status badge-blue">{emp.role}</span></td>
                           <td className="font-mono text-xs text-slate-700">{emp.phone || 'Peelamedu Depot'}</td>
                           <td className="font-mono text-xs font-bold text-slate-800">{shiftProgressStr}</td>
-                          <td><span className="badge-status badge-green">● {emp.attendanceStatus || 'Active'}</span></td>
+                          <td>
+                            {isPresent && <span className="badge-status badge-green font-bold">● PRESENT</span>}
+                            {isLate && <span className="badge-status badge-amber font-bold">● LATE</span>}
+                            {isNotScanned && <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 text-slate-500 border border-slate-200">○ NOT SCANNED</span>}
+                          </td>
                         </tr>
                       );
                     })
